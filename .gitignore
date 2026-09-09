@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+
+# Screenshots pulled off the phone while checking the layout.
+*.xwd
+*.png
