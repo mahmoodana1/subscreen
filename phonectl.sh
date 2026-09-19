@@ -8,6 +8,8 @@
 #   ./phonectl.sh stop              close the sub-screen window
 #   ./phonectl.sh color '#ff5555'   re-tint the clock
 #   ./phonectl.sh reset             back to the default blue
+#   ./phonectl.sh theme aurora      swap palette + ambient animation
+#                                   names: grove | abyss | aurora | circuitry | murmuration
 #
 # Seeing anything still needs the Termux:X11 *app* open on the phone —
 # that is an Android activity, nothing here can start it.
@@ -15,12 +17,70 @@
 set -uo pipefail
 
 ACCENT_FILE="$HOME/.cache/subscreen/accent"
+HOST_CACHE="$HOME/.cache/subscreen/phone-host"
 SERVER_PORT=8765
 PHONE=phone-lan
+PHONE_PORT="$(ssh -G "$PHONE" 2>/dev/null | awk '/^port /{print $2; exit}')"
+PHONE_PORT="${PHONE_PORT:-8022}"
 SSH_OPTS=(-o ConnectTimeout=25 -o BatchMode=yes)
 
+# Is anything listening on the phone's ssh port at $1? One cheap TCP probe,
+# no auth — used both as a liveness check and as the LAN-scan filter.
+port_open() { timeout 2 bash -c "cat </dev/null >/dev/tcp/$1/$PHONE_PORT" 2>/dev/null; }
+
+# Where do we currently think the phone is? The cache wins (it holds the
+# last address a rescan proved), otherwise whatever ssh_config resolves to.
+phone_host() {
+    if [ -s "$HOST_CACHE" ]; then
+        cat "$HOST_CACHE"
+    else
+        ssh -G "$PHONE" 2>/dev/null | awk '/^hostname /{print $2; exit}'
+    fi
+}
+
+# Android hands the phone a new DHCP lease whenever it feels like it, which
+# used to mean every command here died on "connection refused" until the
+# ssh_config was hand-edited. Instead: sweep the local /24 for the ssh port
+# and keep the first address that answers. Identity is not taken on trust —
+# ssh still verifies the pinned HostKeyAlias key on every later command, so
+# a stranger squatting on the port fails verification rather than getting
+# our commands.
+rediscover_phone() {
+    local subnet ip found=""
+    subnet="$(ip -4 route get 1.1.1.1 2>/dev/null |
+              awk '{for (i = 1; i < NF; i++) if ($i == "src") { print $(i + 1); exit }}')"
+    [ -n "$subnet" ] || return 1
+    subnet="${subnet%.*}"
+    echo "phone unreachable — scanning ${subnet}.0/24 for port $PHONE_PORT …" >&2
+    for ip in $(seq 1 254); do
+        ( port_open "$subnet.$ip" && echo "$subnet.$ip" ) &
+    done >"${TMPDIR:-/tmp}/phonectl-scan.$$" 2>/dev/null
+    wait
+    found="$(head -1 "${TMPDIR:-/tmp}/phonectl-scan.$$" 2>/dev/null)"
+    rm -f "${TMPDIR:-/tmp}/phonectl-scan.$$"
+    [ -n "$found" ] || { echo "no host answering on port $PHONE_PORT" >&2; return 1; }
+    mkdir -p "$(dirname "$HOST_CACHE")"
+    printf '%s\n' "$found" > "$HOST_CACHE"
+    echo "phone found at $found (cached; host key still checked)" >&2
+    return 0
+}
+
+# Run once before any command: if the remembered address is dead, rescan.
+# SSH_OPTS then carries an explicit HostName so scp inherits the fix too.
+ensure_phone() {
+    local host
+    host="$(phone_host)"
+    if [ -z "$host" ] || ! port_open "$host"; then
+        rediscover_phone || return 1
+        host="$(phone_host)"
+    fi
+    SSH_OPTS+=(-o "HostName=$host")
+}
+
+ensure_phone || echo "warning: phone not found on the LAN — commands will fail" >&2
+
 # Wifi power-save makes the first connect time out; one retry is normal.
-phone() { timeout 90 ssh "${SSH_OPTS[@]}" "$PHONE" "$@" 2>&1 | grep -v 'proot warning'; }
+phone() { timeout "${PHONE_TIMEOUT:-90}" ssh "${SSH_OPTS[@]}" "$PHONE" "$@" 2>&1 | grep -v 'proot warning'; }
 proot() { phone "~/start-arch.sh \"$1\""; }
 
 case "${1:-status}" in
@@ -53,8 +113,14 @@ deploy)
     # deploying without relaunching changes nothing — hence the relaunch.
     cd "$(dirname "$0")" || exit 1
     timeout 120 scp "${SSH_OPTS[@]}" \
-        subscreen_tui.py subscreen-x11.sh prayer.py timetable.py chime.wav \
+        subscreen_tui.py subscreen-x11.sh prayer.py timetable.py chime.wav athan.mp3 \
         "$PHONE:~/arch-fs/root/" || { echo "scp failed" >&2; exit 1; }
+    # Themes that ship pixel-art frames (currently just "cats") need their
+    # asset dir next to subscreen_tui.py on the phone — the TUI resolves
+    # them via __file__, so the path structure has to match the desktop.
+    timeout 120 scp -r "${SSH_OPTS[@]}" \
+        assets \
+        "$PHONE:~/arch-fs/root/" || { echo "scp assets failed" >&2; exit 1; }
     proot 'chmod +x /root/subscreen-x11.sh /root/subscreen_tui.py; echo deployed'
     "$0" sync-times
     "$0" stop >/dev/null 2>&1
@@ -104,6 +170,29 @@ test-alert)
            paplay /root/chime.wav 2>&1 | head -2
            nohup i3-nagbar -t warning -m "TEST — prayer notifier" >/dev/null 2>&1 &
            sleep 6; pkill -x i3-nagbar; echo "chime played, nagbar raised and dismissed"'
+    ;;
+test-athan)
+    # Fires the athan the way a real prayer rollover would: 7 s fade-in,
+    # then hold at max; moving the mouse cuts it. Runs for up to
+    # ${2:-270} seconds — the whole 3 m 42 s recording plus its 30 s tail
+    # pad — before self-terminating. The ssh timeout has to outlast that,
+    # or the dying session takes mpv down with it just before the end.
+    dur="${2:-270}"
+    export PHONE_TIMEOUT=$((dur + 40))
+    cd "$(dirname "$0")" || exit 1
+    timeout 30 scp "${SSH_OPTS[@]}" test_athan.py \
+        "$PHONE:~/arch-fs/root/" >/dev/null || { echo "scp test_athan.py failed" >&2; exit 1; }
+    proot "export DISPLAY=127.0.0.1:0 PULSE_SERVER=127.0.0.1
+           command -v mpv >/dev/null || { echo 'mpv missing on phone — install it first'; exit 1; }
+           ls -l /dev/input/mice 2>/dev/null | head -1
+           cd /root && python3 /root/test_athan.py $dur"
+    ;;
+theme)
+    # The client polls ~/.cache/subscreen/theme once per fetch (5 s), so
+    # the switch is live — no relaunch required. Unknown names silently
+    # fall back to grove on the phone.
+    [ $# -ge 2 ] || { echo "usage: $0 theme <grove|abyss|aurora|circuitry|forest|murmuration|sunrise>" >&2; exit 1; }
+    proot "mkdir -p /root/.cache/subscreen && printf '%s\n' '$2' > /root/.cache/subscreen/theme && echo theme=$2"
     ;;
 color)
     [ $# -ge 2 ] || { echo "usage: $0 color '#rrggbb'" >&2; exit 1; }
