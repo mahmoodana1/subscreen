@@ -2,6 +2,8 @@ package dev.subscreen.hub;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.content.Context;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageInstaller;
@@ -99,6 +101,7 @@ public class MainActivity extends Activity {
         setContentView(web);
         web.loadUrl(START);
         current = new WeakReference<>(this);
+        takeAthanIntent(getIntent());
     }
 
     @Override
@@ -125,6 +128,13 @@ public class MainActivity extends Activity {
         stopAthan();
         if (web != null) web.destroy();
         super.onDestroy();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        takeAthanIntent(intent);
     }
 
     // A kiosk: Back does nothing rather than leaving the app.
@@ -194,6 +204,56 @@ public class MainActivity extends Activity {
             try { athan.stop(); } catch (Exception ignored) { }
             athan.release();
             athan = null;
+        }
+    }
+
+    // ------------------------------------------------------------------ prayer alarms
+
+    /** Set by an athan alarm; the page asks for it once it has loaded. */
+    private String pendingAthan = "";
+
+    /**
+     * An athan alarm opened (or brought back) the app: light the screen over
+     * the lock screen and let the page play it. The page decides, so an athan
+     * it already played on its own timer is not played twice.
+     */
+    private void takeAthanIntent(Intent intent) {
+        String k = intent == null ? null : intent.getStringExtra("athan");
+        if (k == null || k.isEmpty()) return;
+        intent.removeExtra("athan");
+        pendingAthan = k;
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        }
+        js("window.athanFromAlarm && window.athanFromAlarm(" + JSONObject.quote(k) + ")");
+        main.postDelayed(() -> armNextAthan(this), 5000);
+    }
+
+    /**
+     * The page hands over the coming adhan times ([{at, k}, ...] in epoch ms);
+     * one alarm-clock alarm is kept armed for the soonest. Alarm-clock alarms
+     * fire on time even in Doze and may open the app over the lock screen.
+     */
+    static void armNextAthan(Context ctx) {
+        try {
+            JSONArray list = new JSONArray(ctx.getSharedPreferences("subscreen", MODE_PRIVATE).getString("athans", "[]"));
+            long now = System.currentTimeMillis(), best = Long.MAX_VALUE;
+            String key = null;
+            for (int i = 0; i < list.length(); i++) {
+                JSONObject o = list.getJSONObject(i);
+                long at = o.getLong("at");
+                if (at > now + 2000 && at < best) { best = at; key = o.getString("k"); }
+            }
+            AlarmManager am = ctx.getSystemService(AlarmManager.class);
+            Intent open = new Intent(ctx, MainActivity.class)
+                    .putExtra("athan", key == null ? "" : key)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            PendingIntent pi = PendingIntent.getActivity(ctx, 7, open,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            if (key == null) { am.cancel(pi); return; }
+            am.setAlarmClock(new AlarmManager.AlarmClockInfo(best, pi), pi);
+        } catch (Exception ignored) {
         }
     }
 
@@ -341,5 +401,29 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void checkUpdate() { MainActivity.this.checkUpdate(); }
 
         @JavascriptInterface public void installUpdate(String url) { main.post(() -> MainActivity.this.installUpdate(url)); }
+
+        @JavascriptInterface public void scheduleAthans(String json) {
+            getSharedPreferences("subscreen", MODE_PRIVATE).edit().putString("athans", json).apply();
+            armNextAthan(MainActivity.this);
+        }
+
+        @JavascriptInterface public String takePendingAthan() {
+            String k = pendingAthan;
+            pendingAthan = "";
+            return k;
+        }
+
+        /** Screen off, like double-tapping Samsung's home screen. False until the accessibility service is on. */
+        @JavascriptInterface public boolean screenOff() { return ScreenService.lockScreen(); }
+
+        /** Android's power menu (Power off / Restart). */
+        @JavascriptInterface public boolean powerMenu() { return ScreenService.powerMenu(); }
+
+        @JavascriptInterface public boolean screenControlOn() { return ScreenService.instance != null; }
+
+        @JavascriptInterface public void openScreenControlSettings() {
+            main.post(() -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)));
+        }
     }
 }

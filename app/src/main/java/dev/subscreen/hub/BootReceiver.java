@@ -14,6 +14,8 @@ import android.provider.Settings;
 public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
+        // Alarms do not survive a reboot or an update; re-arm the next athan.
+        MainActivity.armNextAthan(context);
         if (!Settings.canDrawOverlays(context)) return;
         context.startActivity(new Intent(context, MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));

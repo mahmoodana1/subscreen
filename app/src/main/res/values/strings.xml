@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_service_desc">Lets Subscreen turn the screen off when you double-tap empty space on the clock, and open the power menu, the way the Samsung home screen does. Subscreen reads nothing from other apps.</string>
+</resources>

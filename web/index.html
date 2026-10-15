@@ -455,6 +455,8 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
     <div id="nativeRows" hidden>
       <h3 style="margin-top:6px">App</h3>
       <button class="rowt" id="updateBtn" type="button">Updates<span class="rowv" id="updateTxt">Check</span></button>
+      <button class="rowt" id="screenOffBtn" type="button">Turn screen off<span class="rowv">or double-tap the clock screen</span></button>
+      <button class="rowt" id="powerBtn" type="button">Power off…<span>›</span></button>
       <button class="rowt" id="homeAppBtn" type="button">Use as the home screen<span>›</span></button>
       <button class="rowt" id="bootBtn" type="button">Start after a reboot<span>›</span></button>
       <div class="ver" id="appVer"></div>
@@ -737,7 +739,7 @@ async function fetchPrayer() {
   for (const a of agents.filter(a => a.ok && a.state?.prayer)) {
     try {
       const d = await (await fetch(`http://${a.addr}/prayer?days=45`, { cache: 'no-store' })).json();
-      if (d.days?.length) { PR = d; saveJSON('ss-prayer', d); prayerFetched = Date.now(); return; }
+      if (d.days?.length) { PR = d; saveJSON('ss-prayer', d); prayerFetched = Date.now(); scheduleAthans(); return; }
     } catch {}
   }
 }
@@ -1214,6 +1216,55 @@ $('#restNowBtn').addEventListener('click', () => setRest(true));
 $('#rest').addEventListener('click', () => setRest(false));
 renderRestMenu();
 setInterval(checkAway, 1000);
+
+/* ================= screen off + power menu (in the app) ================= */
+// Double-tapping empty space on the clock screen turns the screen off, like
+// Samsung's own home screen. Both need the app's accessibility service, which
+// the user switches on once.
+function needScreenControl() {
+  toast('Switch on <b>Subscreen screen off</b> in Accessibility › Installed apps. If Android greys it out: App info › ⋮ › Allow restricted settings, then try again.');
+  setTimeout(() => { try { native.openScreenControlSettings(); } catch {} }, 1800);
+}
+function screenOff() {
+  if (!native?.screenOff) return;
+  if (!native.screenOff()) needScreenControl();
+}
+if (native?.screenOff) {
+  $('#screenOffBtn').addEventListener('click', () => { setMenu(false); setTimeout(screenOff, 250); });
+  $('#powerBtn').addEventListener('click', () => { setMenu(false); if (!native.powerMenu()) needScreenControl(); });
+  let lastTap = { t: 0, x: 0, y: 0 };
+  $('#p-home').addEventListener('pointerup', e => {
+    if (e.target.closest('button, a, input, .g, .glance') || !menu.hidden) return;
+    const now = Date.now();
+    if (now - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) {
+      lastTap.t = 0;
+      if (!fauna.tap(e.clientX, e.clientY)) screenOff();
+    } else lastTap = { t: now, x: e.clientX, y: e.clientY };
+  });
+} else { $('#screenOffBtn').hidden = true; $('#powerBtn').hidden = true; }
+
+/* ================= athan alarms: they wake the phone even with the screen off ================= */
+let sentAthans = '';
+function scheduleAthans() {
+  if (!native?.scheduleAthans || !PR) return;
+  const now = new Date(), out = [];
+  for (let d = 0; d < 3; d++) {
+    for (const p of dayTimes(addDays(now, d)) || []) {
+      if (p.k !== 'sunrise' && p.time > now) out.push({ at: p.time.getTime(), k: p.k });
+    }
+  }
+  const json = JSON.stringify(out.slice(0, 8));
+  if (json !== sentAthans) { sentAthans = json; try { native.scheduleAthans(json); } catch {} }
+}
+window.athanFromAlarm = k => {
+  const now = new Date();
+  const p = (dayTimes(now) || []).find(x => x.k === k);
+  const key = 'ss-athan-' + iso(now) + '-' + k;
+  if (store.get(key, '')) return;                     // already played by the page's own timer
+  store.set(key, '1');
+  openAthan(p || undefined);
+};
+setInterval(scheduleAthans, 60000);
 
 /* ================= updates (in the app): download the newest build from GitHub ================= */
 let pendingUpdate = null;
@@ -1704,6 +1755,8 @@ secondTick();
 let polling = false;
 async function pollLoop() { if (!polling) { polling = true; try { await pollAll(); } finally { polling = false; } } }
 pollLoop(); setInterval(pollLoop, 2000);
+scheduleAthans();
+if (native?.takePendingAthan) { const k = native.takePendingAthan(); if (k) setTimeout(() => window.athanFromAlarm(k), 400); }
 requestAnimationFrame(frame);
 addEventListener('resize', () => { fitPages(); if (PAGES[pageIndex] === 'machines') drawSparks(); });
 })();
