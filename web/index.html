@@ -20,10 +20,10 @@
   --sel:#141414;
   --green:#a6e3a1; --sand:#f9e2af; --rose:#eba0ac; --warm:#fab387; --blue:#89b4fa; --teal:#94e2d5; --purple:#cba6f7; --brown:#c2956e;
   --accent:var(--teal);
-  --f-ui:"Geist",system-ui,sans-serif;
-  --f-num:"Geist Mono",ui-monospace,monospace;
+  --f-ui:"Manrope",system-ui,sans-serif;
+  --f-num:"Manrope",system-ui,sans-serif;
   --f-ar:"IBM Plex Sans Arabic","Noto Sans Arabic",sans-serif;
-  --f-flip:"Bebas Neue","Oswald","Arial Narrow",sans-serif;
+  --f-flip:"Barlow Condensed","Arial Narrow",sans-serif;
   color-scheme:dark;
 }
 :root[data-scene="aurora"]{--accent:var(--green)}
@@ -36,6 +36,7 @@ body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text)
 button{font:inherit;color:inherit;appearance:none;background:none;border:0;padding:0;cursor:pointer}
 :focus-visible{outline:1px solid var(--accent);outline-offset:3px;border-radius:4px}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 
 #sky{position:fixed;inset:0;width:100%;height:100%;display:block;background:var(--bg);transition:opacity .6s}
 #fauna{position:fixed;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:1}
@@ -86,14 +87,14 @@ button{font:inherit;color:inherit;appearance:none;background:none;border:0;paddi
 .stack{display:flex;flex-direction:column;min-width:0}
 .stack .when{justify-content:center}
 /* flip clock: two cards, each split in half; a minute change folds the top half down */
-.flipclock{--ch:min(53vh,46cqw);display:flex;gap:calc(var(--ch)*.05)}
-.flip{position:relative;width:calc(var(--ch)*1.02);height:var(--ch);perspective:calc(var(--ch)*3.5);font:400 calc(var(--ch)*1.12)/1 var(--f-flip);color:#e2e2e2;letter-spacing:.005em;font-variant-numeric:tabular-nums;--r:calc(var(--ch)*.055)}
+.flipclock{--ch:min(56vh,46cqw);display:flex;gap:calc(var(--ch)*.05)}
+.flip{position:relative;width:calc(var(--ch)*1.04);height:var(--ch);perspective:calc(var(--ch)*3.5);font:600 calc(var(--ch)*1.04)/1 var(--f-flip);color:#e6e6e6;letter-spacing:-.01em;font-variant-numeric:tabular-nums;--r:calc(var(--ch)*.055)}
 .flip .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;-webkit-backface-visibility:hidden;backface-visibility:hidden}
 .flip .h{background:rgba(30,30,34,.12);-webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(3px)}
 .flip .ft,.flip .fb{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgb(22,22,26)}
 .flip .up{top:0;border-radius:var(--r) var(--r) 0 0;background:linear-gradient(rgba(255,255,255,.045),rgba(255,255,255,.02));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 1px 0 0 rgba(255,255,255,.04),inset -1px 0 0 rgba(255,255,255,.04)}
 .flip .lo{bottom:0;border-radius:0 0 var(--r) var(--r);background:linear-gradient(rgba(255,255,255,.03),rgba(255,255,255,.015));box-shadow:inset 0 -1px 0 rgba(255,255,255,.04),inset 1px 0 0 rgba(255,255,255,.04),inset -1px 0 0 rgba(255,255,255,.04)}
-.flip .h span{position:absolute;left:0;right:0;height:200%;display:flex;align-items:center;justify-content:center;padding-top:calc(var(--ch)*.045);box-sizing:border-box}
+.flip .h span{position:absolute;left:0;right:0;height:200%;display:flex;align-items:center;justify-content:center;padding-top:calc(var(--ch)*.01);box-sizing:border-box}
 .flip .up span{top:0}
 .flip .lo span{bottom:0}
 .flip .ft{z-index:3;transform-origin:50% 100%;visibility:hidden}
@@ -249,6 +250,8 @@ button{font:inherit;color:inherit;appearance:none;background:none;border:0;paddi
 /* ---------- overlays ---------- */
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 52px);transform:translate(-50%,10px);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;background:#0d0d0d;box-shadow:inset 0 0 0 1px var(--faint);border-radius:10px;padding:10px 14px;font-size:12.5px;color:var(--sub);max-width:calc(100% - 40px);box-sizing:border-box;z-index:40}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.has-action.show{pointer-events:auto;display:flex;align-items:center;gap:14px}
+.toast-btn{color:var(--accent);font-weight:500;font-size:12.5px;padding:2px 0}
 .toast b{color:var(--text);font-weight:500}
 .toast code{font:12px var(--f-num);color:var(--text);word-break:break-all}
 .pop{position:fixed;width:5px;height:5px;margin:-2.5px;border-radius:50%;pointer-events:none;z-index:45;animation:pop .7s cubic-bezier(.2,.8,.3,1) forwards}
@@ -478,9 +481,16 @@ function fit(c) {
   return d;
 }
 let toastTimer;
-function toast(html) {
-  const t = $('#toast'); t.innerHTML = html; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+function toast(html, action) {
+  const t = $('#toast'); t.innerHTML = html;
+  t.classList.toggle('has-action', !!action);
+  if (action) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-btn'; b.textContent = action.label;
+    b.addEventListener('click', () => { t.classList.remove('show'); action.run(); });
+    t.appendChild(b);
+  }
+  t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), action ? 5000 : 2600);
 }
 function pop(el, color, n = 12) {
   if (reduce || !el) return;
@@ -665,7 +675,7 @@ function source(key) {
   const live = agents.filter(a => a.ok && a.state?.[key]);
   if (key === 'taskvim') live.sort((x, y) => y.state.taskvim.mtime - x.state.taskvim.mtime);
   else { const act = activeAgent(); live.sort((x, y) => (y === act) - (x === act)); }
-  if (live[0]) { const v = { data: live[0].state[key], host: nameOf(live[0]), live: true }; saveJSON('ss-cache-' + key, v); return v; }
+  if (live[0]) { const v = { data: live[0].state[key], host: nameOf(live[0]), addr: live[0].addr, live: true }; saveJSON('ss-cache-' + key, v); return v; }
   const c = loadJSON('ss-cache-' + key, null);
   return c ? { ...c, live: false } : null;
 }
@@ -860,11 +870,11 @@ function renderTasks() {
     if (!list.length) return '';
     return `<div class="group"><div class="group-h"><b>${label}</b><span class="num">${list.filter(t => !t.done).length}</span></div>
       ${list.map(t => { const d = dueInfo(t); return `
-        <div class="task${t.done ? ' done' : ''}">
+        <button type="button" class="task${t.done ? ' done' : ''}" data-id="${t.id}" aria-pressed="${!!t.done}">
           <span class="chk"></span>
           <span class="t">${t.course ? `<span class="proj" style="color:var(--${t.color})">${esc(t.course)}</span>` : ''}${esc(t.text)}</span>
           ${d ? `<span class="due ${d.cls}">${esc(d.txt)}</span>` : '<span></span>'}
-        </div>`; }).join('')}</div>`;
+        </button>`; }).join('')}</div>`;
   }).join('') || '<p class="empty">Nothing on the dashboard.</p>';
   $('#goalBig').innerHTML = `${tv.goal.done}<small>/ ${tv.goal.target}</small>`;
   $('#goalLine').style.width = clamp(tv.goal.done / tv.goal.target * 100, 0, 100) + '%';
@@ -875,6 +885,32 @@ function renderTasks() {
     <div class="line"><i style="width:${c.pct}%;background:var(--${c.color})"></i></div></div>`).join('') : '<p class="empty">No courses.</p>';
   fitPages();
 }
+
+async function toggleTask(id, el) {
+  const src = source('taskvim');
+  if (!src?.live) return toast('No computer with taskvim is reachable right now');
+  const a = agents.find(x => x.addr === src.addr);
+  const undo = !!el?.classList.contains('done');
+  if (el) {
+    el.classList.toggle('done', !undo);
+    if (!undo) pop($('.chk', el), css('--green'));
+  }
+  try {
+    const r = await fetch(`http://${a.addr}/task`, { method: 'POST', body: JSON.stringify({ id }), headers: { 'Content-Type': 'text/plain' } });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'failed');
+    const text = el ? $('.t', el).textContent : 'Task';
+    if (d.result === 'done') toast(`Done · <b>${esc(text)}</b>`, { label: 'Undo', run: () => toggleTask(id, null) });
+    else toast(`Reopened · <b>${esc(text)}</b>`);
+  } catch (err) {
+    if (el) el.classList.toggle('done', undo);
+    toast(`Couldn’t update taskvim on <b>${esc(src.host)}</b>: ${esc(err.message)}`);
+  }
+  await poll(a); tasksKey = ''; renderAll();
+}
+$('#taskGroups').addEventListener('click', e => {
+  const b = e.target.closest('.task'); if (b) toggleTask(+b.dataset.id, b);
+});
 
 /* ================= dojo ================= */
 let dojoKey = '';
@@ -1332,7 +1368,7 @@ const fauna = (() => {
     for (let i = 0; i < 3; i++) {
       const k = (t * .3 + i / 3) % 1;
       x.globalAlpha = alphaNow * (1 - k) * .9;
-      x.font = `500 ${S * (.12 + .1 * k)}px Geist, system-ui, sans-serif`;
+      x.font = `500 ${S * (.12 + .1 * k)}px Manrope, system-ui, sans-serif`;
       x.fillText('z', zx + face * S * k * .25, zy - S * k * .6);
     }
     x.restore();
@@ -1347,11 +1383,15 @@ const fauna = (() => {
     if (!catImg.complete || !catImg.naturalWidth) return;
     const line = $('#minute').parentElement.getBoundingClientRect(); if (!line.width) return;
     const ly = line.top + line.height / 2;
-    // never hang into the dock: size the cat to the room between the line and the dock
-    const room = $('#dock').getBoundingClientRect().top - ly - 8;
-    const w = Math.min(clamp(line.width * .18, 84, 140), room * CW / (CH - CLEDGE));
-    if (w < 46) return;
-    const k = w / CW, left = line.right - w - line.width * .03;
+    // It lies on the left end of the minute line, where nothing sits below it
+    // until the bottom edge of the screen; it never hangs over the page dock.
+    const hang = (CH - CLEDGE) / CW;
+    const left = line.left + Math.min(10, line.width * .01);
+    const dockBtn = $('#dock button').getBoundingClientRect();
+    let w = Math.min(line.width * .3, 170, (innerHeight - ly - 4) / hang);
+    if (ly + w * hang > dockBtn.top - 2) w = Math.min(w, dockBtn.left - 14 - left);
+    w = Math.max(w, 70);
+    const k = w / CW;
     const br = 1 + Math.sin(t * 1.3) * .035;
     const since = cat.meow - t, flick = since > 0 ? Math.sin(since * 11) * .09 * Math.min(1, since) : 0;
     const up = CLEDGE * k * br;
@@ -1367,7 +1407,7 @@ const fauna = (() => {
       for (let i = 0; i < 3; i++) {
         const q = (t * .25 + i / 3) % 1;
         x.globalAlpha = alphaNow * (1 - q) * .85;
-        x.font = `500 ${(8 + 5 * q) * D}px Geist, system-ui, sans-serif`;
+        x.font = `500 ${(8 + 5 * q) * D}px Manrope, system-ui, sans-serif`;
         x.fillText('z', zx - q * 8 * D, zy - q * 22 * D);
       }
       x.restore();
@@ -1504,17 +1544,25 @@ const fauna = (() => {
     }
   }
   function camels(t) {
-    const s = 34 * D, speed = 15 * D, P = (W + 300 * D) / speed + 15;
-    const p0 = -130 * D + (t % P) * speed; if (p0 > W + 220 * D) return;
-    for (let i = 0; i < 3; i++) walker(p0 - i * s * 1.5, H * .735, s * (1 - i * .08), t * 4 + i * 1.3, 1, 'camel', '#0b0404');
+    const s = 46 * D, gap = s * 1.55, speed = 13 * D;
+    const span = W + 4 * gap + 2 * s, gy = H - 4 * D;
+    const lead = -s + ((t * speed) % span);
+    x.save();
+    x.shadowColor = 'rgba(250,179,135,.75)'; x.shadowBlur = 7 * D;
+    for (let i = 0; i < 4; i++) {
+      const k = i === 3 ? .62 : 1 - i * .07;            // the last one is a calf
+      walker(lead - i * gap, gy, s * k, t * 3.6 + i * 1.3, 1, 'camel', '#140806');
+    }
+    x.restore();
   }
 
   return {
     frame(t, dt, page, scene, night, alpha) {
       now = t; alphaNow = alpha; eyeCol = css('--accent') || '#94e2d5';
       x.clearRect(0, 0, W, H);
-      if (!enabled || page !== 'home' || alpha < .02) { cat.box = null; return; }
+      if (page !== 'home' || alpha < .02) { cat.box = null; return; }
       x.globalAlpha = alpha;
+      if (!enabled) { lyingCat(t); x.globalAlpha = 1; return; }
       if (scene === 'glow') fireflies(t);
       else if (scene === 'aurora') fox(t);
       else if (scene === 'abyss') { jellies(t); fish(t); }

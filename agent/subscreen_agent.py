@@ -9,13 +9,14 @@ serves it as JSON to the Subscreen app on the phone, over Tailscale:
     GET  /state             everything the phone shows, one JSON document
     GET  /prayer?days=N     the next N days of prayer times (the phone caches them)
     POST /action            {"id": "ws2"} runs one of a fixed set of actions
+    POST /task              {"id": 12} completes (or reopens) a taskvim task
 
 Sources, each optional — a machine without dojo simply reports none:
     input idle      /dev/input (the user must be in the "input" group),
                     falling back to watching the Hyprland cursor
     system stats    /proc, hwmon, nvidia-smi or amdgpu
     media           playerctl
-    taskvim         ~/.local/share/taskvim/data.json (read-only)
+    taskvim         ~/.local/share/taskvim/data.json (tasks can be ticked off)
     dojo            ~/.local/share/dojo/dojo.db (read-only)
     claude          ~/.cache/subscreen/claude/*.json, written by claude_hook.py
     prayer          the hypr panel's prayer.py / timetable.py
@@ -413,6 +414,50 @@ def taskvim():
     return value
 
 
+_task_lock = threading.Lock()
+
+
+def toggle_task(tid):
+    """Complete or reopen one task exactly the way taskvim's toggle_complete does:
+    flip `completed`, and add (or remove the newest) log entry that feeds the
+    heatmap, streak and daily goal. Written atomically; a running taskvim
+    notices the new file and reloads it."""
+    with _task_lock:
+        data = json.loads(TASKVIM_FILE.read_text())
+        t = next((x for x in data.get("tasks", []) if x.get("id") == tid), None)
+        if t is None:
+            return False, "that task no longer exists"
+        was = bool(t.get("completed"))
+        t["completed"] = not was
+        log_ = data.setdefault("log", [])
+        if not was:
+            proj = next((p for p in data.get("projects", []) if p.get("id") == t.get("project")), None)
+            sec = next((x for x in data.get("sections", []) if x.get("id") == t.get("section")), None)
+            ids = [x.get("id", 0) for key in ("tasks", "projects", "sections", "log") for x in data.get(key, [])]
+            nid = max([data.get("next_id", 1)] + [i + 1 for i in ids])
+            data["next_id"] = nid + 1
+            now = datetime.now()
+            log_.append({"id": nid, "text": t.get("text", ""), "project": t.get("project"),
+                         "project_name": proj["name"] if proj else "", "color": proj.get("color", 0) if proj else 0,
+                         "section": t.get("section"), "section_name": sec["name"] if sec else "",
+                         "date": now.strftime("%Y-%m-%d"), "time": now.strftime("%H:%M"), "task": tid})
+            if t.get("repeat"):
+                t["period"] = habit_period_start(date.today(), t["repeat"]).isoformat()
+        else:
+            for i in range(len(log_) - 1, -1, -1):
+                e = log_[i]
+                same = e.get("task") == tid if e.get("task") is not None else (
+                    e.get("text") == t.get("text") and e.get("project") == t.get("project") and e.get("section") == t.get("section"))
+                if same:
+                    del log_[i]
+                    break
+        tmp = TASKVIM_FILE.with_name(TASKVIM_FILE.name + ".subscreen-tmp")
+        tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        os.replace(tmp, TASKVIM_FILE)
+        _taskvim_cache["mtime"] = None
+        return True, "reopened" if was else "done"
+
+
 # ---------------------------------------------------------------------------
 # dojo (read-only)
 # ---------------------------------------------------------------------------
@@ -691,7 +736,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         ip = self.client_ip()
-        if urlparse(self.path).path != "/action":
+        route = urlparse(self.path).path
+        if route not in ("/action", "/task"):
             return self._json({"error": "not found"}, 404)
         if not action_allowed(ip):
             log("refused action from", ip)
@@ -701,6 +747,15 @@ class Handler(BaseHTTPRequestHandler):
             req = json.loads(self.rfile.read(length) or b"{}")
         except ValueError:
             return self._json({"error": "bad request"}, 400)
+        if route == "/task":
+            try:
+                ok, msg = toggle_task(int(req.get("id")))
+            except (OSError, ValueError, TypeError) as exc:
+                ok, msg = False, str(exc)
+            log("task", req.get("id"), "from", ip, msg)
+            with _state_lock:
+                _state["at"] = 0
+            return self._json({"ok": ok, "result": msg} if ok else {"ok": False, "error": msg})
         fn = ACTIONS.get(req.get("id"))
         if not fn:
             return self._json({"error": "unknown action"}, 404)
