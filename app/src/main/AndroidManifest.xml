@@ -7,6 +7,8 @@
     <!-- Lets the app bring itself up after a reboot (Android blocks background
          activity starts otherwise). Granted by the user from the app's menu. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- The menu's Updates row downloads new builds from GitHub and installs them. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:label="Subscreen"
@@ -35,6 +37,12 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <receiver android:name=".InstallReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="dev.subscreen.hub.INSTALL_STATUS" />
+            </intent-filter>
+        </receiver>
 
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>

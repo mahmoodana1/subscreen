@@ -125,7 +125,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .menu-btn{width:30px;height:30px;margin:-4px -6px -4px 0;border-radius:50%;display:grid;place-items:center;color:var(--muted);transition:color .2s,background .2s}
 .menu-btn svg{width:16px;height:16px}
 .menu-btn[aria-expanded="true"]{color:var(--text);background:var(--sel)}
-.menu{position:fixed;top:calc(env(safe-area-inset-top,0px) + 46px);right:16px;z-index:30;width:min(290px,calc(100vw - 32px));background:rgba(12,12,12,.93);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:inset 0 0 0 1px var(--faint),0 20px 60px rgba(0,0,0,.7);border-radius:16px;padding:14px 16px 6px;box-sizing:border-box;transform-origin:top right;animation:menuIn .25s cubic-bezier(.22,.9,.24,1)}
+.menu{position:fixed;top:calc(env(safe-area-inset-top,0px) + 46px);right:16px;z-index:30;width:min(600px,calc(100vw - 32px));max-height:calc(100% - 60px);overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0 24px;background:rgba(12,12,12,.93);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:inset 0 0 0 1px var(--faint),0 20px 60px rgba(0,0,0,.7);border-radius:16px;padding:14px 16px 6px;box-sizing:border-box;transform-origin:top right;animation:menuIn .25s cubic-bezier(.22,.9,.24,1)}
 .menu h3{margin:0 0 10px;font:500 10px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .swatches{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:12px}
 .sw{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10.5px;color:var(--sub)}
@@ -138,11 +138,18 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .sw[data-scene="abyss"] i{background:radial-gradient(circle at 50% 30%,#89b4fa55,transparent 60%),linear-gradient(180deg,#0b1a2c,#000)}
 .sw[data-scene="sunrise"] i{background:radial-gradient(circle at 70% 70%,#fab387,transparent 30%),linear-gradient(180deg,#000 15%,#4a1820 62%,#7a3a24 100%)}
 .sw[data-scene="off"] i{background:#000}
-.rowt{display:flex;justify-content:space-between;align-items:center;width:100%;padding:11px 0;border-top:1px solid var(--hair);font-size:13px;text-align:left}
+.rowt{display:flex;justify-content:space-between;align-items:center;width:100%;padding:8px 0;border-top:1px solid var(--hair);font-size:13px;text-align:left}
 .switch{width:30px;height:18px;border-radius:9px;background:var(--faint);position:relative;transition:background .2s;flex:none}
 .switch::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--sub);transition:transform .2s,background .2s}
 [aria-pressed="true"] .switch{background:var(--accent)}
 [aria-pressed="true"] .switch::after{transform:translateX(12px);background:#000}
+.menu-col{min-width:0}
+.rowv{color:var(--sub);font-size:12px}
+.menu-btn{position:relative}
+.menu-btn.has-update::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+/* rest: true black (AMOLED pixels off) with a faint clock that wanders so nothing burns in */
+.rest{position:fixed;inset:0;z-index:48;background:#000;cursor:pointer;animation:fade 1.4s ease-out}
+.rest-clock{position:absolute;font:300 28px var(--f-ui);color:#262626;font-variant-numeric:tabular-nums;transition:left 3s ease-in-out,top 3s ease-in-out;white-space:nowrap}
 @keyframes menuIn{from{opacity:0;transform:scale(.94) translateY(-4px)}}
 
 /* ---------- tasks ---------- */
@@ -424,26 +431,38 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<div class="menu" id="menu" role="dialog" aria-label="Display" hidden>
-  <h3>Ambient</h3>
-  <div class="swatches">
-    <button class="sw" type="button" data-scene="glow"><i></i>Glow</button>
-    <button class="sw" type="button" data-scene="aurora"><i></i>Aurora</button>
-    <button class="sw" type="button" data-scene="abyss"><i></i>Abyss</button>
-    <button class="sw" type="button" data-scene="sunrise"><i></i>Sunrise</button>
-    <button class="sw" type="button" data-scene="off"><i></i>Off</button>
+<div class="menu" id="menu" role="dialog" aria-label="Settings" hidden>
+  <div class="menu-col">
+    <h3>Ambient</h3>
+    <div class="swatches">
+      <button class="sw" type="button" data-scene="glow"><i></i>Glow</button>
+      <button class="sw" type="button" data-scene="aurora"><i></i>Aurora</button>
+      <button class="sw" type="button" data-scene="abyss"><i></i>Abyss</button>
+      <button class="sw" type="button" data-scene="sunrise"><i></i>Sunrise</button>
+      <button class="sw" type="button" data-scene="off"><i></i>Off</button>
+    </div>
+    <button class="rowt" type="button" id="animalsBtn" aria-pressed="true">Animals<span class="switch"></span></button>
+    <button class="rowt" type="button" id="nightBtn" aria-pressed="false">Night mode<span class="switch"></span></button>
+    <button class="rowt" type="button" id="athanBtn">Preview athan<span style="color:var(--sand);font-size:11px">▶</span></button>
   </div>
-  <button class="rowt" type="button" id="animalsBtn" aria-pressed="true">Animals<span class="switch"></span></button>
-  <button class="rowt" type="button" id="nightBtn" aria-pressed="false">Night mode<span class="switch"></span></button>
-  <button class="rowt" type="button" id="athanBtn">Preview athan<span style="color:var(--sand);font-size:11px">▶</span></button>
-  <h3 style="margin-top:14px">Computers</h3>
-  <div class="agents-row"><input id="agentsIn" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Computers, comma separated"><button id="agentsSave" type="button" class="btn">Save</button></div>
-  <div id="nativeRows" hidden>
-    <button class="rowt" id="homeAppBtn" type="button">Use as the home screen<span>›</span></button>
-    <button class="rowt" id="bootBtn" type="button">Start after a reboot<span>›</span></button>
-    <div class="ver" id="appVer"></div>
+  <div class="menu-col">
+    <h3>Rest</h3>
+    <button class="rowt" type="button" id="restAutoBtn" aria-pressed="true">Rest when I'm away<span class="switch"></span></button>
+    <button class="rowt" type="button" id="restAfterBtn">Away after<span class="rowv" id="restAfterTxt">10 min</span></button>
+    <button class="rowt" type="button" id="restNowBtn">Rest now<span>›</span></button>
+    <h3 style="margin-top:12px">Computers</h3>
+    <div class="agents-row"><input id="agentsIn" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Computers, comma separated"><button id="agentsSave" type="button" class="btn">Save</button></div>
+    <div id="nativeRows" hidden>
+      <h3 style="margin-top:6px">App</h3>
+      <button class="rowt" id="updateBtn" type="button">Updates<span class="rowv" id="updateTxt">Check</span></button>
+      <button class="rowt" id="homeAppBtn" type="button">Use as the home screen<span>›</span></button>
+      <button class="rowt" id="bootBtn" type="button">Start after a reboot<span>›</span></button>
+      <div class="ver" id="appVer"></div>
+    </div>
   </div>
 </div>
+
+<div class="rest" id="rest" hidden><div class="rest-clock" id="restClock"></div></div>
 
 <div class="athan" id="athan" hidden>
   <i class="ring"></i><i class="ring"></i><i class="ring"></i>
@@ -1118,6 +1137,7 @@ function openAthan(p) {
   $('#athanAr').textContent = p.ar || p.en;
   $('#athanEn').textContent = `${p.en} · ${p.t}`;
   $('#athanNote').textContent = 'Tap anywhere to stop';
+  setRest(false);
   $('#athan').hidden = false;
   if (native) { try { native.playAthan(); return; } catch {} }
   startAthanSound().catch(err => { $('#athanNote').textContent = `The sound could not play (${err && err.message || err}) · tap to close`; });
@@ -1144,6 +1164,81 @@ if (native) {
   $('#bootBtn').addEventListener('click', () => { try { native.requestStartOnBoot(); } catch {} });
   try { $('#appVer').textContent = 'App ' + native.version(); } catch {}
 }
+
+/* ================= rest: the phone goes dark when nobody is around ================= */
+// "Away" means no computer has been touched for N minutes (or none answers).
+// Resting is true black with the brightness at its minimum; the page keeps
+// running, so it wakes itself when you touch a computer, for the athan, or on a tap.
+const restCfg = loadJSON('ss-rest', { auto: true, minutes: 10 });
+const REST_STEPS = [5, 10, 20, 30, 60];
+let resting = false, sawAway = false, wokeAt = Date.now();
+function nearestIdle() {
+  const live = agents.filter(a => a.ok && a.state);
+  return live.length ? Math.min(...live.map(a => a.state.idle)) : Infinity;
+}
+function setRest(on) {
+  if (on === resting) return;
+  resting = on;
+  $('#rest').hidden = !on;
+  if (native) { try { native.setRest(on); } catch {} }
+  if (on) { setMenu(false); sawAway = nearestIdle() > 60; moveRestClock(); }
+  else wokeAt = Date.now();
+}
+function moveRestClock() {
+  const c = $('#restClock');
+  c.textContent = hm(new Date());
+  c.style.left = Math.round(rand(.08, .78) * innerWidth) + 'px';
+  c.style.top = Math.round(rand(.1, .8) * innerHeight) + 'px';
+}
+function checkAway() {
+  const idle = nearestIdle();
+  if (resting) {
+    if (idle > 60) sawAway = true;
+    if (sawAway && idle < 20) setRest(false);          // you are back at a computer
+    else if (new Date().getSeconds() === 0) moveRestClock();
+    return;
+  }
+  const after = restCfg.minutes * 60;
+  if (restCfg.auto && idle > after && Date.now() - wokeAt > after * 1000) setRest(true);
+}
+function renderRestMenu() {
+  $('#restAutoBtn').setAttribute('aria-pressed', String(restCfg.auto));
+  $('#restAfterTxt').textContent = `${restCfg.minutes} min`;
+}
+$('#restAutoBtn').addEventListener('click', () => { restCfg.auto = !restCfg.auto; saveJSON('ss-rest', restCfg); renderRestMenu(); });
+$('#restAfterBtn').addEventListener('click', () => {
+  restCfg.minutes = REST_STEPS[(REST_STEPS.indexOf(restCfg.minutes) + 1) % REST_STEPS.length];
+  saveJSON('ss-rest', restCfg); renderRestMenu();
+});
+$('#restNowBtn').addEventListener('click', () => setRest(true));
+$('#rest').addEventListener('click', () => setRest(false));
+renderRestMenu();
+setInterval(checkAway, 1000);
+
+/* ================= updates (in the app): download the newest build from GitHub ================= */
+let pendingUpdate = null;
+window.onUpdateInfo = (current, latest, url) => {
+  const t = $('#updateTxt');
+  if (latest < 0) { t.textContent = 'Couldn’t reach GitHub'; return; }
+  if (latest > current && url) {
+    pendingUpdate = url; t.textContent = `Install build ${latest}`; t.style.color = 'var(--accent)';
+    $('#menuBtn').classList.add('has-update');
+  } else {
+    pendingUpdate = null; t.textContent = `Up to date · build ${current}`; t.style.color = '';
+    $('#menuBtn').classList.remove('has-update');
+  }
+};
+window.onUpdateProgress = (pct, msg) => {
+  $('#updateTxt').textContent = pct < 0 ? (msg || 'Update failed') : pct >= 100 ? 'Opening installer…' : `Downloading ${pct}%`;
+};
+if (native && native.checkUpdate) {
+  $('#updateBtn').addEventListener('click', () => {
+    if (pendingUpdate) { $('#updateTxt').textContent = 'Downloading…'; native.installUpdate(pendingUpdate); }
+    else { $('#updateTxt').textContent = 'Checking…'; native.checkUpdate(); }
+  });
+  native.checkUpdate();
+  setInterval(() => { if (!pendingUpdate) native.checkUpdate(); }, 6 * 3600e3);
+} else $('#updateBtn').hidden = true;
 
 /* ================= kiosk: fullscreen + keep awake (browser only; the app does this natively) ================= */
 if (!native) {
@@ -1587,6 +1682,7 @@ document.addEventListener('pointerup', e => { if (PAGES[pageIndex] === 'home' &&
 
 let t = 0, last = performance.now(), dim = 0;
 function frame(now) {
+  if (resting) { last = now; return setTimeout(() => requestAnimationFrame(frame), 1000); }
   const dt = Math.min(.1, (now - last) / 1000); last = now;
   t += dt * (reduce ? .05 : 1);
   dim += ((PAGES[pageIndex] === 'home' ? 0 : 1) - dim) * Math.min(1, dt * 3);
