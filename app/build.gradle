@@ -1,0 +1,53 @@
+plugins {
+    id "com.android.application"
+}
+
+// Signing comes from the CI secrets (see .github/workflows/apk.yml); a local
+// build without them falls back to the debug key.
+def ks = System.getenv("SUBSCREEN_KEYSTORE")
+
+android {
+    namespace "dev.subscreen.hub"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "dev.subscreen.hub"
+        minSdk 26
+        targetSdk 34
+        versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger())
+        versionName "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
+    }
+
+    signingConfigs {
+        release {
+            if (ks) {
+                storeFile file(ks)
+                storeType "pkcs12"
+                storePassword System.getenv("SUBSCREEN_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("SUBSCREEN_KEY_ALIAS")
+                keyPassword System.getenv("SUBSCREEN_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ks ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    // The page itself is the repo's web/ folder, bundled as the app's assets.
+    sourceSets {
+        main.assets.srcDirs += ["$rootDir/web"]
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "androidx.webkit:webkit:1.11.0"
+}

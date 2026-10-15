@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Two flip-clock cards with the split line, on black. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#262626" android:pathData="M30,36h22a4,4 0,0 1,4 4v28a4,4 0,0 1,-4 4h-22a4,4 0,0 1,-4 -4v-28a4,4 0,0 1,4 -4z" />
+    <path android:fillColor="#262626" android:pathData="M58,36h22a4,4 0,0 1,4 4v28a4,4 0,0 1,-4 4h-22a4,4 0,0 1,-4 -4v-28a4,4 0,0 1,4 -4z" />
+    <path android:fillColor="#000000" android:pathData="M24,53h62v2h-62z" />
+    <path android:fillColor="#94E2D5" android:pathData="M36,44h10v4h-10zM64,44h10v4h-10z" />
+    <path android:fillColor="#DEDEDE" android:pathData="M36,58h10v6h-10zM64,58h10v6h-10z" />
+</vector>

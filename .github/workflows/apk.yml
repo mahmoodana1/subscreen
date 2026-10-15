@@ -1,0 +1,49 @@
+name: Build the phone app
+
+on:
+  push:
+    branches: [hub, master]
+    paths: ["app/**", "web/**", "build.gradle", "settings.gradle", "gradle.properties", ".github/workflows/apk.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.SUBSCREEN_KEYSTORE_B64 }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+          echo "SUBSCREEN_KEYSTORE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+
+      - name: Build
+        env:
+          SUBSCREEN_KEYSTORE_PASSWORD: ${{ secrets.SUBSCREEN_KEYSTORE_PASSWORD }}
+          SUBSCREEN_KEY_ALIAS: ${{ secrets.SUBSCREEN_KEY_ALIAS }}
+        run: gradle :app:assembleRelease --no-daemon
+
+      - name: Publish as the "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk subscreen.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest subscreen.apk \
+            --title "Subscreen app (build ${{ github.run_number }})" \
+            --notes "Download subscreen.apk on the phone and open it to install or update. Built from ${{ github.sha }}." \
+            --target "${{ github.sha }}"
