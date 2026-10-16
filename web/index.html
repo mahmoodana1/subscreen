@@ -103,19 +103,61 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .flip .h span{position:absolute;left:0;right:0;height:200%;display:flex;align-items:center;justify-content:center;padding-top:calc(var(--ch)*.01);box-sizing:border-box}
 .flip .up span{top:0}
 .flip .lo span{bottom:0}
-.flip .ft{z-index:3;transform-origin:50% 100%;visibility:hidden}
+.flip .ft{z-index:3;transform-origin:50% 100%;visibility:hidden;will-change:transform}
 .flip.go .ft,.flip.go .fb{visibility:visible}
-.flip .fb{z-index:3;transform-origin:50% 0;transform:rotateX(90deg);visibility:hidden}
-.flip.go .ft{animation:flipTop .28s cubic-bezier(.55,0,.85,.4) forwards}
-.flip.go .fb{animation:flipBot .34s .28s cubic-bezier(.2,.75,.3,1.15) forwards}
+.flip .fb{z-index:3;transform-origin:50% 0;transform:rotateX(90deg);visibility:hidden;will-change:transform}
+/* The glass is see-through, so a leaf gets an opaque backing (::before) that hides the digit behind it,
+   and a shade (::after) that darkens it as it tips away or lightens it as it lands. The backing fades in
+   as the top leaf starts to fall and out as the bottom one settles, while the static halves cross-fade
+   their digits, so nothing ever shows two numbers at once. Only transform and opacity animate, so the
+   whole flip runs on the compositor and stays smooth while the sky shader keeps the main thread busy. */
+.flip .ft::before,.flip .fb::before,.flip .ft::after,.flip .fb::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;will-change:opacity}
+.flip .ft::before,.flip .fb::before{background:linear-gradient(rgba(40,39,47,.96),rgba(30,30,37,.96))}
+.flip .ft::after{background:#000;z-index:1}
+.flip .fb::after{background:#fff;z-index:1}
+.flip{--d:0s;--f1:.3s;--f2:.42s}
+#fH{--d:.07s}
+.flip.go .ft{animation:flipTop var(--f1) var(--d) cubic-bezier(.45,0,.9,.55) both}
+.flip.go .ft::before{animation:backIn var(--f1) var(--d) linear both}
+.flip.go .ft::after{animation:shadeTop var(--f1) var(--d) cubic-bezier(.45,0,.9,.55) both}
+.flip.go .up:not(.ft) span{animation:digitIn var(--f1) var(--d) linear both}
+.flip.go .fb{animation:flipBot var(--f2) calc(var(--d) + var(--f1)) cubic-bezier(.12,.62,.28,1) both}
+.flip.go .fb::before{animation:backOut var(--f2) calc(var(--d) + var(--f1)) linear both}
+.flip.go .fb::after{animation:shadeBot var(--f2) calc(var(--d) + var(--f1)) ease-out both}
+.flip.go .lo:not(.fb) span{animation:digitOut var(--f2) calc(var(--d) + var(--f1)) linear both}
 .flip::after{content:"";position:absolute;left:0;right:0;top:50%;height:max(2px,calc(var(--ch)*.009));margin-top:calc(max(2px,calc(var(--ch)*.009)) / -2);background:rgba(0,0,0,.75);z-index:5;box-shadow:0 1px 0 rgba(255,255,255,.05)}
 .flip::before{content:"";position:absolute;inset:0;border-radius:var(--r);box-shadow:0 calc(var(--ch)*.04) calc(var(--ch)*.12) rgba(0,0,0,.18);pointer-events:none}
-@keyframes flipTop{0%{transform:rotateX(0);filter:brightness(1)}100%{transform:rotateX(-90deg);filter:brightness(.55)}}
-@keyframes flipBot{0%{transform:rotateX(90deg);filter:brightness(1.4)}100%{transform:rotateX(0);filter:brightness(1)}}
+@keyframes flipTop{from{transform:rotateX(0)}to{transform:rotateX(-90deg)}}
+@keyframes flipBot{from{transform:rotateX(90deg)}to{transform:rotateX(0)}}
+@keyframes shadeTop{to{opacity:.45}}
+@keyframes shadeBot{from{opacity:.1}to{opacity:0}}
+@keyframes backIn{0%{opacity:0}30%,100%{opacity:1}}
+@keyframes backOut{0%,40%{opacity:1}85%,100%{opacity:0}}
+@keyframes digitIn{0%,25%{opacity:0}100%{opacity:1}}
+@keyframes digitOut{0%,20%{opacity:1}40%,100%{opacity:0}}
 .when{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:clamp(12px,1.5vw,15px);color:var(--sub)}
 .when .hijri{color:var(--sand)}
 .minute{margin-top:8px;max-width:100%}
+.minute i{width:100%!important;transform-origin:0 50%;transform:scaleX(0);will-change:transform}
 
+/* idle: the header, the dock and the glance fade out, then the clock grows to fill the screen
+   (a FLIP transform, so the growth is one smooth compositor animation); a tap brings it all back */
+.top,.dock{transition:opacity .45s}
+.glance{transition:opacity .6s .2s}
+.app.idling .top,.app.idling .dock,.app.idling .glance{opacity:0;pointer-events:none;transition-delay:0s}
+.app.idle{grid-template-rows:0 minmax(0,1fr) 0}
+.app.idle .top,.app.idle .dock{overflow:hidden;min-height:0;padding:0}
+.app.idle .glance{display:none}
+.app.idle .home{grid-template-columns:minmax(0,1fr)}
+.app.idle .flipclock{--ch:min(66vh,46cqw)}
+/* the clock sits high so the cat, lying on the minute line, has room to hang its legs and tail */
+.app.idle{padding-top:calc(env(safe-area-inset-top,0px) + 4px)}
+.app.idle #p-home{padding-block:0}
+.app.idle #p-home .fit{align-items:flex-start}
+.app.idle .stack .when{margin-top:14px}
+.idlep{display:none;margin-top:12px;text-align:right;font:600 13px var(--f-num);letter-spacing:.03em;color:#fff;white-space:nowrap;text-shadow:0 1px 8px rgba(0,0,0,.7)}
+.idlep .in{font-weight:400;color:rgba(255,255,255,.72)}
+.app.idle .idlep{display:block;animation:fade .8s .35s both}
 /* a soft scrim keeps the small text readable over the brighter ambients */
 .glance{display:flex;flex-direction:column;min-width:0;background:radial-gradient(closest-side,rgba(0,0,0,.58),rgba(0,0,0,.46) 50%,rgba(0,0,0,.16) 80%,transparent);margin:-40px -48px;padding:40px 48px}
 .g{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:7px 8px;margin:0 -8px;border-bottom:1px solid var(--hair);text-align:left;border-radius:6px;transition:background .2s}
@@ -304,6 +346,8 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
   .home,.cols,.claude{grid-template-columns:minmax(0,1fr)}
   .home{gap:22px}
   .flipclock{--ch:min(34vh,47cqw)}
+  .app.idle .flipclock{--ch:min(52vh,46cqw)}
+  .app.idle #p-home .fit{align-items:center}
   .keys{grid-template-columns:repeat(5,minmax(0,1fr))}
 }
 @media (max-width:520px){
@@ -339,7 +383,8 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
           <div class="clockblock" id="drift"><div class="stack">
             <div class="flipclock" id="clock" role="timer" aria-label="Time"><div class="flip" id="fH"><div class="h up"><span></span></div><div class="h lo"><span></span></div><div class="h up ft"><span></span></div><div class="h lo fb"><span></span></div></div><div class="flip" id="fM"><div class="h up"><span></span></div><div class="h lo"><span></span></div><div class="h up ft"><span></span></div><div class="h lo fb"><span></span></div></div></div>
             <div class="when"><span id="dateG"></span></div>
-            <div class="line minute"><i id="minute" style="width:0"></i></div>
+            <div class="line minute"><i id="minute"></i></div>
+            <div class="idlep num" id="idleP"></div>
           </div></div>
           <nav class="glance" aria-label="At a glance">
             <button class="g prayer" id="gPrayer" type="button" data-go="athan">
@@ -1263,8 +1308,11 @@ function setFlip(id, v) {
   if (old === undefined || reduce) { t.textContent = b.textContent = ft.textContent = fb.textContent = v; return; }
   t.textContent = v; ft.textContent = old; fb.textContent = v; b.textContent = old;
   el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
-  clearTimeout(el._done);
-  el._done = setTimeout(() => { b.textContent = v; ft.textContent = v; el.classList.remove('go'); }, 650);
+  const done = () => { clearTimeout(el._done); fb.parentElement.removeEventListener('animationend', el._end); b.textContent = v; ft.textContent = v; el.classList.remove('go'); };
+  clearTimeout(el._done); if (el._end) fb.parentElement.removeEventListener('animationend', el._end);
+  el._end = e => { if (e.target === fb.parentElement && e.animationName === 'flipBot') done(); };
+  fb.parentElement.addEventListener('animationend', el._end);
+  el._done = setTimeout(done, 2500);   // in case the animation never runs (hidden tab)
 }
 function beltFor(xp) { let i = 0; BELTS.forEach((b, k) => { if (xp >= b[2]) i = k; }); return { cur: BELTS[i], next: BELTS[i + 1] }; }
 function firstTask(tv) {
@@ -1283,8 +1331,8 @@ function tickHome(now) {
   $('#clock').setAttribute('aria-label', hm(now));
   $('#mini').textContent = hm(now);
   const mi = $('#minute');
-  if (now.getSeconds() === 0) { mi.style.transition = 'none'; mi.style.width = '0'; void mi.offsetWidth; }
-  else { mi.style.transition = 'width 1s linear'; mi.style.width = (now.getSeconds() / 59 * 100) + '%'; }
+  if (now.getSeconds() === 0) { mi.style.transition = 'none'; mi.style.transform = 'scaleX(0)'; void mi.offsetWidth; }
+  else { mi.style.transition = 'transform 1s linear'; mi.style.transform = `scaleX(${now.getSeconds() / 59})`; }
   $('#dateG').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   const st = lastPrayer = prayerState(now);
@@ -1294,9 +1342,12 @@ function tickHome(now) {
     $('#gPv').textContent = st.mode === 'iqama' ? `${st.p.en} · ${hm(st.end)}` : `${st.p.en} · ${st.p.t}${st.p.tomorrow ? ' tomorrow' : ''}`;
     $('#gPr').textContent = 'in ' + countdown(st.end - now);
     $('#gPbar').style.width = (clamp((now - st.start) / (st.end - st.start), 0, 1) * 100) + '%';
+    $('#idleP').innerHTML = (st.mode === 'iqama' ? `Iqama ${esc(st.p.en)} ${hm(st.end)}` : `${esc(st.p.en)} ${st.p.t}${st.p.tomorrow ? ' tomorrow' : ''}`)
+      + ` <span class="in">· in ${countdown(st.end - now)}</span>`;
     checkAthan(now, st);
   } else {
     $('#gPk').textContent = 'Prayer'; $('#gPv').textContent = 'Waiting for a computer'; $('#gPr').textContent = ''; $('#gPbar').style.width = '0';
+    $('#idleP').textContent = '';
   }
 }
 function renderGlance() {
@@ -1694,6 +1745,46 @@ $('#rest').addEventListener('click', () => setRest(false));
 renderRestMenu();
 setInterval(checkAway, 1000);
 
+/* ================= idle: nobody touching the phone → just the clock and the cat ================= */
+// After a short while untouched on Home (longer elsewhere, then it goes Home) everything but the
+// clock fades and the clock grows to fill the screen, with the next prayer in small white type
+// under it. The first tap anywhere brings the full panel back.
+const IDLE_HOME = 20e3, IDLE_AWAY = 120e3;
+let idleUI = false, lastTouch = Date.now(), idleStep = 0;
+function flipLayout(change) {
+  const el = $('#drift .stack'), a = el.getBoundingClientRect();
+  el.style.transition = 'none'; el.style.transform = '';
+  change(); fitPages();
+  const b = el.getBoundingClientRect();
+  if (!a.width || !b.width || reduce) return;
+  el.style.transformOrigin = '0 0';
+  el.style.transform = `translate(${a.left - b.left}px,${a.top - b.top}px) scale(${a.width / b.width})`;
+  void el.offsetWidth;
+  el.style.transition = 'transform .95s cubic-bezier(.3,.7,.2,1)';
+  el.style.transform = '';
+}
+function setIdle(on) {
+  if (on === idleUI) return;
+  idleUI = on; clearTimeout(idleStep);
+  if (on) {
+    app.classList.add('idling');
+    idleStep = setTimeout(() => flipLayout(() => app.classList.add('idle')), 450);
+  } else {
+    flipLayout(() => app.classList.remove('idle'));
+    app.classList.remove('idling');
+  }
+}
+function poke() { lastTouch = Date.now(); if (idleUI) setIdle(false); }
+document.addEventListener('pointerdown', poke, true);
+addEventListener('keydown', poke, true);
+setInterval(() => {
+  if (idleUI || resting || !menu.hidden || !$('#athan').hidden || document.hidden) return;
+  const home = PAGES[pageIndex] === 'home';
+  if (Date.now() - lastTouch < (home ? IDLE_HOME : IDLE_AWAY)) return;
+  if (!home) go(0);
+  setIdle(true);
+}, 1000);
+
 /* ================= screen off + power menu (in the app) ================= */
 // Double-tapping empty space on the clock screen turns the screen off, like
 // Samsung's own home screen. Both need the app's accessibility service, which
@@ -2012,7 +2103,7 @@ const fauna = (() => {
     const hang = (CH - CLEDGE) / CW;
     const left = line.left + Math.min(10, line.width * .01);
     const dockBtn = $('#dock button').getBoundingClientRect();
-    let w = Math.min(line.width * .3, 170, (innerHeight - ly - 4) / hang);
+    let w = Math.min(line.width * .3, idleUI ? 250 : 170, (innerHeight - ly - 4) / hang);
     if (ly + w * hang > dockBtn.top - 2) w = Math.min(w, dockBtn.left - 14 - left);
     w = Math.max(w, 70);
     const k = w / CW;
@@ -2315,7 +2406,7 @@ const fauna = (() => {
     if (cr) {   // the fish swim under the clock: fade them there, feathered, so the digits stay clean
       x.save(); x.globalCompositeOperation = 'destination-out'; x.filter = `blur(${24 * D}px)`; x.fillStyle = 'rgba(0,0,0,.8)';
       x.fillRect((cr.left - 16) * D, (cr.top - 16) * D, (cr.width + 32) * D, (cr.height + 32) * D);
-      const dk = $('#dock')?.getBoundingClientRect(); if (dk) x.fillRect((dk.left - 10) * D, (dk.top - 6) * D, (dk.width + 20) * D, (dk.height + 12) * D);
+      const dk = !idleUI && $('#dock')?.getBoundingClientRect(); if (dk) x.fillRect((dk.left - 10) * D, (dk.top - 6) * D, (dk.width + 20) * D, (dk.height + 12) * D);
       x.restore();
     }
     x = main; alphaNow = a0; x.globalAlpha = a0;
