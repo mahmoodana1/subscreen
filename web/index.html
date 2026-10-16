@@ -1970,7 +1970,7 @@ document.addEventListener('pointerdown', e => {
 });
 
 /* ================= fauna: animals that live on the screen ================= */
-// The cat lies on a shelf at the top of the side panel in every theme (on the minute line when idle). Each ambient adds its own: sunrise → a camel
+// The cat lies on a shelf at the top of the side panel in every theme (not on the idle full screen). Each ambient adds its own: sunrise → a camel
 // caravan on the far ridge and a bird flock, cloudsea → a hot-air balloon, moonlit → geese across
 // the moon, koi → the koi, tide → ghost crabs, orbit → a space station. Storm's lightning is weather,
 // so it stays with the animals off. Tap the cat.
@@ -2086,22 +2086,15 @@ const fauna = (() => {
     const hang = (CH - CLEDGE) / CW;
     let ly, left, w, fade = 1;
     // It lies on the shelf at the top of the side panel, at its right end, legs and tail
-    // hanging into the gap above the prayer row. When the panel is away (idle full screen)
-    // it moves to the left end of the minute line under the big clock.
-    const pr = !idleUI && $('#perch').getBoundingClientRect();
-    const spot = pr && pr.width ? 'perch' : 'line';
-    if (spot !== catSpot) { catSpot = spot; catSince = t; }
-    fade = Math.min(1, (t - catSince) / .6);   // a soft fade when it changes places
-    if (spot === 'perch') {
-      fade *= +getComputedStyle($('.glance')).opacity;
-      w = Math.min((pr.height - 2) / hang, pr.width * .62);
-      ly = pr.top; left = pr.right - w - 2;
-    } else {
-      const line = $('#minute').parentElement.getBoundingClientRect(); if (!line.width) return;
-      ly = line.top + line.height / 2;
-      left = line.left + Math.min(10, line.width * .01);
-      w = Math.max(70, Math.min(line.width * .3, 250, (innerHeight - ly - 4) / hang));
-    }
+    // hanging into the gap above the prayer row. The idle full screen is just the clock,
+    // so it fades out with the panel and back in when the panel returns.
+    const pr = $('#perch').getBoundingClientRect();   // zero-sized once the idle layout hides it
+    if (!pr || !pr.width) { catSpot = ''; cat.box = null; return; }
+    if (catSpot !== 'perch') { catSpot = 'perch'; catSince = t; }
+    const spot = catSpot;
+    fade = Math.min(1, (t - catSince) / .6) * +getComputedStyle($('.glance')).opacity;
+    w = Math.min((pr.height - 2) / hang, pr.width * .62);
+    ly = pr.top; left = pr.right - w - 2;
     if (fade < .01) { cat.box = null; return; }
     x.globalAlpha = alphaNow * fade;
     const k = w / CW;
