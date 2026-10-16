@@ -907,6 +907,13 @@ const SCENES = {
     col+=vec3(.9,1.,.85)*ca*(.75-.4*dep);
     float refl=exp(-pow((p.x-asp*(.2+.6*fract(u_t*.004))-p.y*.4)*2.2,2.))*(.6+.4*fbm(p*vec2(3.,12.)+u_t*.05));
     col+=vec3(.55,.7,.75)*refl*.06;
+    // Almost no colour in the water: grey stones and silver light with a faint green cast, so the koi
+    // are the colour. The pool is a soft-edged opening in black that melts into the AMOLED surround.
+    col=mix(vec3(dot(col,vec3(.3,.55,.15))),col,.22)*vec3(.92,1.,.97)*.85;
+    vec2 pc0=(p-vec2(asp*.5,.5))/vec2(asp*.47,.5);
+    float edge=length(pc0)+.12*(fbm(pc0*1.6+vec2(u_t*.01,3.))-.5);
+    float pool=1.-smoothstep(.58,1.02,edge);
+    col*=pool*pool;
     for(int i=0;i<6;i++){float fi=float(i);
       vec2 c0=i==0?vec2(asp*.06,.13):i==1?vec2(asp*.11,.07):i==2?vec2(asp*.96,.16):i==3?vec2(asp*.02,.86):i==4?vec2(asp*.89,.07):vec2(asp*.71,.05);
       c0+=.015*vec2(sin(u_t*.05+fi),cos(u_t*.04+fi*2.));
@@ -920,12 +927,13 @@ const SCENES = {
       vec3 pc=mix(vec3(.05,.16,.07),vec3(.11,.27,.1)+vec3(.05,.02,0.)*hash(vec2(fi,9.)),smoothstep(0.,r,l)*.6+.25*noise(d*40.));
       pc*=1.-.12*smoothstep(r*.5,r,l);pc+=vec3(.08,.13,.05)*vein;
       float curl=smoothstep(r-.012,r-.002,l)*smoothstep(.2,.9,sin(a*1.5+fi));pc+=vec3(.18,.3,.12)*curl*.7;pc+=vec3(.15,.3,.12)*smoothstep(r-.006,r-.002,l)*.6;
+      pc=mix(vec3(dot(pc,vec3(.3,.55,.15))),pc,.4)*(.3+.7*pool);   // muted pads, dark silhouettes where they drift into the black
       col=mix(col,pc,pad);
       if(i==1){vec2 lc=c0+vec2(r*.25,r*.1);vec2 ld=p-lc;float la=atan(ld.y,ld.x);float lr=length(ld);
         for(int k=0;k<3;k++){float fk=float(k);float pr=(.032-fk*.009)*(.55+.45*pow(abs(cos(la*4.+fk*.8)),.6));
-          vec3 pk=mix(vec3(.9,.45,.6),vec3(1.,.88,.92),fk/2.)*(.75+.25*smoothstep(0.,pr,lr));
+          vec3 pk=mix(vec3(.88,.7,.75),vec3(1.,.95,.96),fk/2.)*(.75+.25*smoothstep(0.,pr,lr))*(.4+.6*pool);   // a pale lotus
           col=mix(col,pk,smoothstep(pr,pr-.003,lr));}
-        col=mix(col,vec3(1.,.82,.3),smoothstep(.006,.004,lr));}
+        col=mix(col,vec3(.95,.85,.55)*(.4+.6*pool),smoothstep(.006,.004,lr));}
     }
     gl_FragColor=vec4(post(col,uv),1.);
   }`,
@@ -2351,9 +2359,9 @@ const fauna = (() => {
 
   // koi: each fish follows a smooth looping path; its body is the path it just swam
   const KOI = [   // four fish, each with its own stretch of the pond
-    { base: '#f2ece2', spots: [['#d8472b', [1, 2, 3, 4]], ['#d8472b', [7, 8]], ['#d8472b', [11]]], cx: .2, cy: .5, ax: .12, ay: .3, w: .09, ph: 0, L: 100 },
-    { base: '#e9a93a', spots: [], cx: .5, cy: .5, ax: .34, ay: .22, w: .07, ph: 2.1, L: 92 },
-    { base: '#1a1a1f', spots: [['#d4452c', [2, 3, 8, 9]], ['#ece6dc', [5, 6, 12]]], cx: .5, cy: .13, ax: .3, ay: .025, w: .06, ph: 4.4, L: 90 },
+    { base: '#f2ece2', spots: [['#d8472b', [1, 2, 3, 4]], ['#d8472b', [7, 8]], ['#d8472b', [11]]], cx: .27, cy: .5, ax: .1, ay: .26, w: .09, ph: 0, L: 100 },
+    { base: '#e9a93a', spots: [], cx: .5, cy: .5, ax: .28, ay: .2, w: .07, ph: 2.1, L: 92 },
+    { base: '#1a1a1f', spots: [['#d4452c', [2, 3, 8, 9]], ['#ece6dc', [5, 6, 12]]], cx: .5, cy: .22, ax: .26, ay: .03, w: .06, ph: 4.4, L: 90 },
     { base: '#ffffff', spots: [['#d8372b', [1]]], cx: .705, cy: .52, ax: .02, ay: .22, wx: .012, w: .07, ph: 1.2, L: 80 },
   ];
   // a fish glides and pushes: its speed rises and falls slowly, and the tail beats with the distance swum
@@ -2461,6 +2469,11 @@ const fauna = (() => {
       if (gl && gl.width) x.fillRect((gl.left + 30) * D, (gl.top + 100) * D, (gl.width - 60) * D, (gl.height - 120) * D);
       x.restore();
     }
+    // the pool melts into black (see the shader): a fish swimming out to its edge sinks into the dark
+    x.save(); x.globalCompositeOperation = 'destination-out'; x.translate(W / 2, H / 2); x.scale(W * .47, H * .5);
+    const pg = x.createRadialGradient(0, 0, .5, 0, 0, 1.02);
+    pg.addColorStop(0, 'rgba(0,0,0,0)'); pg.addColorStop(.55, 'rgba(0,0,0,.35)'); pg.addColorStop(1, 'rgba(0,0,0,1)');
+    x.fillStyle = pg; x.fillRect(-2, -2, 4, 4); x.restore();
     x = main; alphaNow = a0; x.globalAlpha = a0;
     x.drawImage(kc, 0, 0);
   }
