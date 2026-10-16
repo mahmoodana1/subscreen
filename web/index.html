@@ -92,56 +92,20 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .clockblock{min-width:0;transition:transform 6s ease-in-out;container-type:inline-size;display:grid;justify-content:center}
 .stack{display:flex;flex-direction:column;min-width:0}
 .stack .when{justify-content:center}
-/* flip clock: two cards, each split in half; a minute change folds the top half down */
-.flipclock{--ch:min(56vh,46cqw);display:flex;gap:calc(var(--ch)*.05)}
-.flip{position:relative;width:calc(var(--ch)*1.04);height:var(--ch);perspective:calc(var(--ch)*3.5);font:600 calc(var(--ch)*1.04)/1 var(--f-flip);color:#e6e6e6;letter-spacing:-.01em;font-variant-numeric:tabular-nums;--r:calc(var(--ch)*.055)}
-.flip .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;-webkit-backface-visibility:hidden;backface-visibility:hidden}
-/* clear glass: a faint tint and a whisper of blur, so the scene behind stays sharp; a soft shadow keeps the digits readable */
-.flip .h{-webkit-backdrop-filter:blur(.01px);backdrop-filter:blur(.01px)}
-.flip .h span{text-shadow:0 calc(var(--ch)*.01) calc(var(--ch)*.06) rgba(0,0,0,.35)}
-.flip .ft,.flip .fb{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgb(22,22,26)}
-/* plain glass, like an empty drinking glass: clear in the middle, the thickness showing only at the
-   edges (a thin bright rim and a soft vertical sheen down each side) and a heavier base at the bottom */
-.flip .up,.flip .lo{background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.02) 5%,rgba(255,255,255,0) 11%,rgba(255,255,255,0) 89%,rgba(255,255,255,.015) 95%,rgba(255,255,255,.06)),rgba(16,16,22,.04)}
-.flip .up{top:0;border-radius:var(--r) var(--r) 0 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.38),inset 0 0 0 1px rgba(255,255,255,.12)}
-.flip .lo{bottom:0;border-radius:0 0 var(--r) var(--r);background:linear-gradient(0deg,rgba(255,255,255,.07),rgba(255,255,255,.02) 6%,rgba(255,255,255,0) 10%),linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.02) 5%,rgba(255,255,255,0) 11%,rgba(255,255,255,0) 89%,rgba(255,255,255,.015) 95%,rgba(255,255,255,.06)),rgba(16,16,22,.04);box-shadow:inset 0 -1px 0 rgba(255,255,255,.26),inset 0 0 0 1px rgba(255,255,255,.12)}
-.flip .h span{position:absolute;left:0;right:0;height:200%;display:flex;align-items:center;justify-content:center;padding-top:calc(var(--ch)*.01);box-sizing:border-box}
-.flip .up span{top:0}
-.flip .lo span{bottom:0}
-.flip .ft{z-index:3;transform-origin:50% 100%;visibility:hidden;will-change:transform}
-.flip.go .ft,.flip.go .fb{visibility:visible}
-.flip .fb{z-index:3;transform-origin:50% 0;transform:rotateX(90deg);visibility:hidden;will-change:transform}
-/* The glass is see-through, so a leaf gets an opaque backing (::before) that hides the digit behind it,
-   and a shade (::after) that darkens it as it tips away or lightens it as it lands. The backing fades in
-   as the top leaf starts to fall and out as the bottom one settles, while the static halves cross-fade
-   their digits, so nothing ever shows two numbers at once. Only transform and opacity animate, so the
-   whole flip runs on the compositor and stays smooth while the sky shader keeps the main thread busy. */
-.flip .ft::before,.flip .fb::before,.flip .ft::after,.flip .fb::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;will-change:opacity}
-.flip .ft::before,.flip .fb::before{background:linear-gradient(rgba(30,30,37,.4),rgba(24,24,30,.4))}
-.flip .ft::after{background:#000;z-index:1}
-.flip .fb::after{background:#fff;z-index:1}
-.flip{--d:0s;--f1:.3s;--f2:.42s}
-#fH{--d:.07s}
-.flip.go .ft{animation:flipTop var(--f1) var(--d) cubic-bezier(.45,0,.9,.55) both}
-.flip.go .ft::before{animation:backIn var(--f1) var(--d) linear both}
-.flip.go .ft span{animation:digitFall var(--f1) var(--d) linear both}
-.flip.go .ft::after{animation:shadeTop var(--f1) var(--d) cubic-bezier(.45,0,.9,.55) both}
-.flip.go .up:not(.ft) span{animation:digitIn var(--f1) var(--d) linear both}
-.flip.go .fb{animation:flipBot var(--f2) calc(var(--d) + var(--f1)) cubic-bezier(.12,.62,.28,1) both}
-.flip.go .fb::before{animation:backOut var(--f2) calc(var(--d) + var(--f1)) linear both}
-.flip.go .fb::after{animation:shadeBot var(--f2) calc(var(--d) + var(--f1)) ease-out both}
-.flip.go .lo:not(.fb) span{animation:digitOut var(--f2) calc(var(--d) + var(--f1)) linear both}
-.flip::after{content:"";position:absolute;left:0;right:0;top:50%;height:max(2px,calc(var(--ch)*.009));margin-top:calc(max(2px,calc(var(--ch)*.009)) / -2);background:rgba(0,0,0,.75);z-index:5;box-shadow:0 1px 0 rgba(255,255,255,.05)}
-.flip::before{content:"";position:absolute;inset:0;border-radius:var(--r);box-shadow:0 calc(var(--ch)*.04) calc(var(--ch)*.12) rgba(0,0,0,.18);pointer-events:none}
-@keyframes flipTop{from{transform:rotateX(0)}to{transform:rotateX(-90deg)}}
-@keyframes flipBot{from{transform:rotateX(90deg)}to{transform:rotateX(0)}}
-@keyframes shadeTop{to{opacity:.45}}
-@keyframes shadeBot{from{opacity:.1}to{opacity:0}}
-@keyframes digitFall{0%,30%{opacity:1}100%{opacity:0}}
-@keyframes backIn{0%{opacity:0}30%,100%{opacity:1}}
-@keyframes backOut{0%,40%{opacity:1}85%,100%{opacity:0}}
-@keyframes digitIn{0%,55%{opacity:0}100%{opacity:1}}
-@keyframes digitOut{0%,10%{opacity:1}30%,100%{opacity:0}}
+/* the clock: light, slightly see-through digits floating on the scene with no card behind them, so the
+   ambient shows everywhere but the strokes; a wide faint shadow keeps them readable over bright skies.
+   A changed digit rolls: the old one rises and fades while the new one comes up from below, right-hand
+   digit first like an odometer. Only transform and opacity animate, so it runs on the compositor. */
+.flipclock{--ch:min(56vh,46cqw);display:flex;align-items:center;justify-content:center;font:300 calc(var(--ch)*1.2)/.84 var(--f-flip);color:rgba(255,255,255,.88);letter-spacing:.005em;font-variant-numeric:tabular-nums;text-shadow:0 0 calc(var(--ch)*.16) rgba(0,0,0,.22),0 calc(var(--ch)*.008) calc(var(--ch)*.03) rgba(0,0,0,.2)}
+.roll{display:flex}
+.sep{font-size:.55em;margin:0 calc(var(--ch)*.07);opacity:.32;transform:translateY(-.04em)}
+.dg{position:relative;display:block}
+.dg i{display:block;font-style:normal;will-change:transform,opacity}
+.dg i + i{position:absolute;left:0;top:0;opacity:0}
+.dg.go i:first-child{animation:rollOut .34s var(--d,0s) cubic-bezier(.5,0,.8,.4) both}
+.dg.go i + i{animation:rollIn .6s calc(var(--d,0s) + .16s) cubic-bezier(.16,.8,.3,1) both}
+@keyframes rollOut{to{transform:translateY(-.22em);opacity:0}}
+@keyframes rollIn{from{transform:translateY(.26em);opacity:0}to{transform:none;opacity:1}}
 .when{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:clamp(12px,1.5vw,15px);color:var(--sub)}
 .when .hijri{color:var(--sand)}
 .minute{margin-top:8px;max-width:100%}
@@ -388,7 +352,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
       <section class="page on" id="p-home" aria-label="Home"><div class="fit">
         <div class="home">
           <div class="clockblock" id="drift"><div class="stack">
-            <div class="flipclock" id="clock" role="timer" aria-label="Time"><div class="flip" id="fH"><div class="h up"><span></span></div><div class="h lo"><span></span></div><div class="h up ft"><span></span></div><div class="h lo fb"><span></span></div></div><div class="flip" id="fM"><div class="h up"><span></span></div><div class="h lo"><span></span></div><div class="h up ft"><span></span></div><div class="h lo fb"><span></span></div></div></div>
+            <div class="flipclock" id="clock" role="timer" aria-label="Time"><div class="roll" id="fH"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div><span class="sep" aria-hidden="true">:</span><div class="roll" id="fM"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div></div>
             <div class="when"><span id="dateG"></span></div>
             <div class="line minute"><i id="minute"></i></div>
             <div class="idlep num" id="idleP"></div>
@@ -1311,15 +1275,19 @@ function setFlip(id, v) {
   const el = $('#' + id), old = flipVal[id];
   if (old === v) return;
   flipVal[id] = v;
-  const [t, b, ft, fb] = $$('.h span', el);
-  if (old === undefined || reduce) { t.textContent = b.textContent = ft.textContent = fb.textContent = v; return; }
-  t.textContent = v; ft.textContent = old; fb.textContent = v; b.textContent = old;
-  el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
-  const done = () => { clearTimeout(el._done); fb.parentElement.removeEventListener('animationend', el._end); b.textContent = v; ft.textContent = v; el.classList.remove('go'); };
-  clearTimeout(el._done); if (el._end) fb.parentElement.removeEventListener('animationend', el._end);
-  el._end = e => { if (e.target === fb.parentElement && e.animationName === 'flipBot') done(); };
-  fb.parentElement.addEventListener('animationend', el._end);
-  el._done = setTimeout(done, 2500);   // in case the animation never runs (hidden tab)
+  $$('.dg', el).forEach((d, k) => {
+    const [a, b] = d.children, nv = v[k];
+    if (old === undefined || reduce) { a.textContent = nv; b.textContent = ''; return; }
+    if (old[k] === nv) return;
+    d.style.setProperty('--d', ((id === 'fH' ? 2 : 0) + (1 - k)) * .08 + 's');   // right-hand digit first
+    a.textContent = old[k]; b.textContent = nv;
+    d.classList.remove('go'); void d.offsetWidth; d.classList.add('go');
+    const done = () => { clearTimeout(d._t); b.removeEventListener('animationend', d._e); a.textContent = nv; b.textContent = ''; d.classList.remove('go'); };
+    clearTimeout(d._t); if (d._e) b.removeEventListener('animationend', d._e);
+    d._e = e => { if (e.target === b) done(); };
+    b.addEventListener('animationend', d._e);
+    d._t = setTimeout(done, 2500);   // in case the animation never runs (hidden tab)
+  });
 }
 function beltFor(xp) { let i = 0; BELTS.forEach((b, k) => { if (xp >= b[2]) i = k; }); return { cur: BELTS[i], next: BELTS[i + 1] }; }
 function firstTask(tv) {
