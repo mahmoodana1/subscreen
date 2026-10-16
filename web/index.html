@@ -53,7 +53,10 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 
 /* ---------- top rail ---------- */
 .top{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:28px;font-size:12px}
-.hosts{display:flex;gap:18px;align-items:center;min-width:0}
+.hosts{display:flex;gap:18px;align-items:center;min-width:0;transition:opacity .4s}
+/* Home keeps the top rail quiet: the computers and the network name show on the other pages */
+.app[data-page="home"] .hosts,.app[data-page="home"] #netTxt{opacity:0;pointer-events:none}
+#netTxt{transition:opacity .4s}
 .host{display:flex;align-items:center;gap:7px;color:var(--muted);transition:color .3s;font-family:var(--f-num);font-size:12px}
 .host i{width:6px;height:6px;border-radius:50%;border:1px solid currentColor;box-sizing:border-box;transition:background .3s,border-color .3s}
 .host.on{color:var(--text)}
@@ -136,7 +139,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 /* a soft scrim keeps the small text readable over the brighter ambients */
 .glance{display:flex;flex-direction:column;min-width:0;background:radial-gradient(closest-side,rgba(0,0,0,.58),rgba(0,0,0,.46) 50%,rgba(0,0,0,.16) 80%,transparent);margin:-40px -48px;padding:40px 48px}
 .g{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:7px 8px;margin:0 -8px;border-bottom:1px solid var(--hair);text-align:left;border-radius:6px;transition:background .2s}
-.g:last-child{border-bottom:0}
+.g:last-child,.g:not(:has(~ .g:not([hidden]))){border-bottom:0}
 .g:active,.g:hover{background:var(--sel)}
 .g .k{grid-row:1;grid-column:1;font:500 8.5px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:#8a8a8a}
 .g .r{grid-row:1;grid-column:2;font:400 10px var(--f-num);color:var(--sub);white-space:nowrap;text-align:right}
@@ -144,6 +147,10 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .g .bar{grid-row:3;grid-column:1 / 3;margin-top:5px}
 .g .bar i{background:var(--sand)}
 .g.prayer.iqama .bar i{background:var(--teal)}
+/* the prayer leads the panel; a task can take two lines rather than being cut off */
+.g.prayer .v{font-size:15px}
+.g .r .due{font-size:inherit}
+#gTask .v{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
 
 /* ---------- display menu ---------- */
 .menu-btn{width:30px;height:30px;margin:-4px -6px -4px 0;border-radius:50%;display:grid;place-items:center;color:var(--muted);transition:color .2s,background .2s}
@@ -368,10 +375,10 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
               <span class="k" id="gPk">Prayer</span><span class="v" id="gPv"></span><span class="r num" id="gPr"></span>
               <span class="line bar"><i id="gPbar" style="width:0"></i></span>
             </button>
-            <button class="g" type="button" data-go="1"><span class="k">Task</span><span class="v" id="gTv"></span><span class="r" id="gTr"></span></button>
-            <button class="g" type="button" data-go="2"><span class="k">Dojo</span><span class="v" id="gDv"></span><span class="r" id="gDr"></span></button>
-            <button class="g" type="button" data-go="1"><span class="k">Next up</span><span class="v" id="gCv"></span><span class="r num" id="gCr"></span></button>
-            <button class="g" type="button" data-go="4"><span class="k">Claude</span><span class="v" id="gAv"></span><span class="r" id="gAr"></span></button>
+            <button class="g" id="gTask" type="button" data-go="1" hidden><span class="k" id="gTk">Task</span><span class="v" id="gTv"></span><span class="r" id="gTr"></span></button>
+            <button class="g" id="gDojo" type="button" data-go="2" hidden><span class="k">Dojo</span><span class="v" id="gDv"></span><span class="r" id="gDr"></span></button>
+            <button class="g" id="gNext" type="button" data-go="1" hidden><span class="k">Next up</span><span class="v" id="gCv"></span><span class="r num" id="gCr"></span></button>
+            <button class="g" id="gClaude" type="button" data-go="4" hidden><span class="k">Claude</span><span class="v" id="gAv"></span><span class="r" id="gAr"></span></button>
           </nav>
         </div>
       </div></section>
@@ -863,25 +870,43 @@ const SCENES = {
     }
     gl_FragColor=vec4(post(col,uv),1.);
   }`,
-  // A koi pond seen from above: depth gradient, a caustic net, pebbles, veined lily pads with a
-  // lotus. The koi are in the fauna layer.
+  // A clear, shallow koi pond seen from above: a bed of rounded stones seen through moving water,
+  // bright caustic nets dancing over it, deeper and greener toward the middle, veined lily pads
+  // with a lotus. The koi, and their shadows on the stones, are in the fauna layer.
   koi: `
-  float voro(vec2 p){vec2 i=floor(p),f=fract(p);float m1=8.,m2=8.;
-    for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 b=vec2(float(x),float(y));vec2 o=vec2(hash(i+b),hash(i+b+7.));
-      o=.5+.45*sin(u_t*.5+6.28*o);float d=length(b+o-f);if(d<m1){m2=m1;m1=d;}else if(d<m2)m2=d;}
-    return m2-m1;}
+  vec3 vor(vec2 p,float tm){vec2 i=floor(p),f=fract(p);float m1=8.,m2=8.,id=0.;
+    for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 b=vec2(float(x),float(y));vec2 h=vec2(hash(i+b),hash(i+b+7.));
+      vec2 o=tm>0.?.5+.42*sin(u_t*tm+6.2832*h):.12+.76*h;float d=length(b+o-f);
+      if(d<m1){m2=m1;m1=d;id=hash(i+b+3.1);}else if(d<m2)m2=d;}
+    return vec3(m1,m2,id);}
   void main(){
     vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);
-    float depth=.55+.45*smoothstep(1.3,.2,length((p-vec2(asp*.5,.5))*vec2(.6,1.)));
-    vec3 col=mix(vec3(.03,.12,.11),vec3(.006,.045,.05),depth)*(.85+.3*fbm(p*2.));
-    col+=vec3(.03,.05,.04)*smoothstep(.45,.75,fbm(p*9.))*(1.-depth*.6);
-    vec2 cq=p*3.2+vec2(fbm(p*1.5+u_t*.03),fbm(p*1.5+4.))*.8;float cz=0.;   // soft caustic webs
-    for(int i=0;i<3;i++){cq+=vec2(sin(cq.y*1.3+u_t*.35),cos(cq.x*1.1-u_t*.3))*.55;cz+=.5/(abs(sin(cq.x+cq.y))+.35);}
-    float calm=smoothstep(.4,.65,fbm(p*.9+u_t*.01));
-    col+=vec3(.35,.7,.6)*pow(cz/3.8,3.)*.16*(1.-depth*.5)*(.3+.7*calm);
-    float refl=exp(-pow((p.x-asp*(.2+.6*fract(u_t*.004))-p.y*.4)*2.5,2.))*.05*(.6+.4*fbm(p*vec2(3.,12.)+u_t*.05));
-    col+=vec3(.6,.75,.8)*refl*2.4;
-    col+=vec3(.2,.35,.3)*.06*smoothstep(.4,.8,fbm(p*vec2(1.5,.6)+u_t*.02));
+    vec2 wv=vec2(fbm(p*2.2+vec2(u_t*.07,0.)),fbm(p*2.2+vec2(4.,-u_t*.06)))-.5;
+    vec2 q=p+wv*.035;                                     // the bed, seen through moving water
+    float dep=1.-smoothstep(.1,1.05,length((p-vec2(asp*.52,.48))*vec2(.5,.95)));
+    float zs=max(1.,.9/asp);                              // the same stone size on a tall screen
+    vec3 v=vor(q*7.5*zs,0.);float gap=v.y-v.x;float h=v.z;
+    vec3 sc=h<.28?vec3(.40,.37,.32):h<.5?vec3(.46,.38,.27):h<.7?vec3(.27,.30,.31):h<.88?vec3(.55,.5,.42):vec3(.36,.25,.2);
+    sc*=.8+.4*fbm(q*38.*zs+h*9.);
+    float lit=.75+.35*noise(vec2(h*40.,h*17.));            // each stone a little lighter or darker
+    float rr=.36+.12*fract(h*13.7);                       // round pebbles of different sizes, grit between them
+    float st=smoothstep(rr+.02,rr-.05,v.x)*smoothstep(.0,.06,gap);
+    float dome=sqrt(max(0.,1.-pow(v.x/rr,2.)));
+    vec3 grit=vec3(.16,.15,.12)*(.6+.8*noise(q*170.))*(.8+.4*noise(q*23.));
+    vec3 bed=mix(grit,sc*lit*(.55+.6*dome),st);
+    bed*=1.-.4*smoothstep(rr+.08,rr,v.x)*(1.-st);         // contact shadow on the grit around each stone
+    vec2 k1=q*3.6*zs;k1+=.32*vec2(sin(k1.y*2.1+u_t*.4),cos(k1.x*1.8-u_t*.35));   // curved, wobbling light lines
+    vec2 k2=q*5.2*zs+vec2(3.,1.);k2+=.28*vec2(sin(k2.y*1.7-u_t*.3),cos(k2.x*2.3+u_t*.45));
+    vec3 c1=vor(k1,.5),c2=vor(k2,.42);
+    float l1=smoothstep(.16,0.,c1.y-c1.x),l2=smoothstep(.12,0.,c2.y-c2.x);
+    float ca=pow(l1,3.)*.55+pow(l2,3.)*.4+pow(l1*l2,1.5)*.9;   // brightest where the two nets cross
+    ca*=smoothstep(.25,.7,fbm(p*1.6+vec2(u_t*.025,-u_t*.018)));   // sunlight comes and goes in patches
+    vec3 col=bed*mix(vec3(.95,.98,.9),vec3(.4,.55,.5),dep);
+    col=mix(col,vec3(.02,.12,.115),dep*.42);
+    col*=1.3;
+    col+=vec3(.9,1.,.85)*ca*(.75-.4*dep);
+    float refl=exp(-pow((p.x-asp*(.2+.6*fract(u_t*.004))-p.y*.4)*2.2,2.))*(.6+.4*fbm(p*vec2(3.,12.)+u_t*.05));
+    col+=vec3(.55,.7,.75)*refl*.06;
     for(int i=0;i<6;i++){float fi=float(i);
       vec2 c0=i==0?vec2(asp*.06,.13):i==1?vec2(asp*.11,.07):i==2?vec2(asp*.96,.16):i==3?vec2(asp*.02,.86):i==4?vec2(asp*.89,.07):vec2(asp*.71,.05);
       c0+=.015*vec2(sin(u_t*.05+fi),cos(u_t*.04+fi*2.));
@@ -892,7 +917,7 @@ const SCENES = {
       float shd=smoothstep(r,r-.015,length(d-vec2(.01,-.013)));col*=1.-shd*.6;
       float pad=smoothstep(r,r-.003,l)*cut;
       float vein=smoothstep(.06,.0,abs(fract(a*2.55)-.5))*.5+smoothstep(.04,.0,abs(fract(l/r*3.)-.5))*.15;
-      vec3 pc=mix(vec3(.05,.16,.07),vec3(.11,.27,.1)+vec3(.05,.02,0.)*hash(vec2(fi,9.)),smoothstep(0.,r,l)*.6+.25*fbm(d*40.));
+      vec3 pc=mix(vec3(.05,.16,.07),vec3(.11,.27,.1)+vec3(.05,.02,0.)*hash(vec2(fi,9.)),smoothstep(0.,r,l)*.6+.25*noise(d*40.));
       pc*=1.-.12*smoothstep(r*.5,r,l);pc+=vec3(.08,.13,.05)*vein;
       float curl=smoothstep(r-.012,r-.002,l)*smoothstep(.2,.9,sin(a*1.5+fi));pc+=vec3(.18,.3,.12)*curl*.7;pc+=vec3(.15,.3,.12)*smoothstep(r-.006,r-.002,l)*.6;
       col=mix(col,pc,pad);
@@ -974,61 +999,75 @@ const SCENES = {
     col+=vec3(1.)*m*smoothstep(.3,.0,length((a.z>b.z?a.xy:b.xy)-vec2(-.35,.45)))*.35;
     gl_FragColor=vec4(post(col,uv),1.);
   }`,
-  // A night beach where the breaking waves glow blue: swells rolling in under the Milky Way,
-  // a glowing wash running up the sand and draining back.
-  tide: `void main(){
+  // A moonlit beach where the breaking waves glow blue. A low moon lays a glittering path on the
+  // sea; every few seconds a wave curls and breaks in a line of blue light, its wash runs up the
+  // wet sand with a glowing edge, then drains back and leaves sparks that fade.
+  tide: `
+  float shoreY(float x){return .2+.014*sin(x*2.1+1.)+.008*sin(x*5.3+.4);}
+  void main(){
     vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);float y=uv.y;
-    vec3 bio=vec3(.1,.78,1.);
-    float hz=.5;vec3 col;
-    float side=1.-.4*smoothstep(.12,.0,abs(uv.x-.49)-.22)*smoothstep(.25,.12,y);
+    vec3 bio=vec3(.12,.78,1.);
+    float hz=.56;vec2 mc=u_fx.x>0.?vec2(asp*u_fx.x,u_fx.y):vec2(asp*.735,.8);float mr=.04;   // the page moves the moon clear of the clock
+    float P=9.,cyc=fract(u_t/P),wn=floor(u_t/P);
+    float sh=shoreY(p.x);
+    float yb=sh+.11*(1.-smoothstep(0.,.42,cyc));              // the breaking line rolls in to the shore
+    float brk=smoothstep(.12,.32,cyc)*(1.-smoothstep(.42,.6,cyc));
+    float reach=.105*smoothstep(.36,.56,cyc)*(1.-smoothstep(.62,1.,cyc))*(.75+.25*sin(wn*2.7));
+    float ys=sh-reach-.012*fbm(vec2(p.x*5.,wn*3.1))*step(.001,reach);   // how far up the sand the wash has run
+    vec3 col;
     if(y>hz){
-      col=mix(vec3(.03,.06,.1),vec3(.004,.008,.022),smoothstep(hz,.95,y));
-      float bd=dot(p-vec2(asp*.55,.8),vec2(.5,.87));float band=exp(-bd*bd*18.);
-      float dust=fbm(p*vec2(5.,5.)+3.);
-      col+=vec3(.25,.25,.36)*band*smoothstep(.35,.75,fbm(p*3.+1.))*.45;
-      col*=1.-.6*band*smoothstep(.55,.7,dust);
+      col=mix(vec3(.04,.055,.1),vec3(.006,.008,.025),smoothstep(hz,1.,y));
+      float bd=dot(p-vec2(asp*.62,.85),vec2(.45,.89));float band=exp(-bd*bd*16.);
+      col+=vec3(.22,.22,.32)*band*smoothstep(.4,.8,fbm(p*3.+1.))*.35;
       vec2 g=p*170.;vec2 id=floor(g);float h=hash(id);float sz=pow(hash(id+2.),5.);
-      col+=vec3(.8,.85,1.)*step(.985-.03*band,h)*smoothstep(.12+.2*sz,0.,length(fract(g)-.5))*(.4+.6*sz)*(.6+.4*sin(u_t*2.+h*50.));
-      col*=smoothstep(hz,hz+.06,y)*.6+.4;
-      col+=bio*.06*exp(-(y-hz)*30.)+vec3(.05,.08,.12)*exp(-(y-hz)*40.);
+      col+=vec3(.8,.85,1.)*step(.986-.025*band,h)*smoothstep(.12+.2*sz,0.,length(fract(g)-.5))*(.4+.6*sz)*(.6+.4*sin(u_t*2.+h*50.))*smoothstep(.12,.3,length(p-mc));
+      float md=length(p-mc);
+      col+=vec3(.75,.8,.95)*(exp(-md*7.)*.16+exp(-md*22.)*.25);
+      float disk=smoothstep(mr,mr-.003,md);
+      vec3 mcol=vec3(1.,.97,.9)*(.82+.18*smoothstep(.35,.65,fbm((p-mc)*38.+2.)));
+      mcol*=1.-.12*smoothstep(mr*.4,mr,md);
+      col=mix(col,mcol,disk);
+      col+=vec3(.3,.4,.55)*exp(-(y-hz)*28.)*.18;
+    }else if(y>sh){
+      float d=hz-y+.003,Z=1./d,xs=(p.x-mc.x)*Z;
+      col=vec3(.006,.02,.04)+vec3(.05,.07,.12)*exp(-d*16.);
+      float sw=.5+.5*sin((Z*.9+u_t*.12+.15*fbm(vec2(p.x*1.2,Z*.05)))*6.2832);   // long swells catching the moon
+      float lit=pow(sw,14.)*smoothstep(.0,.05,d);
+      float path=exp(-pow((p.x-mc.x)/(.025+.5*(hz-y)),2.));
+      vec2 gq=vec2(xs*7.,Z*16.-u_t*1.2);                                   // glints: many small, short-lived
+      float sp=smoothstep(.62,.85,noise(gq))*smoothstep(.45,.8,noise(gq*2.3+vec2(u_t*.8,0.)));
+      col+=vec3(.85,.88,1.)*path*(sp*.9+lit*.5+.05)*smoothstep(.0,.02,d);
+      col+=vec3(.25,.32,.5)*lit*.18*(.5+.5*noise(vec2(xs*.6,Z)));
+      for(int k=1;k<3;k++){float fk=float(k);                               // swells further out, glowing faintly as they roll
+        float yk=sh+.11+fk*.075+.012*sin(p.x*1.3+fk*2.+u_t*.15)-.035*cyc;
+        col+=bio*exp(-abs(y-yk)*(220.+fk*120.))*(.22-fk*.06)*(.5+.5*smoothstep(.3,.7,fbm(vec2(p.x*4.+fk*7.,u_t*.3))));}
+      float near=smoothstep(.16,.0,y-sh);
+      float fb=.5+.5*smoothstep(.3,.7,fbm(vec2(p.x*7.,u_t*.5+wn)));
+      float line=exp(-abs(y-yb)*mix(150.,70.,brk))*(.15+1.6*brk)*fb;   // the curl, then the breaking line
+      float lip=exp(-max(0.,yb-y)*30.)*step(y,yb)*brk*.35*fb;              // light spilling down its face
+      float foam=smoothstep(yb+.002,sh,y)*smoothstep(.45,.75,cyc)*(1.-smoothstep(.75,1.,cyc))*smoothstep(.4,.7,fbm(vec2(p.x*14.,y*40.-u_t*.3)));
+      col+=bio*(line+lip+foam*.35)+vec3(.8,1.,1.)*line*line*.25;
+      col+=vec3(.02,.12,.16)*near*(.5+.5*fb);
     }else{
-      float shore=.135+.012*sin(p.x*2.3+1.)+.008*sin(p.x*5.7);
-      float T=u_t*.3,wash=min(shore-.03-.028*sin(T+p.x*.6)-.008*fbm(vec2(p.x*4.,u_t*.15)),shore-.018);
-      if(y>shore){
-        float d=hz-y+.002,Z=1./d;
-        float xs=(p.x-asp*.5)*Z;
-        float ph=Z*1.3+u_t*.16+.25*fbm(vec2(p.x*1.5,Z*.05))+.35*sin(p.x*1.7+Z*.2+u_t*.1)*(1.-smoothstep(.0,.25,hz-y-.2));
-        float cr=fract(ph);
-        float near=smoothstep(.22,.0,y-shore);
-        float line=pow(cr,mix(16.,6.,near))*smoothstep(1.,.96,cr);
-        float foam=smoothstep(.3,.75,fbm(vec2(xs*.35,floor(ph)*3.7+u_t*.2)))*smoothstep(.2,.6,noise(vec2(xs*.12,floor(ph)*1.3)));
-        col=vec3(0.,.014,.03)+vec3(.02,.05,.08)*exp(-d*14.);
-        col+=vec3(.25,.3,.45)*.05*smoothstep(.5,.9,noise(vec2(xs*.8,Z*2.)))*(1.-near);
-        float brk=.6+.8*smoothstep(.7,1.,sin(p.x*.8-u_t*.5+floor(ph)));
-        float L=line*(.12+1.3*near*brk)*(.25+1.2*foam)*smoothstep(.06,.14,d);
-        float dcr=min(cr,1.-cr);
-        float halo=exp(-dcr*mix(16.,5.,near))*near*(.35+.6*foam)*.9*smoothstep(.06,.14,d);
-        col+=vec3(.02,.16,.2)*near*(.5+.8*fbm(vec2(xs*.2,Z*.6-u_t*.1)));
-        col+=mix(vec3(.05,.45,.55),vec3(.13,.83,.93),near)*halo;
-        float face=smoothstep(.5,1.,cr)*near*.35;col+=vec3(.03,.3,.36)*face;
-        float drift=smoothstep(.6,.85,noise(vec2(xs*.25-u_t*.2,floor(ph)*2.1)))*(1.-near);
-        L+=line*drift*.5*smoothstep(.03,.08,d);
-        float flare=smoothstep(.85,1.,sin(p.x*.6-u_t*.35))*near;
-        col+=mix(bio,vec3(.85,1.,1.),clamp(L*.8-.2+flare*.6,0.,1.))*L*(1.+flare*1.2);
+      vec3 sand=vec3(.34,.315,.29)*(.82+.28*noise(p*260.))*(.9+.15*noise(p*vec2(9.,60.)));
+      sand*=.7+.45*smoothstep(.0,.2,y);                                           // moonlight falls off toward us
+      sand*=.93+.1*sin(p.y*150.+5.*noise(p*vec2(3.,8.)));                         // soft wind ripples
+      col=sand;
+      float wetTop=sh-.085;
+      float wet=smoothstep(wetTop-.02,wetTop+.02,y);
+      col*=1.-.45*wet;
+      col+=vec3(.75,.8,.95)*wet*exp(-pow((p.x-mc.x)*9.,2.))*.12*(.6+.4*noise(vec2(p.x*40.,y*200.)));   // the moon on wet sand
+      col=mix(col,vec3(.02,.1,.13),smoothstep(sh-.01,sh,y));                      // no hard seam where sand meets sea
+      if(y>ys){                                                                   // the wash: a thin glowing sheet over the sand
+        float e=exp(-(y-ys)*90.),th=smoothstep(ys,sh,y);
+        col=mix(col,vec3(.015,.05,.07),.45+.25*th)+bio*(e*(.8+.6*smoothstep(.3,.7,fbm(vec2(p.x*20.,u_t*.6))))+.05+.06*(1.-th));
+        col+=vec3(.75,.8,.95)*exp(-pow((p.x-mc.x)*7.,2.))*.12*(.6+.4*noise(vec2(p.x*30.,y*150.-u_t)));
       }else{
-        col=vec3(.05,.04,.035)*(.75+.4*noise(p*140.));
-        if(y>wash){
-          float e=exp(-(y-wash)*110.)*smoothstep(-.002,.003,y-wash);
-          col=mix(col,vec3(0.,.02,.035),.7)+bio*(e*(.6+.8*smoothstep(.3,.7,fbm(vec2(p.x*18.,u_t*.4))))+.03);
-        }else{
-          float wet=smoothstep(wash-.08,wash,y);col*=1.-.4*wet;
-          float rf=fbm(vec2(p.x*30.,y*4.-u_t*.2));
-          col+=bio*.6*wet*rf*smoothstep(wash-.07,wash,y)*smoothstep(.3,.7,fbm(vec2(p.x*9.,u_t*.3)));
-          vec2 g=p*90.;float h=hash(floor(g));
-          col+=mix(bio,vec3(.8,1.,1.),.4)*step(.9,h)*smoothstep(.3,.0,length(fract(g)-.5-(vec2(h,fract(h*7.))-.5)*.3))*wet*pow(.5+.5*sin(u_t*2.5+h*30.),3.)*1.4;
-        }
+        float drain=smoothstep(.55,.95,cyc)+(1.-smoothstep(.0,.25,cyc));   // sparks left in the sand as it drains
+        vec2 g=p*vec2(110.,90.);vec2 gi=floor(g);float h=hash(gi+wn);vec2 go=vec2(hash(gi+wn+3.),hash(gi+wn+7.))-.5;
+        float spark=step(.965,h)*smoothstep(.3,.0,length(fract(g)-.5-go*.6))*wet*drain*(1.-smoothstep(.0,.45,fract(cyc+.45)))*(.6+.4*sin(u_t*6.+h*40.));
+        col+=mix(bio,vec3(.8,1.,1.),.4)*spark*1.3;
       }
-      col*=side;
     }
     gl_FragColor=vec4(post(col,uv),1.);
   }`,
@@ -1331,24 +1370,34 @@ function tickHome(now) {
     $('#idleP').textContent = '';
   }
 }
+// Home shows only what matters right now: the prayer always; the most important open task and the
+// dojo when there is something; the next event only when it is within three hours; Claude only
+// when a session is waiting for you.
 function renderGlance() {
   const tv = source('taskvim'), dj = source('dojo');
   const t = firstTask(tv?.data);
-  $('#gTv').textContent = t ? t.text : tv ? 'Nothing open' : 'No taskvim yet';
-  const d = t && dueInfo(t);
-  $('#gTr').innerHTML = d ? `<span class="due ${d.cls}">${esc(d.txt)}</span>` : '';
+  $('#gTask').hidden = !t;
+  if (t) {
+    $('#gTk').textContent = (tv.data.groups.important || []).includes(t) ? 'Important' : 'Task';
+    $('#gTv').textContent = t.text;
+    const d = dueInfo(t);
+    $('#gTr').innerHTML = d ? `<span class="due ${d.cls}">${esc(d.txt)}</span>` : '';
+  }
+  $('#gDojo').hidden = !dj;
   if (dj) {
     const b = beltFor(dj.data.xp);
-    $('#gDv').textContent = dj.data.dueCount ? `${dj.data.dueCount} reviews due` : 'No reviews due';
+    $('#gDv').textContent = dj.data.dueCount ? `${dj.data.dueCount} review${dj.data.dueCount > 1 ? 's' : ''} due` : 'All caught up';
     $('#gDr').innerHTML = `<span style="color:var(--${b.cur[1]})">${b.cur[0].toLowerCase()} belt</span>`;
-  } else { $('#gDv').textContent = 'No dojo yet'; $('#gDr').textContent = ''; }
-  const nx = tv?.data?.next?.[0];
-  $('#gCv').textContent = nx ? nx.title : 'Nothing scheduled';
-  $('#gCr').textContent = nx ? whenText(nx.at) : '';
-  const ss = allSessions(), w = ss.filter(s => s.state === 'waiting');
-  $('#gAv').innerHTML = w.length ? `<span style="color:var(--rose)">${w.length} session${w.length > 1 ? 's' : ''} need${w.length > 1 ? '' : 's'} you</span>`
-    : ss.some(s => s.state === 'working') ? `${ss.filter(s => s.state === 'working').length} working` : 'No sessions';
-  $('#gAr').textContent = w.length ? w[0].host : '';
+  }
+  const nx = tv?.data?.next?.[0], soon = nx && new Date(nx.at) - Date.now() < 3 * 3600e3;
+  $('#gNext').hidden = !soon;
+  if (soon) { $('#gCv').textContent = nx.title; $('#gCr').textContent = whenText(nx.at); }
+  const w = allSessions().filter(s => s.state === 'waiting');
+  $('#gClaude').hidden = !w.length;
+  if (w.length) {
+    $('#gAv').innerHTML = `<span style="color:var(--rose)">${w.length} session${w.length > 1 ? 's' : ''} need${w.length > 1 ? '' : 's'} you</span>`;
+    $('#gAr').textContent = w[0].host;
+  }
 }
 // Burn-in drift: the AMOLED never holds the same pixels for long
 const DRIFT = [[0, 0], [5, -3], [-4, 3], [3, 4], [-5, -2]];
@@ -2077,6 +2126,7 @@ const fauna = (() => {
   catImg.src = 'data:image/png;base64,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';
   const CW = 361, CH = 290, CLEDGE = 89, CTAIL = 303;
   let catSpot = '', catSince = 0;
+  let moonX = .735, moonT = 0;
   function lyingCat(t) {
     if (!catImg.complete || !catImg.naturalWidth) return;
     const main = x; x = cx;
@@ -2306,9 +2356,11 @@ const fauna = (() => {
     { base: '#1a1a1f', spots: [['#d4452c', [2, 3, 8, 9]], ['#ece6dc', [5, 6, 12]]], cx: .5, cy: .13, ax: .3, ay: .025, w: .06, ph: 4.4, L: 90 },
     { base: '#ffffff', spots: [['#d8372b', [1]]], cx: .705, cy: .52, ax: .02, ay: .22, wx: .012, w: .07, ph: 1.2, L: 80 },
   ];
-  const koiPos = (k, t) => { const a = t * k.w + k.ph; return [W * (k.cx + k.ax * Math.sin(a) + (k.wx ?? .07) * Math.sin(a * 2.3 + k.ph)), H * (k.cy + k.ay * Math.sin(a * 1.6 + 1.1 + k.ph) + .06 * Math.cos(a * 3.1))]; };
+  // a fish glides and pushes: its speed rises and falls slowly, and the tail beats with the distance swum
+  const koiA = (k, t) => t * k.w + k.ph + .35 * Math.sin(t * .13 + k.ph * 2);
+  const koiPos = (k, t) => { const a = koiA(k, t); return [W * (k.cx + k.ax * Math.sin(a) + (k.wx ?? .07) * Math.sin(a * 2.3 + k.ph)), H * (k.cy + k.ay * Math.sin(a * 1.6 + 1.1 + k.ph) + .06 * Math.cos(a * 3.1))]; };
   function oneKoi(k, t) {
-    const N = 16, L = k.L * D, seg = L / N, dense = [koiPos(k, t)];
+    const N = 16, L = k.L * D, seg = L / N, dense = [koiPos(k, t)], swim = koiA(k, t) * 70;
     for (let j = 1, len = 0; j < 500 && len < L * 1.1; j++) { const q = koiPos(k, t - j * .04), p = dense[j - 1]; len += Math.hypot(q[0] - p[0], q[1] - p[1]); dense.push(q); }
     const pts = [dense[0]];
     for (let j = 1, acc = 0; j < dense.length && pts.length <= N; j++) {
@@ -2320,7 +2372,7 @@ const fauna = (() => {
     const nrm = [], wid = [];
     for (let i = 0; i <= N; i++) {
       const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
-      const u = i / N, sway = Math.sin(t * 5 - u * 6) * L * .07 * Math.pow(u, 1.3);
+      const u = i / N, sway = Math.sin(swim - u * 6) * L * .07 * Math.pow(u, 1.3);
       nrm.push([-dy / l, dx / l]);
       pts[i] = [pts[i][0] + nrm[i][0] * sway, pts[i][1] + nrm[i][1] * sway];
       wid.push(L * .135 * (u < .28 ? .7 + .3 * Math.sin(u / .28 * Math.PI / 2) : 1 - .84 * Math.pow((u - .28) / .72, 1.3)));
@@ -2338,7 +2390,7 @@ const fauna = (() => {
     const fins = (alpha) => {
       x.fillStyle = k.fin || k.base; x.globalAlpha = alphaNow * alpha;
       const tp = pts[N], tb = pts[N - 2], tn = nrm[N], back = [tp[0] - tb[0], tp[1] - tb[1]], bl = Math.hypot(...back) || 1;
-      const bx = back[0] / bl, by = back[1] / bl, flap = Math.sin(t * 5 - 6);
+      const bx = back[0] / bl, by = back[1] / bl, flap = Math.sin(swim - 6);
       for (const sd of [1, -1]) {   // the tail: two soft lobes fanning out behind
         const sp = L * (.15 + .03 * flap * sd);
         x.beginPath(); x.moveTo(tb[0], tb[1]);
@@ -2371,11 +2423,16 @@ const fauna = (() => {
       x.restore();
     }
     x.save(); body(); x.clip();
-    x.strokeStyle = 'rgba(0,0,0,.07)'; x.lineWidth = wid[4] * .5; x.stroke();   // darker flanks, rounder body
+    x.strokeStyle = 'rgba(0,0,0,.12)'; x.lineWidth = wid[4] * .6; x.stroke();   // darker flanks, rounder body
+    x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = 1.2 * D; x.stroke();       // a crisp edge against the stones
     const sg = x.createLinearGradient(pts[0][0], pts[0][1], pts[N][0], pts[N][1]);
     sg.addColorStop(0, 'rgba(255,255,255,.28)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
     x.strokeStyle = sg; x.lineWidth = wid[4] * .35; x.beginPath(); x.moveTo(pts[1][0], pts[1][1]);
     for (let i = 2; i < N - 2; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke();
+    const sh = (t * .35 + k.ph) % 1.6 - .3, si = Math.max(1, Math.min(N - 3, Math.round(sh * N)));   // light sliding along the scales
+    const g2 = x.createRadialGradient(pts[si][0], pts[si][1], 0, pts[si][0], pts[si][1], wid[si] * 2.2);
+    g2.addColorStop(0, 'rgba(255,255,255,.32)'); g2.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g2; x.fillRect(pts[si][0] - wid[si] * 2.2, pts[si][1] - wid[si] * 2.2, wid[si] * 4.4, wid[si] * 4.4);
     x.restore();
     x.fillStyle = '#111';
     for (const sd of [1, -1]) { x.beginPath(); x.arc(pts[1][0] + nrm[1][0] * sd * wid[1] * .62, pts[1][1] + nrm[1][1] * sd * wid[1] * .62, 1.4 * D, 0, Math.PI * 2); x.fill(); }
@@ -2397,32 +2454,44 @@ const fauna = (() => {
     const main = x, a0 = alphaNow; x = kc.getContext('2d'); x.clearRect(0, 0, W, H); alphaNow = 1; x.globalAlpha = 1;
     KOI.forEach(k => oneKoi(k, t));
     if (cr) {   // the fish swim under the clock: fade them there, feathered, so the digits stay clean
-      x.save(); x.globalCompositeOperation = 'destination-out'; x.filter = `blur(${24 * D}px)`; x.fillStyle = 'rgba(0,0,0,.8)';
+      x.save(); x.globalCompositeOperation = 'destination-out'; x.filter = `blur(${24 * D}px)`; x.fillStyle = 'rgba(0,0,0,.45)';
       x.fillRect((cr.left - 16) * D, (cr.top - 16) * D, (cr.width + 32) * D, (cr.height + 32) * D);
       const dk = !idleUI && $('#dock')?.getBoundingClientRect(); if (dk) x.fillRect((dk.left - 10) * D, (dk.top - 6) * D, (dk.width + 20) * D, (dk.height + 12) * D);
+      const gl = !idleUI && $('.glance .g:not([hidden])') && $('#gPrayer').parentElement.getBoundingClientRect();   // and under the side panel's text
+      if (gl && gl.width) x.fillRect((gl.left + 30) * D, (gl.top + 100) * D, (gl.width - 60) * D, (gl.height - 120) * D);
       x.restore();
     }
     x = main; alphaNow = a0; x.globalAlpha = a0;
     x.drawImage(kc, 0, 0);
   }
 
-  // tide: ghost crabs scuttling about on the dark sand
+  // tide: ghost crabs scuttling sideways on the moonlit sand, then stopping to look about
   function crabs(t) {
     for (let i = 0; i < 2; i++) {
       const P = 7, n = Math.floor((t + i * 3.1) / P), local = (t + i * 3.1) - n * P;
-      const spot = m => [W * (.72 + .12 * i + .1 * hs(m * 3.7 + i)), H * (.935 + .03 * hs(m * 5.3 + i * 2.2))];
-      const a = spot(n), b = spot(n + 1), mv = Math.min(1, local / 1.4), e = mv * mv * (3 - 2 * mv);
-      const px = a[0] + (b[0] - a[0]) * e, py = a[1] + (b[1] - a[1]) * e, moving = mv < 1, s = 6.8 * D;
+      const spot = m => [W * (.74 + .11 * i + .07 * hs(m * 3.7 + i)), H * (.885 + .065 * hs(m * 5.3 + i * 2.2))];
+      const a = spot(n), b = spot(n + 1), mv = Math.min(1, local / 1.2), e = mv * mv * (3 - 2 * mv);
+      const px = a[0] + (b[0] - a[0]) * e, py = a[1] + (b[1] - a[1]) * e, moving = mv < 1, s = (8 + (py / H - .885) * 45) * D;
+      const C = '#a3967f', CD = '#6f6352';   // ghost crabs are pale, the colour of dry sand
       x.save(); x.translate(px, py);
-      x.fillStyle = 'rgba(40,160,220,.12)'; x.beginPath(); x.ellipse(s * .3, s * .5, s * 1.8, s * .6, 0, 0, Math.PI * 2); x.fill();
-      x.fillStyle = x.strokeStyle = '#07090c'; x.lineWidth = 1.1 * D; x.lineCap = 'round';
-      x.shadowColor = 'rgba(40,190,255,.7)'; x.shadowBlur = 4 * D;
-      for (const sd of [1, -1]) for (let l = 0; l < 4; l++) {
-        const j = moving ? Math.sin(t * 30 + l * 1.7 + sd) * .3 : 0, ang = (l - 1.5) * .35 + j;
-        x.beginPath(); x.moveTo(sd * s * .6, ang * s * .5); x.lineTo(sd * s * 1.25, ang * s * 1.2 - s * .2); x.lineTo(sd * s * 1.45, ang * s * 1.5 + s * .35); x.stroke();
+      x.fillStyle = 'rgba(0,0,0,.32)'; x.beginPath(); x.ellipse(s * .8, s * .6, s * 1.7, s * .55, -.12, 0, Math.PI * 2); x.fill();   // moon shadow
+      x.strokeStyle = x.fillStyle = CD; x.lineCap = 'round'; x.lineJoin = 'round';
+      for (const sd of [1, -1]) for (let l = 0; l < 4; l++) {   // four jointed legs a side, splayed for running sideways
+        const j = moving ? Math.sin(t * 34 + l * 1.9 + (sd > 0 ? 0 : 1.6)) * .35 : Math.sin(t * .8 + l) * .04;
+        const ay = (l - 1.5) * .28 * s, kx = sd * s * (1.25 + .1 * l), ky = ay - s * (.32 - j * .6), fx = sd * s * (1.75 + .08 * l), fy = ay + s * (.4 + j * .5);
+        x.lineWidth = (1.6 - l * .15) * D;
+        x.beginPath(); x.moveTo(sd * s * .7, ay * .8); x.lineTo(kx, ky); x.lineTo(fx, fy); x.stroke();
       }
-      x.beginPath(); x.ellipse(0, 0, s * .8, s * .55, 0, 0, Math.PI * 2); x.fill();
-      for (const sd of [1, -1]) { x.beginPath(); x.arc(sd * s * .55, -s * .7, s * .2, 0, Math.PI * 2); x.fill(); }
+      const sg = x.createLinearGradient(0, -s * .7, 0, s * .7); sg.addColorStop(0, C); sg.addColorStop(1, CD);
+      x.fillStyle = sg; x.beginPath(); x.ellipse(0, 0, s * .95, s * .68, 0, 0, Math.PI * 2); x.fill();   // the shell, wide and flat
+      x.fillStyle = CD;
+      for (const sd of [1, -1]) {   // claws held in front, the right one bigger
+        const cs = sd > 0 ? 1 : .75;
+        x.lineWidth = 1.8 * D; x.beginPath(); x.moveTo(sd * s * .45, -s * .45); x.lineTo(sd * s * .8, -s * .9); x.stroke();
+        x.beginPath(); x.ellipse(sd * s * .72, -s * 1.02, s * .3 * cs, s * .2 * cs, sd * .5, 0, Math.PI * 2); x.fill();
+        x.lineWidth = 1.2 * D; x.beginPath(); x.moveTo(sd * s * .22, -s * .55); x.lineTo(sd * s * .3, -s * .95); x.stroke();   // eye stalks
+        x.fillStyle = '#1b1712'; x.beginPath(); x.arc(sd * s * .3, -s * .98, s * .13, 0, Math.PI * 2); x.fill(); x.fillStyle = CD;
+      }
       x.restore();
     }
   }
@@ -2448,7 +2517,15 @@ const fauna = (() => {
   }
 
   return {
-    fx(scene, t) { return scene === 'storm' ? stormFx(t) : null; },
+    fx(scene, t) {
+      if (scene === 'storm') return stormFx(t);
+      if (scene === 'tide') {   // the moon keeps clear of the clock: beside it normally, at the right edge when it fills the screen
+        const goal = app.classList.contains('idle') ? .915 : .735, k = Math.min(1, Math.max(0, t - moonT) * 2.2);
+        moonT = t; moonX += (goal - moonX) * k;
+        return [moonX, .8, 0, 0];
+      }
+      return null;
+    },
     frame(t, dt, page, scene, night, alpha, fx) {
       now = t; alphaNow = alpha; eyeCol = css('--accent') || '#94e2d5';
       x.clearRect(0, 0, W, H); cx.clearRect(0, 0, W, H);
