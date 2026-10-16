@@ -96,7 +96,9 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .flipclock{--ch:min(56vh,46cqw);display:flex;gap:calc(var(--ch)*.05)}
 .flip{position:relative;width:calc(var(--ch)*1.04);height:var(--ch);perspective:calc(var(--ch)*3.5);font:600 calc(var(--ch)*1.04)/1 var(--f-flip);color:#e6e6e6;letter-spacing:-.01em;font-variant-numeric:tabular-nums;--r:calc(var(--ch)*.055)}
 .flip .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;-webkit-backface-visibility:hidden;backface-visibility:hidden}
-.flip .h{background:rgba(16,16,20,.34);-webkit-backdrop-filter:blur(10px) saturate(1.1);backdrop-filter:blur(10px) saturate(1.1)}
+/* clear glass: a faint tint and a whisper of blur, so the scene behind stays sharp; a soft shadow keeps the digits readable */
+.flip .h{background:rgba(16,16,20,.1);-webkit-backdrop-filter:blur(.01px);backdrop-filter:blur(.01px)}
+.flip .h span{text-shadow:0 calc(var(--ch)*.01) calc(var(--ch)*.06) rgba(0,0,0,.35)}
 .flip .ft,.flip .fb{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgb(22,22,26)}
 .flip .up{top:0;border-radius:var(--r) var(--r) 0 0;background:linear-gradient(rgba(255,255,255,.045),rgba(255,255,255,.02));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 1px 0 0 rgba(255,255,255,.04),inset -1px 0 0 rgba(255,255,255,.04)}
 .flip .lo{bottom:0;border-radius:0 0 var(--r) var(--r);background:linear-gradient(rgba(255,255,255,.03),rgba(255,255,255,.015));box-shadow:inset 0 -1px 0 rgba(255,255,255,.04),inset 1px 0 0 rgba(255,255,255,.04),inset -1px 0 0 rgba(255,255,255,.04)}
@@ -112,13 +114,14 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
    their digits, so nothing ever shows two numbers at once. Only transform and opacity animate, so the
    whole flip runs on the compositor and stays smooth while the sky shader keeps the main thread busy. */
 .flip .ft::before,.flip .fb::before,.flip .ft::after,.flip .fb::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;will-change:opacity}
-.flip .ft::before,.flip .fb::before{background:linear-gradient(rgba(40,39,47,.96),rgba(30,30,37,.96))}
+.flip .ft::before,.flip .fb::before{background:linear-gradient(rgba(30,30,37,.4),rgba(24,24,30,.4))}
 .flip .ft::after{background:#000;z-index:1}
 .flip .fb::after{background:#fff;z-index:1}
 .flip{--d:0s;--f1:.3s;--f2:.42s}
 #fH{--d:.07s}
 .flip.go .ft{animation:flipTop var(--f1) var(--d) cubic-bezier(.45,0,.9,.55) both}
 .flip.go .ft::before{animation:backIn var(--f1) var(--d) linear both}
+.flip.go .ft span{animation:digitFall var(--f1) var(--d) linear both}
 .flip.go .ft::after{animation:shadeTop var(--f1) var(--d) cubic-bezier(.45,0,.9,.55) both}
 .flip.go .up:not(.ft) span{animation:digitIn var(--f1) var(--d) linear both}
 .flip.go .fb{animation:flipBot var(--f2) calc(var(--d) + var(--f1)) cubic-bezier(.12,.62,.28,1) both}
@@ -131,10 +134,11 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 @keyframes flipBot{from{transform:rotateX(90deg)}to{transform:rotateX(0)}}
 @keyframes shadeTop{to{opacity:.45}}
 @keyframes shadeBot{from{opacity:.1}to{opacity:0}}
+@keyframes digitFall{0%,30%{opacity:1}100%{opacity:0}}
 @keyframes backIn{0%{opacity:0}30%,100%{opacity:1}}
 @keyframes backOut{0%,40%{opacity:1}85%,100%{opacity:0}}
-@keyframes digitIn{0%,25%{opacity:0}100%{opacity:1}}
-@keyframes digitOut{0%,20%{opacity:1}40%,100%{opacity:0}}
+@keyframes digitIn{0%,55%{opacity:0}100%{opacity:1}}
+@keyframes digitOut{0%,10%{opacity:1}30%,100%{opacity:0}}
 .when{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:clamp(12px,1.5vw,15px);color:var(--sub)}
 .when .hijri{color:var(--sand)}
 .minute{margin-top:8px;max-width:100%}
