@@ -26,9 +26,15 @@
   --f-flip:"Barlow Condensed","Arial Narrow",sans-serif;
   color-scheme:dark;
 }
-:root[data-scene="aurora"]{--accent:var(--green)}
-:root[data-scene="abyss"]{--accent:var(--blue)}
 :root[data-scene="sunrise"]{--accent:var(--warm)}
+:root[data-scene="cloudsea"]{--accent:#f5c2e7}
+:root[data-scene="storm"]{--accent:var(--purple)}
+:root[data-scene="moonlit"]{--accent:#b4befe}
+:root[data-scene="lanterns"]{--accent:var(--sand)}
+:root[data-scene="koi"]{--accent:var(--rose)}
+:root[data-scene="rain"]{--accent:var(--teal)}
+:root[data-scene="tide"]{--accent:#89dceb}
+:root[data-scene="orbit"]{--accent:var(--blue)}
 
 [hidden]{display:none!important}
 html{height:100%}
@@ -90,7 +96,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .flipclock{--ch:min(56vh,46cqw);display:flex;gap:calc(var(--ch)*.05)}
 .flip{position:relative;width:calc(var(--ch)*1.04);height:var(--ch);perspective:calc(var(--ch)*3.5);font:600 calc(var(--ch)*1.04)/1 var(--f-flip);color:#e6e6e6;letter-spacing:-.01em;font-variant-numeric:tabular-nums;--r:calc(var(--ch)*.055)}
 .flip .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;-webkit-backface-visibility:hidden;backface-visibility:hidden}
-.flip .h{background:rgba(30,30,34,.12);-webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(3px)}
+.flip .h{background:rgba(16,16,20,.34);-webkit-backdrop-filter:blur(10px) saturate(1.1);backdrop-filter:blur(10px) saturate(1.1)}
 .flip .ft,.flip .fb{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgb(22,22,26)}
 .flip .up{top:0;border-radius:var(--r) var(--r) 0 0;background:linear-gradient(rgba(255,255,255,.045),rgba(255,255,255,.02));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 1px 0 0 rgba(255,255,255,.04),inset -1px 0 0 rgba(255,255,255,.04)}
 .flip .lo{bottom:0;border-radius:0 0 var(--r) var(--r);background:linear-gradient(rgba(255,255,255,.03),rgba(255,255,255,.015));box-shadow:inset 0 -1px 0 rgba(255,255,255,.04),inset 1px 0 0 rgba(255,255,255,.04),inset -1px 0 0 rgba(255,255,255,.04)}
@@ -110,11 +116,12 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .when .hijri{color:var(--sand)}
 .minute{margin-top:8px;max-width:100%}
 
-.glance{display:flex;flex-direction:column;min-width:0}
+/* a soft scrim keeps the small text readable over the brighter ambients */
+.glance{display:flex;flex-direction:column;min-width:0;background:radial-gradient(closest-side,rgba(0,0,0,.58),rgba(0,0,0,.46) 50%,rgba(0,0,0,.16) 80%,transparent);margin:-40px -48px;padding:40px 48px}
 .g{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:7px 8px;margin:0 -8px;border-bottom:1px solid var(--hair);text-align:left;border-radius:6px;transition:background .2s}
 .g:last-child{border-bottom:0}
 .g:active,.g:hover{background:var(--sel)}
-.g .k{grid-row:1;grid-column:1;font:500 8.5px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.g .k{grid-row:1;grid-column:1;font:500 8.5px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:#8a8a8a}
 .g .r{grid-row:1;grid-column:2;font:400 10px var(--f-num);color:var(--sub);white-space:nowrap;text-align:right}
 .g .v{grid-row:2;grid-column:1 / 3;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .g .bar{grid-row:3;grid-column:1 / 3;margin-top:5px}
@@ -133,10 +140,15 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .sw:active i{transform:scale(.92)}
 .sw.on{color:var(--text)}
 .sw.on i{box-shadow:0 0 0 2px #0c0c0c,0 0 0 3px var(--text)}
-.sw[data-scene="glow"] i{background:radial-gradient(circle at 30% 35%,#89b4fa99,transparent 55%),radial-gradient(circle at 72% 72%,#94e2d599,transparent 55%),#000}
-.sw[data-scene="aurora"] i{background:linear-gradient(180deg,#000 12%,#a6e3a166 45%,#cba6f755 62%,#000 92%)}
-.sw[data-scene="abyss"] i{background:radial-gradient(circle at 50% 30%,#89b4fa55,transparent 60%),linear-gradient(180deg,#0b1a2c,#000)}
-.sw[data-scene="sunrise"] i{background:radial-gradient(circle at 70% 70%,#fab387,transparent 30%),linear-gradient(180deg,#000 15%,#4a1820 62%,#7a3a24 100%)}
+.sw[data-scene="sunrise"] i{background:radial-gradient(circle at 70% 62%,#ffe9c0 0 9%,#fab38799 15%,transparent 34%),linear-gradient(180deg,#14091c 10%,#8c3346 50%,#f39a5a 66%,#3a1418 67%,#120509 100%)}
+.sw[data-scene="cloudsea"] i{background:radial-gradient(circle at 75% 46%,#fff1d6 0 7%,#ffab7a88 16%,transparent 34%),linear-gradient(180deg,#0d1026 8%,#6b4570 40%,#f6a777 52%,#c98a8c 60%,#5e4a78 100%)}
+.sw[data-scene="storm"] i{background:radial-gradient(ellipse 40% 18% at 60% 52%,#9a98e0aa,transparent 70%),linear-gradient(180deg,#0a0c14 8%,#2a2c3c 30%,#1a1c28 50%,#06070c 56%,#0c0e18 70%,#02030a 100%)}
+.sw[data-scene="moonlit"] i{background:radial-gradient(circle at 68% 30%,#f4f2e6 0 13%,#aab4d855 22%,transparent 45%),linear-gradient(180deg,#0a1024,#03050c 85%)}
+.sw[data-scene="lanterns"] i{background:radial-gradient(circle at 30% 34%,#ffc27a 0 5%,transparent 10%),radial-gradient(circle at 64% 22%,#ffb36a 0 4%,transparent 9%),radial-gradient(circle at 58% 52%,#ffd08f 0 6%,#ff8a3d55 14%,transparent 24%),linear-gradient(180deg,#05061a 10%,#2b0f26 64%,#080611 66%,#1a0c16 100%)}
+.sw[data-scene="koi"] i{background:radial-gradient(ellipse 22% 9% at 40% 42%,#f07a4a 60%,transparent 100%),radial-gradient(circle at 72% 70%,#1d4a24 0 16%,transparent 17%),radial-gradient(circle at 50% 50%,#0f3a3c,#02100f)}
+.sw[data-scene="rain"] i{background:radial-gradient(circle at 30% 65%,#ff8a3d88 0 10%,transparent 18%),radial-gradient(circle at 65% 72%,#ff474766 0 8%,transparent 16%),radial-gradient(circle at 58% 40%,#5cc8e055 0 9%,transparent 17%),linear-gradient(180deg,#05060c,#1a1018)}
+.sw[data-scene="tide"] i{background:linear-gradient(155deg,#0f0d0b 40%,#5fe0ff 46%,#0b4a63 50%,#00121e 70%)}
+.sw[data-scene="orbit"] i{background:radial-gradient(circle at 50% 160%,#04070f 58%,#ffd9a0 60%,#4a8cff 62%,#0e1d55 66%,transparent 71%),#000}
 .sw[data-scene="off"] i{background:#000}
 .rowt{display:flex;justify-content:space-between;align-items:center;width:100%;padding:8px 0;border-top:1px solid var(--hair);font-size:13px;text-align:left}
 .switch{width:30px;height:18px;border-radius:9px;background:var(--faint);position:relative;transition:background .2s;flex:none}
@@ -435,10 +447,15 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
   <div class="menu-col">
     <h3>Ambient</h3>
     <div class="swatches">
-      <button class="sw" type="button" data-scene="glow"><i></i>Glow</button>
-      <button class="sw" type="button" data-scene="aurora"><i></i>Aurora</button>
-      <button class="sw" type="button" data-scene="abyss"><i></i>Abyss</button>
       <button class="sw" type="button" data-scene="sunrise"><i></i>Sunrise</button>
+      <button class="sw" type="button" data-scene="cloudsea"><i></i>Cloudsea</button>
+      <button class="sw" type="button" data-scene="storm"><i></i>Storm</button>
+      <button class="sw" type="button" data-scene="moonlit"><i></i>Moonlit</button>
+      <button class="sw" type="button" data-scene="lanterns"><i></i>Lanterns</button>
+      <button class="sw" type="button" data-scene="koi"><i></i>Koi</button>
+      <button class="sw" type="button" data-scene="rain"><i></i>Rain</button>
+      <button class="sw" type="button" data-scene="tide"><i></i>Tide</button>
+      <button class="sw" type="button" data-scene="orbit"><i></i>Orbit</button>
       <button class="sw" type="button" data-scene="off"><i></i>Off</button>
     </div>
     <button class="rowt" type="button" id="animalsBtn" aria-pressed="true">Animals<span class="switch"></span></button>
@@ -532,7 +549,7 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-uniform vec2 u_res;uniform float u_t,u_dim;
+uniform vec2 u_res;uniform float u_t,u_dim;uniform vec4 u_fx;
 float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1.,0.)),u.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),u.x),u.y);}
@@ -544,50 +561,509 @@ vec3 post(vec3 col,vec2 uv){
 }
 `;
 const SCENES = {
-  glow: `void main(){
+  // Desert dawn: layered dunes with lit and shadowed faces under a low sun.
+  // Desert dawn: dune ranges fading into warm haze under a low sun. The far ridge is dune()
+  // with DUNE_FAR, mirrored in JS so the caravan walks on it.
+  sunrise: `
+  float dune(float x,vec4 q){float s=x*q.z*6.2832+q.w*6.2832;
+    return q.x+q.y*(pow(.5+.5*sin(s+.8*sin(s)),1.4)*(.7+.3*sin(s*.37+q.w*3.))+.3*sin(s*.41+q.w*2.));}
+  vec4 layer(int i){if(i==0)return vec4(.30,.04,1.7,.15);if(i==1)return vec4(.215,.07,1.15,.6);if(i==2)return vec4(.12,.085,.8,.35);return vec4(.02,.1,.55,.8);}
+  void main(){
+    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);float y=uv.y;
+    vec3 hzc=vec3(1.,.6,.32);
+    vec3 col=mix(hzc,vec3(.6,.22,.27),smoothstep(.27,.52,y));
+    col=mix(col,vec3(.16,.07,.19),smoothstep(.45,.8,y));
+    col=mix(col,vec3(.02,.02,.06),smoothstep(.75,1.05,y));
+    vec2 sc=vec2(asp*.715,.325);
+    vec2 sp=p;sp.y+=.0025*sin(p.x*90.+u_t*3.)*smoothstep(.42,.3,y);
+    float sd=length(sp-sc);
+    col+=vec3(1.,.5,.22)*exp(-sd*5.)*.5*(1.-.5*smoothstep(.76,.86,uv.x))+vec3(1.,.4,.3)*exp(-sd*1.5)*.16;
+    float disk=smoothstep(.058,.054,sd);
+    col=mix(col,mix(vec3(1.,.97,.85),vec3(1.,.62,.3),pow(sd/.058,2.5))*1.25,disk);
+    col+=vec3(1.,.55,.25)*exp(-abs(sd-.06)*60.)*.25;
+    float n=fbm(vec2(p.x*1.3+u_t*.005,y*11.));
+    float cl=smoothstep(.52,.78,n)*smoothstep(.38,.48,y)*smoothstep(.78,.6,y);
+    vec3 clc=mix(vec3(.38,.13,.22),vec3(1.,.64,.44),exp(-abs(p.x-sc.x)*1.2)*smoothstep(.75,.45,y));
+    col=mix(col,clc,cl*.75);
+    float n2=fbm(vec2(p.x*.9-u_t*.003,y*16.+3.));
+    col=mix(col,mix(vec3(.3,.1,.2),vec3(.95,.5,.45),smoothstep(.85,.6,y)),smoothstep(.6,.82,n2)*smoothstep(.58,.65,y)*smoothstep(.85,.74,y)*.55);
+    float n3=fbm(vec2(p.x*.7+u_t*.002,y*20.+9.));
+    col=mix(col,vec3(.55,.22,.32),smoothstep(.62,.85,n3)*smoothstep(.84,.88,y)*smoothstep(.95,.9,y)*.5);
+    for(int i=0;i<4;i++){float fi=float(i);vec4 q=layer(i);float h=dune(uv.x,q);
+      if(y<h+.002){
+        float dh=(dune(uv.x+.012,q)-dune(uv.x-.012,q))/.024;float dir=clamp((.715-uv.x)*8.,-1.,1.);
+        float lit=smoothstep(-.12,.2,-dh*dir);
+        float dep=clamp((h-y)/(q.y*1.6+.05),0.,1.);
+        vec3 sh=mix(vec3(.4,.15,.19),vec3(.035,.01,.02),fi/3.);
+        vec3 li=mix(vec3(.95,.5,.3),vec3(.42,.16,.08),fi/3.);
+        vec3 dc=mix(sh,li,lit*(1.-dep*.6));
+        dc*=1.-dep*.35;
+        dc+=vec3(1.,.6,.32)*exp(-(h-y)*(110.+fi*40.))*(.3-fi*.05)*(.4+.6*lit);
+        dc+=vec3(1.,.72,.45)*exp(-(h-y)*450.)*(.4-fi*.08);
+        if(i>1){float w=noise(p*vec2(3.,8.))*6.;dc*=1.+.07*sin((h-y)*(160.+fi*60.)+p.x*20.*(fi-1.)+w)*(1.-dep*.5);}
+        dc=mix(dc,hzc*.8,(.45-fi*.15)*(1.-dep*.5));
+        if(i==3)dc=mix(dc,vec3(.03,.01,.015),smoothstep(.0,.05,h-y))+vec3(1.,.55,.3)*exp(-(h-y)*220.)*.35;
+        col=mix(col,dc,smoothstep(h+.002,h-.002,y));}}
+    gl_FragColor=vec4(post(col,uv),1.);
+  }`,
+  // Above a sea of clouds at golden hour: two mountain ranges breaking through, billowed cloud tops lit
+  // from the sun, cirrus overhead.
+  cloudsea: `
+  float rn(float x){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*(1.-abs(noise(vec2(x,1.))*2.-1.));x*=2.1;a*=.5;}return v;}
+  float rn2(float x){float v=0.,a=.5;for(int i=0;i<2;i++){v+=a*pow(1.-abs(noise(vec2(x,1.))*2.-1.),2.);x*=2.1;a*=.5;}return v;}
+  float base(float x,float asp,float hz,float k){
+    return hz-.06+k*(.21*exp(-abs(x-asp*.03)*6.)+.12*exp(-abs(x-asp*.14)*9.)+.1*exp(-abs(x-asp*.69)*7.))+.06*k*rn2(x*3.2+k*9.);}
+  float range(float x,float asp,float hz,float k){return base(x,asp,hz,k)+.012*k*(rn(x*14.+k*3.)-.5);}
+  float worley(vec2 p){vec2 i=floor(p),f=fract(p);float m=8.;
+    for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 b=vec2(float(x),float(y));vec2 o=vec2(hash(i+b),hash(i+b+5.3));m=min(m,length(b+o-f));}
+    return m;}
+  float billow(vec2 w){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*abs(noise(w)*2.-1.);w=w*2.1+vec2(1.3,7.1);a*=.5;}return 1.-v;}
+  float puff(vec2 w){w+=.4*vec2(noise(w*.7),noise(w*.7+9.));
+    float a=pow(clamp(1.-worley(w),0.,1.),1.6),b=pow(clamp(1.-worley(w*2.7+3.),0.,1.),1.6);
+    return max(a*.8,b*.55)*.75+.25*billow(w*2.3);}
+  void main(){
+    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);float y=uv.y;
+    float hz=.45;
+    vec3 col=mix(vec3(1.,.68,.42),vec3(.45,.28,.46),smoothstep(hz,hz+.24,y));
+    col=mix(col,vec3(.05,.06,.16),smoothstep(hz+.18,1.,y));
+    vec2 sc=vec2(asp*.71,hz+.05);float sd=length(p-sc);
+    float fade=1.-.55*smoothstep(.76,.86,uv.x);
+    col+=(vec3(1.,.55,.28)*exp(-sd*6.)*.65+vec3(1.,.5,.4)*exp(-sd*1.6)*.2)*fade;
+    col=mix(col,mix(vec3(1.,.96,.82),vec3(1.,.7,.4),pow(sd/.032,2.))*1.3,smoothstep(.033,.029,sd)*smoothstep(hz-.01,hz+.01,p.y-.0));
+    float ci=fbm(vec2(p.x*1.2-u_t*.004+y*.8,y*8.));
+    col+=mix(vec3(.9,.5,.6),vec3(1.,.75,.5),exp(-abs(p.x-sc.x)))*smoothstep(.5,.8,ci)*smoothstep(hz+.1,hz+.28,y)*smoothstep(.98,.72,y)*.4;
+    float mf=range(p.x+3.1,asp,hz,.55);
+    col=mix(col,col*.83+vec3(.02,0.,.04),smoothstep(mf+.002,mf-.002,y));
+    float m=range(p.x,asp,hz,1.);
+    if(y<m+.003){
+      float dm=(base(p.x+.04,asp,hz,1.)-base(p.x-.04,asp,hz,1.))/.08;
+      float lit=smoothstep(.25,-.45,dm+.15*(noise(vec2(p.x*6.,y*3.))-.5));
+      float gul=noise(vec2(p.x*28.+y*6.,y*5.));lit*=mix(1.,.6+.6*gul,smoothstep(hz-.02,hz+.07,y));
+      float snow=smoothstep(hz+.05,hz+.09,y+.035*noise(vec2(p.x*45.,y*7.)))*smoothstep(.25,.5,gul+.2);
+      vec3 rock=mix(vec3(.11,.07,.13),vec3(.5,.3,.34),lit);
+      rock+=vec3(1.,.6,.35)*exp(-(m-y)*60.)*.5*exp(-abs(p.x-sc.x)*3.);
+      vec3 sn=mix(vec3(.38,.38,.6),vec3(1.,.82,.66),lit);
+      vec3 mc=mix(rock,sn,snow*(.6+.4*lit));
+      mc+=vec3(1.,.62,.4)*exp(-(m-y)*90.)*.3*lit;
+      mc=mix(mc,vec3(.75,.5,.5),smoothstep(hz+.05,hz-.04,y)*.55);
+      col=mix(col,mix(mc,col,.16),smoothstep(m+.002,m-.002,y));
+    }
+    float wisp=smoothstep(.5,.8,fbm(vec2(p.x*3.-u_t*.012,y*14.)))*smoothstep(hz+.07,hz+.005,y)*smoothstep(hz-.02,hz+.01,y);
+    col=mix(col,vec3(1.,.78,.62),wisp*.55);
+    float edge=hz+.02*billow(vec2(p.x*5.+u_t*.01,2.))-.012;
+    if(y<edge+.01){
+      float d=max(edge-y,0.)+.004;float z=1./d;
+      vec2 w=vec2((p.x-asp*.5)*z,z*.6)*1.1+vec2(u_t*.01,u_t*.02);
+      float fz=smoothstep(.0,.06,d);
+      vec2 cw=w*.8;
+      float n=mix(.5,puff(cw),fz),n2=mix(.5,puff(cw+vec2(.09,.06)),fz);
+      float near=smoothstep(.15,.4,d);n=mix(n,.5+.5*(n-.5),near*.5);n2=mix(n2,.5+.5*(n2-.5),near*.5);
+      float sh=clamp((n-n2)*6.+.55,0.,1.);
+      vec3 cc=mix(vec3(.09,.06,.18),vec3(.5,.34,.5),smoothstep(.05,.55,n));
+      cc=mix(cc,vec3(1.,.76,.56),sh*smoothstep(.3,.8,n)*.85);
+      cc*=1.-.18*smoothstep(.4,.0,d)*(1.-sh);
+      cc+=vec3(1.,.66,.4)*exp(-abs(p.x-sc.x)*4.)*exp(-d*6.)*.8*n*fade;
+      cc=mix(cc,vec3(1.,.74,.55),exp(-d*12.)*.75+exp(-d*45.)*.25);
+      cc*=1.-.4*smoothstep(.3,.05,y)*smoothstep(asp*.75,asp*.2,p.x);
+      cc*=1.-.35*smoothstep(.3,.2,y);
+      col=mix(col,cc,smoothstep(edge+.006,edge-.004,y));
+    }
+    gl_FragColor=vec4(post(col,uv),1.);
+  }`,
+  // A squall line over a night sea: a heavy cloud deck with mammatus underneath, lit from inside by
+  // lightning and from below by a harbour town; the sea mirrors every flash. u_fx = (flash, x, y, bolt).
+  storm: `void main(){
+    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);float y=uv.y;
+    float F=u_fx.x;vec2 lc=vec2(u_fx.y*asp,u_fx.z);
+    float hz=.2;
+    float fk=floor(u_t*6.);float fl=step(.7,hash(vec2(fk,3.)))*(.25+.4*hash(vec2(fk,5.)));
+    vec2 fc=vec2((.3+.6*hash(vec2(fk,7.)))*asp,.6+.25*hash(vec2(fk,9.)));
+    vec3 col=mix(vec3(.05,.06,.09),vec3(.006,.008,.02),smoothstep(hz,1.,y));
+    if(y>hz){
+      vec2 g=p*170.;float sh=hash(floor(g));
+      col+=vec3(.75,.8,1.)*step(.988,sh)*smoothstep(.2,0.,length(fract(g)-.5))*(.5+.5*sin(u_t*1.7+sh*60.));
+      float clear=smoothstep(.0,.25,length((p-vec2(asp*.1,.95))*vec2(.55,1.))-.2);
+      for(int i=0;i<2;i++){float fi=float(i);
+        vec2 q=vec2(p.x*(.7+fi*.4)-u_t*(.006+fi*.006)+fi*7.,y*(2.6+fi*1.2));
+        q+=vec2(fbm(q*.7+u_t*.01),fbm(q*.7+3.))*.7;
+        float n=fbm(q);
+        float base=.43+.03*fi+.02*sin(p.x*9.+fi*2.)*sin(p.x*4.3+u_t*.05);
+        float mam=smoothstep(.06,.0,y-base)*(.5+.5*sin(p.x*48.+fi)*sin(y*60.));   // mammatus pouches under the base
+        float c=smoothstep(.3,.55,n+.25*smoothstep(base+.25,base,y))*smoothstep(base-.035,base+.03,y+mam*.02)*clear;
+        float under=smoothstep(base+.2,base,y);
+        float ridge=clamp((n-fbm(q+vec2(.05,-.08)))*6.+.5,0.,1.);
+        vec3 cc=mix(vec3(.012,.014,.022),vec3(.2,.21,.28),smoothstep(.3,.8,n)*(.35+.9*ridge));
+        float tw=smoothstep(.7,0.,abs(p.x-asp*.72));
+        cc+=vec3(.5,.28,.14)*(under*.2+mam*.5)*tw;
+        float L=F*exp(-length((p-lc)*vec2(.8,1.4))*2.2)+fl*exp(-length((p-fc)*vec2(.8,1.4))*3.5);
+        L*=1.-.55*smoothstep(.74,.8,uv.x)-.35*smoothstep(.2,.0,abs(uv.x-.38)-.27)*smoothstep(.3,.4,y);
+        cc+=vec3(.7,.75,1.)*L*(.35+1.8*n*n)*(.6+.8*under)*(.7+.5*ridge);
+        cc*=1.-fi*.35;
+        col=mix(col,cc,c*(fi<.5?.95:.9));
+      }
+      col+=vec3(.45,.5,.75)*F*.04;
+      float cur=smoothstep(.3,.0,abs(p.x-asp*.62-.1*sin(y*3.+u_t*.15)))*(.35+.65*fbm(vec2(p.x*3.-u_t*.05,y*.5)))+.6*smoothstep(.25,.0,abs(p.x-asp*1.)-.05);
+      cur*=smoothstep(.45,.33,y);
+      float rx=p.x*320.+y*70.;float r=hash(vec2(floor(rx),0.));
+      float ph=fract(y*4.+u_t*3.2+r*13.);
+      float rain=step(.6,r)*smoothstep(.0,.3,ph)*smoothstep(.45,.3,ph)*smoothstep(.5,.0,abs(fract(rx)-.5));
+      col+=vec3(.42,.47,.65)*rain*cur*(.14+.8*F)+vec3(.15,.17,.25)*cur*(.1+.3*F);
+      float town=smoothstep(.5,0.,abs(p.x-asp*.72));
+      col+=vec3(.6,.35,.15)*town*.16*exp(-(y-hz)*30.);
+      vec2 tg=vec2(p.x*120.,0.);float th=hash(floor(tg));
+      float tall=step(.95,th)*.012;
+      if(y<hz+.012+tall){col=mix(col,vec3(.01,.012,.02),.9);col+=vec3(1.,.68,.32)*step(.75,th)*smoothstep(.3,.08,length(vec2(fract(tg.x)-.5,(y-hz-.005-tall)*120.)))*town;}
+    }else{
+      float d=hz-y;
+      float rx=p.x+.004*sin(d*200.-u_t*1.2);
+      col=vec3(.006,.008,.014)+vec3(.02,.025,.04)*exp(-d*10.);
+      float wv=.5+.5*sin(d*300./(.2+d*3.)+noise(vec2(p.x*12.,d*40.))*4.-u_t*.8);
+      col+=vec3(.5,.55,.8)*F*.35*exp(-abs(rx-lc.x)*2.5)*exp(-d*6.)*wv;
+      vec2 tg=vec2(p.x*120.,0.);float th=hash(floor(tg));float town=smoothstep(.5,0.,abs(p.x-asp*.72));
+      col+=vec3(1.,.6,.28)*step(.75,th)*smoothstep(.35,.1,abs(fract(tg.x)-.5))*town*exp(-d*12.)*(.3+.7*smoothstep(.3,.7,noise(vec2(p.x*60.,d*140.-u_t*.6))))*.5;
+    }
+    gl_FragColor=vec4(post(col,uv),1.);
+  }`,
+  // A big full moon with a halo; dark front clouds race past moonlit back clouds with silver
+  // linings, over three rows of pines.
+  moonlit: `
+  float cl(vec2 p,float fi){vec2 cq=vec2(p.x*(1.3+fi*.5)+u_t*(.008+fi*.014)+fi*9.,p.y*(2.4+fi)+fi*3.);
+    return fbm(cq+.45*vec2(fbm(cq*1.7),0.));}
+  void main(){
+    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);float y=uv.y;
+    vec2 mc=vec2(asp*.7,.8);float R=.075;float md=length(p-mc);
+    vec3 col=mix(vec3(.035,.05,.1),vec3(.006,.01,.028),y);
+    vec2 g=p*150.;vec2 id=floor(g);float h=hash(id);float sz=pow(hash(id+3.),6.);
+    float st=step(.982,h)*smoothstep(.12+.2*sz,0.,length(fract(g)-.5))*(.35+.65*sz)*(.6+.4*sin(u_t*(1.+h*3.)+h*60.));
+    col+=vec3(.8,.85,1.)*st*smoothstep(.2,.4,md);
+    col+=vec3(.35,.45,.8)*exp(-md*3.)*.3+vec3(.75,.8,.95)*exp(-md*14.)*.6;
+    col+=vec3(.6,.65,.85)*exp(-pow((md-.24)*45.,2.))*.06;
+    vec2 mq=(p-mc)/R;float mz=sqrt(max(0.,1.-dot(mq,mq)));
+    vec3 moon=vec3(1.,.98,.92)*(.72+.38*pow(mz,.5));
+    moon=vec3(.93,.94,.96)*(.75+.33*pow(mz,.45));
+    float mar=fbm(mq*1.3+vec2(4.2,1.7))+.25*smoothstep(.9,.0,length(mq-vec2(-.25,.25)));
+    moon*=1.-.1*smoothstep(.55,.72,mar)-.04*fbm(mq*7.);
+    moon=max(moon,vec3(.8,.82,.86)*(.8+.2*mz));
+    float disk=smoothstep(1.,.96,length(mq));
+    col=mix(col,moon*1.45,disk);
+    vec2 tm=normalize(mc-p+1e-4)*.03;
+    float wisp=smoothstep(.55,.8,fbm(vec2(p.x*1.6+u_t*.006,y*5.)+7.))*smoothstep(.75,.0,uv.x)*smoothstep(.35,.6,y);
+    col+=vec3(.12,.14,.22)*wisp*.5;
+    for(int i=0;i<2;i++){float fi=float(i);
+      float n=cl(p,fi),nt=cl(p+tm,fi);
+      float c=smoothstep(.45+fi*.03,.65+fi*.03,n)*(1.-fi*.0);
+      float lit=exp(-md*(2.2-fi*.9));
+      float edge=clamp((n-nt)*9.,0.,1.);
+      vec3 cc=fi<.5?mix(vec3(.07,.085,.14),vec3(.16,.18,.27),n)*(.5+.8*lit):vec3(.035,.045,.085);
+      cc+=vec3(.75,.8,.95)*.35*exp(-md*6.);
+      float band=smoothstep(.0,.25,c)*smoothstep(.85,.45,c);
+      cc+=vec3(.81,.85,1.)*exp(-md*3.)*(edge*4.*band+.1)*(1.-fi*.5);
+      float op=c*(fi<.5?.92:.97);op=min(op,mix(op,.35,disk));
+      col=mix(col,cc,op);
+    }
+    for(int i=0;i<3;i++){float fi=float(i);
+      float fr=10.+fi*7.;float cx=p.x*fr+fi*.37;float ci=floor(cx);float th=hash(vec2(ci,4.+fi));
+      float tl=.1-fi*.035+.035*fbm(vec2(p.x*2.,fi));
+      float rel=abs(fract(cx)-.5-(hash(vec2(ci,8.+fi))-.5)*.3)/fr;
+      float gap=step(.25,fbm(vec2(p.x*1.5,fi*5.)));
+      float ht=(.04+.09*th*th)*(.7+fi*.35)*(.65+.7*fbm(vec2(p.x*.8,fi*3.)))*step(.15,hash(vec2(ci,6.+fi)))*gap;float ty=(y-tl)/max(ht,1e-3);
+      float tier=fract(ty*5.);float wdt=ht*.36*(1.-ty)*(.55+.45*tier)+.0015*noise(vec2(p.x*400.,y*400.));
+      float face=step(0.,(fract(cx)-.5)*sign(mc.x-p.x));
+      if(y<tl||(ty<1.&&ty>0.&&rel<wdt))col=mix(vec3(.03,.04,.07)+vec3(.05,.06,.1)*exp(-md*1.2)+vec3(.08,.09,.12)*face*smoothstep(.6,1.,rel/max(wdt,1e-4))*step(tl,y)*(1.-fi*.6),vec3(0.),fi/2.);
+    }
+    for(int i=0;i<3;i++){float fi=float(i);   // two tall pines on the left, a smaller one on the right
+      float tx=i==0?.035:i==1?.105:.965;float th2=i==0?.4:i==1?.31:.27;
+      float ty=(y-.02)/th2;float rel=abs(uv.x-tx)*asp;float tier=fract(ty*6.+.3*fi);
+      float wdt=th2*.3*(1.-ty)*(.5+.5*tier)+.002*noise(vec2(p.x*300.,y*300.));
+      if(ty>0.&&ty<1.&&rel<wdt)col=vec3(0.);
+    }
+    gl_FragColor=vec4(post(col,uv),1.);
+  }`,
+  // Sky lanterns rising over a domed waterfront: a haze of distant ones over the city, a few
+  // near ones glowing paper shells, all mirrored and streaked in the water.
+  lanterns: `
+  float dome(float f,float w,float h){float dx=(f-.5)/w;return dx*dx<1.?h*sqrt(1.-dx*dx)+h*.35*max(0.,1.-abs(dx)*6.):-1.;}
+  float skyline(float x,float lay){float sc=lay>.5?44.:26.;float c=floor(x*sc),f=fract(x*sc);float h=hash(vec2(c,1.+lay)),hd=hash(vec2(c,2.+lay));
+    float b=(.01+.028*h*h)*(lay>.5?.7:1.);
+    if(hd>.68)b=max(b,b+dome(f,.42,.022));
+    if(hd<.14){float m=abs(f-.5),mh=.06+.03*h;   // minaret: a shaft, a spire, a crescent-tipped finial
+      if(m<.14)b=max(b,mh+.022*(1.-m/.14));if(m<.03)b=max(b,mh+.034);}
+    return b;}
+  vec3 lant(vec2 p,float y,float hz,float far){vec3 c=vec3(0.);
+    for(int i=0;i<4;i++){float fi=float(i);float sc=i==0?16.:i==1?8.:i==2?4.6:2.6;
+      float sp=.008+fi*.008;
+      vec2 g=vec2(p.x*sc+fi*3.7,(y-hz)*sc-u_t*sp*sc);
+      vec2 id=floor(g);vec2 f=fract(g)-.5;float h=hash(id+fi*13.1);
+      float clu=fbm(vec2(p.x*1.4-u_t*.004,(y-hz)*1.2-u_t*.01)+fi*3.)-.5;
+      if(h<(i==0?.25-.2*smoothstep(.2,.0,y-hz):i==1?.5:i==2?.72:.86)-clu*.6+.15*smoothstep(.6,.95,y))continue;
+      vec2 o=(vec2(hash(id+3.1),hash(id+7.7))-.5)*(i==0?.55:i==1?.4:.2);o.x+=(i>1?.03:.06)*sin(u_t*.5+h*30.);
+      vec2 d=f-o;float sz=(.08+.04*hash(id+5.))*(i==0?.5+hash(id+6.):1.);
+      float fl=.82+.18*sin(u_t*7.+h*50.)*sin(u_t*2.7+h*20.);
+      float glow=exp(-length(d)/sz*(i>1?2.:1.3));
+      vec3 gc=vec3(1.,.5,.17);
+      if(i==0){c+=gc*exp(-length(d)/sz*2.6)*(.25+.8*hash(id+2.))*fl;continue;}
+      float w=sz*(.62+.22*clamp(d.y/sz,-1.,1.));
+      float blur=.006+(fi-1.)*.018;
+      float rr=sz*.12*step(0.,d.y);vec2 bq=vec2(abs(d.x)-w+rr,abs(d.y)-sz+rr);
+      float body=smoothstep(blur,-blur,length(max(bq,0.))+min(max(bq.x,bq.y),0.)-rr);
+      float v=clamp(.5-d.y/(2.*sz),0.,1.);
+      vec3 shell=mix(vec3(.75,.24,.06),vec3(1.,.78,.42),pow(v,1.6));
+      shell*=1.-.25*smoothstep(.0,.5,abs(fract(d.x/w*1.5+.5)-.5)*2.-.85+.85)*0.;
+      float rib=smoothstep(.08,.0,abs(abs(d.x/w)-.45))*.25*(1.-v);
+      shell*=1.-rib;
+      float flame=exp(-length((d-vec2(0.,-sz*.7))*vec2(1.3,1.8))/sz*7.)*smoothstep(-sz,-sz*.85,d.y);
+      c+=(shell*body*(1.2-fi*.15)+vec3(1.,.95,.75)*flame*1.8*body+gc*glow*.38)*fl*(.45+.25*fi);}
+    return c*smoothstep(0.,.05,y-hz)*smoothstep(1.08,.65,y)*far;}
+  vec3 skyc(float y,float hz){vec3 s=mix(vec3(.3,.11,.15),vec3(.12,.05,.16),smoothstep(hz,.45,y));s=mix(s,vec3(.035,.025,.08),smoothstep(.4,.85,y));return mix(s,vec3(.008,.01,.03),smoothstep(.85,1.1,y));}
+  void main(){
+    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);float y=uv.y;
+    float hz=.25;vec3 col;
+    float far=1.-.45*smoothstep(.75,.82,uv.x);
+    far*=1.-.3*smoothstep(.35,.0,abs(uv.x-.38)/.27-.75)*smoothstep(.2,.35,y)*smoothstep(.9,.8,y);
+    if(y>hz){
+      col=skyc(y,hz)+lant(p,y,hz,far);
+      col+=vec3(1.,.5,.2)*exp(-(y-hz)*12.)*.26*(.5+fbm(vec2(p.x*6.-u_t*.02,y*10.)))*far;
+      vec2 g=p*150.;float sh=hash(floor(g));col+=vec3(.75,.75,.85)*step(.99,sh)*smoothstep(.16,0.,length(fract(g)-.5))*smoothstep(.45,.75,y)*(.5+.5*sin(u_t*2.+sh*40.));
+      float s2=skyline(p.x+1.7,1.);if(y<hz+s2)col=mix(col,vec3(.13,.06,.12),.85);
+      float s=skyline(p.x,0.);
+      if(y<hz+s){col=vec3(.016,.011,.024);
+        vec2 wg=vec2(p.x*170.,(y-hz)*170.);col+=vec3(1.,.7,.35)*step(.88,hash(floor(wg)))*smoothstep(.3,.1,abs(fract(wg.x)-.5))*smoothstep(.35,.15,abs(fract(wg.y)-.5))*.45;}
+    }else{
+      float d=hz-y;
+      float rx=p.x+(.0018*sin(d*260.-u_t*1.5)+.0012*sin(d*410.+u_t*1.1+p.x*30.)+.0008*sin(d*700.-u_t*2.))*(.6+d*5.);
+      float ry=hz+.05+d*.55;
+      vec3 r=skyc(ry,hz)+lant(vec2(rx,0.),ry,hz,far)*1.2+vec3(1.,.5,.2)*exp(-d*12.)*.26*(.5+fbm(vec2(rx*6.,d*30.)));
+      if(d<skyline(rx,0.))r=vec3(.016,.011,.024);
+      col=r*.5*(1.-d*1.2)+vec3(0.,.006,.014);
+      col*=.8+.4*noise(vec2(p.x*3.,d*160.-u_t*.4));
+      col+=vec3(1.,.6,.3)*exp(-d*120.)*.18;
+      col+=vec3(1.,.6,.25)*exp(-d*35.)*.22*smoothstep(.55,.85,noise(vec2(p.x*90.,d*500.-u_t*.8)));
+    }
+    gl_FragColor=vec4(post(col,uv),1.);
+  }`,
+  // A koi pond seen from above: depth gradient, a caustic net, pebbles, veined lily pads with a
+  // lotus. The koi are in the fauna layer.
+  koi: `
+  float voro(vec2 p){vec2 i=floor(p),f=fract(p);float m1=8.,m2=8.;
+    for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 b=vec2(float(x),float(y));vec2 o=vec2(hash(i+b),hash(i+b+7.));
+      o=.5+.45*sin(u_t*.5+6.28*o);float d=length(b+o-f);if(d<m1){m2=m1;m1=d;}else if(d<m2)m2=d;}
+    return m2-m1;}
+  void main(){
     vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);
+    float depth=.55+.45*smoothstep(1.3,.2,length((p-vec2(asp*.5,.5))*vec2(.6,1.)));
+    vec3 col=mix(vec3(.03,.12,.11),vec3(.006,.045,.05),depth)*(.85+.3*fbm(p*2.));
+    col+=vec3(.03,.05,.04)*smoothstep(.45,.75,fbm(p*9.))*(1.-depth*.6);
+    vec2 cq=p*3.2+vec2(fbm(p*1.5+u_t*.03),fbm(p*1.5+4.))*.8;float cz=0.;   // soft caustic webs
+    for(int i=0;i<3;i++){cq+=vec2(sin(cq.y*1.3+u_t*.35),cos(cq.x*1.1-u_t*.3))*.55;cz+=.5/(abs(sin(cq.x+cq.y))+.35);}
+    float calm=smoothstep(.4,.65,fbm(p*.9+u_t*.01));
+    col+=vec3(.35,.7,.6)*pow(cz/3.8,3.)*.16*(1.-depth*.5)*(.3+.7*calm);
+    float refl=exp(-pow((p.x-asp*(.2+.6*fract(u_t*.004))-p.y*.4)*2.5,2.))*.05*(.6+.4*fbm(p*vec2(3.,12.)+u_t*.05));
+    col+=vec3(.6,.75,.8)*refl*2.4;
+    col+=vec3(.2,.35,.3)*.06*smoothstep(.4,.8,fbm(p*vec2(1.5,.6)+u_t*.02));
+    for(int i=0;i<6;i++){float fi=float(i);
+      vec2 c0=i==0?vec2(asp*.06,.13):i==1?vec2(asp*.11,.07):i==2?vec2(asp*.96,.16):i==3?vec2(asp*.02,.86):i==4?vec2(asp*.89,.07):vec2(asp*.71,.05);
+      c0+=.015*vec2(sin(u_t*.05+fi),cos(u_t*.04+fi*2.));
+      float r=.04+.045*hash(vec2(fi,3.));
+      vec2 d=p-c0;float a=atan(d.y,d.x)+u_t*.008*(fi-3.)+fi*1.7;float l=length(d);
+      r*=1.+.05*sin(a*3.+fi)+.03*sin(a*7.+fi*2.);
+      float cut=1.-smoothstep(.97,.99,cos(a))*step(l,r*1.05);
+      float shd=smoothstep(r,r-.015,length(d-vec2(.01,-.013)));col*=1.-shd*.6;
+      float pad=smoothstep(r,r-.003,l)*cut;
+      float vein=smoothstep(.06,.0,abs(fract(a*2.55)-.5))*.5+smoothstep(.04,.0,abs(fract(l/r*3.)-.5))*.15;
+      vec3 pc=mix(vec3(.05,.16,.07),vec3(.11,.27,.1)+vec3(.05,.02,0.)*hash(vec2(fi,9.)),smoothstep(0.,r,l)*.6+.25*fbm(d*40.));
+      pc*=1.-.12*smoothstep(r*.5,r,l);pc+=vec3(.08,.13,.05)*vein;
+      float curl=smoothstep(r-.012,r-.002,l)*smoothstep(.2,.9,sin(a*1.5+fi));pc+=vec3(.18,.3,.12)*curl*.7;pc+=vec3(.15,.3,.12)*smoothstep(r-.006,r-.002,l)*.6;
+      col=mix(col,pc,pad);
+      if(i==1){vec2 lc=c0+vec2(r*.25,r*.1);vec2 ld=p-lc;float la=atan(ld.y,ld.x);float lr=length(ld);
+        for(int k=0;k<3;k++){float fk=float(k);float pr=(.032-fk*.009)*(.55+.45*pow(abs(cos(la*4.+fk*.8)),.6));
+          vec3 pk=mix(vec3(.9,.45,.6),vec3(1.,.88,.92),fk/2.)*(.75+.25*smoothstep(0.,pr,lr));
+          col=mix(col,pk,smoothstep(pr,pr-.003,lr));}
+        col=mix(col,vec3(1.,.82,.3),smoothstep(.006,.004,lr));}
+    }
+    gl_FragColor=vec4(post(col,uv),1.);
+  }`,
+  // A city at night through a fogged, rainy window: big soft bokeh (street lights, tail lights),
+  // beaded drops that refract the city upside down, and drops that slide in stops and starts.
+  rain: `
+  vec3 bokeh(vec2 p,float y){
+    vec3 c=mix(vec3(.11,.06,.05),vec3(.01,.016,.04),smoothstep(0.,.7,y));
+    for(int i=0;i<3;i++){float fi=float(i);float sc=1.6+fi*1.6;
+      vec2 g=p*sc+vec2(fi*7.3+u_t*.006*(fi+1.),fi*2.1);
+      vec2 id=floor(g);vec2 f=fract(g)-.5;float h=hash(id+fi*5.);
+      vec2 o=(vec2(hash(id+1.3),hash(id+2.9))-.5)*.3;float r=(.08+.3*pow(hash(id+4.4),2.5))/(1.+step(fi,.5)*1.2);
+      float d=length(f-o);
+      float disc=smoothstep(r,r*.85,d)*(1.-.35*d/r)+.12*smoothstep(r*.8,r,d)*smoothstep(r,r*.9,d);
+      vec3 pc=h<.35?vec3(1.,.6,.22):h<.6?vec3(1.,.85,.6):h<.8?vec3(1.,.72,.45):vec3(.95,.4,.7);
+      float hb=hash(id+9.1);float br=(hb>.86?1.45:pow(hb,3.)*.7)*(.6+.4*sin(u_t*.4+h*30.));
+      if(hb>.86)pc=mix(pc,vec3(1.,.72,.35),.6);
+      c+=pc*disc*br*smoothstep(1.,.3,y)*(.8-fi*.15);}
+    c+=vec3(.2,.32,.45)*.1*exp(-y*6.);
+    float fl=1.-.6*step(.985,fract(u_t*.13))*step(.5,fract(u_t*9.));   // neon tubes, top left, out of focus
+    vec2 ta=p-vec2(.1,.6);float t1=length(ta-vec2(0.,clamp(ta.y,0.,.17)));
+    vec2 tb=p-vec2(.15,.72);float t2=length(tb-vec2(0.,clamp(tb.y,-.12,0.)));
+    float nb=min(t1,t2);
+    c+=vec3(1.,.25,.6)*(smoothstep(.014,.0,nb)*.22+exp(-nb*30.)*.2+exp(-nb*9.)*.05)*fl;
+    vec2 tc=p-vec2(.06,.53);float nb2=length(tc-vec2(clamp(tc.x,0.,.15),0.));
+    c+=vec3(.2,.9,.9)*(smoothstep(.01,.0,nb2)*.18+exp(-nb2*32.)*.14+exp(-nb2*10.)*.04);
+    c+=vec3(.16,.23,.29)*.5*smoothstep(.32,.0,y);
+    for(int k=0;k<3;k++){float fk=float(k);vec2 lp=vec2((.15+.35*fk)*2.2+.04*sin(u_t*.03+fk),.55+.12*sin(fk*2.3));
+      float ld=length(p-lp);c+=vec3(1.,.7,.35)*exp(-ld*9.)*.07;}
+    for(int k=0;k<4;k++){float fk=float(k);vec2 gp=vec2((.12+.25*fk+.05*sin(fk*3.1))*2.2+.03*sin(u_t*.02+fk),.4+.12*sin(fk*1.7+.5));
+      c+=vec3(1.,.62,.28)*exp(-length(p-gp)*5.5)*.1;}
+    for(int l=0;l<3;l++){float fl=float(l);float ty=.16-fl*.03;float sc=4.+fl*3.;
+      float dir=l==1?-1.:1.;vec2 tg=vec2((p.x+u_t*(.05+fl*.02)*dir)*sc,0.);float tc=floor(tg.x);float tf=fract(tg.x);
+      float hc=hash(vec2(tc,3.+fl));float car=step(.5,hc)*step(.3,fbm(vec2(tc*.3,fl)));float sz=(.007+fl*.004)*(.8+.4*hash(vec2(tc,5.)));
+      float jy=(hash(vec2(tc,8.))-.5)*.008;float dim=.45+.3*fl;
+      vec3 lc=l==1?vec3(1.,.85,.6):vec3(1.,.13,.08);
+      for(int k=0;k<2;k++){float lx=.5+(float(k)-.5)*(.18+.1*hash(vec2(tc,7.)));float dd=length(vec2((tf-lx)/sc,y-ty-jy));
+        c+=lc*car*dim*(smoothstep(sz,sz*.5,dd)*.5+exp(-dd/sz*1.6)*.18);}
+      c+=lc*.6*exp(-abs(y-ty+.015)*60.)*.05;}
+    c*=1.-.3*smoothstep(.05,.0,abs(p.x/2.2-.5)-.19)*smoothstep(.2,.12,y);
+    return c;}
+  vec4 drop(vec2 p,float sc,float dens,float sd){vec2 g=p*sc;vec2 id=floor(g);vec2 f=fract(g)-.5;float h=hash(id+sd);
+    vec2 o=(vec2(h,hash(id+3.3+sd))-.5)*.5;float r=.1+.16*pow(hash(id+5.1+sd),2.);
+    float life=fract(u_t*.025+h*7.);float a=smoothstep(0.,.04,life)*smoothstep(1.,.8,life)*step(1.-dens,hash(id+8.+sd));
+    vec2 d=(f-o)/r;d.y*=1.1;float l=length(d);float m=smoothstep(1.,.8,l)*a;
+    return vec4(d,m,l);}
+  void main(){
+    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);
+    float cut=1.-.6*smoothstep(.76,.82,uv.x)-.5*smoothstep(.88,.93,uv.y);
+    vec4 a=drop(p,7.,.3*cut,0.),b=drop(p,26.,.35*cut,11.);
+    float trail=0.,sm=0.;vec2 so=vec2(0.);
+    for(int i=0;i<2;i++){float fi=float(i);float cw=3.5+fi*2.;float cid=floor(p.x*cw);float ch=hash(vec2(cid,9.+fi));
+      float tt=u_t*(.09+.05*ch)+ch*5.;float yd=1.2-(floor(tt)+smoothstep(.0,.35,fract(tt)))*.17;yd=1.2-mod(1.2-yd,1.6);
+      float xd=(cid+.5+.35*(ch-.5))/cw+.006*sin(yd*40.+ch*9.);
+      vec2 dd=vec2(p.x-xd,p.y-yd)/.03;float ls=length(dd*vec2(1.,.85));float s2=smoothstep(1.,.8,ls)*step(.2,ch)*cut;
+      so+=dd*s2;sm=max(sm,s2);
+      float wx=abs(p.x-xd-.004*sin((p.y-yd)*60.+ch*7.));
+      float tr=step(0.,p.y-yd)*smoothstep(.35,0.,p.y-yd)*smoothstep(.012*(1.-.5*(p.y-yd)/.35),.002,wx)*step(.45,ch)*cut;trail=max(trail,tr);
+      float bead=smoothstep(.35,.1,length(vec2((p.x-xd)/.006,fract((p.y-yd)*28.)-.5)))*tr*step(.5,hash(vec2(floor((p.y-yd)*28.),cid)));
+      sm=max(sm,bead*.8);}
+    vec3 bg=bokeh(p,uv.y);
+    vec3 fog=bg*.55+vec3(.05,.055,.07);
+    vec3 col=mix(fog,bg*1.5+vec3(.04,.045,.06),trail*.9);
+    vec2 n1=a.xy*a.z,n2=b.xy*b.z;
+    float m=max(max(a.z,b.z),sm);
+    vec2 off=(a.z>b.z?a.xy:b.xy);if(sm>m*.99)off=so;
+    vec3 inner=bokeh(p-off*.09,uv.y+off.y*.12)*1.5+vec3(.02,.025,.035);
+    col=mix(col,inner,m);
+    float rl=max(a.z*smoothstep(.55,1.,a.w),b.z*smoothstep(.55,1.,b.w));
+    col+=vec3(.75,.8,.9)*rl*smoothstep(-.2,-.9,(a.z>b.z?a.y:b.y))*.12;
+    col+=vec3(1.)*m*smoothstep(.3,.0,length((a.z>b.z?a.xy:b.xy)-vec2(-.35,.45)))*.35;
+    gl_FragColor=vec4(post(col,uv),1.);
+  }`,
+  // A night beach where the breaking waves glow blue: swells rolling in under the Milky Way,
+  // a glowing wash running up the sand and draining back.
+  tide: `void main(){
+    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);float y=uv.y;
+    vec3 bio=vec3(.1,.78,1.);
+    float hz=.5;vec3 col;
+    float side=1.-.4*smoothstep(.12,.0,abs(uv.x-.49)-.22)*smoothstep(.25,.12,y);
+    if(y>hz){
+      col=mix(vec3(.03,.06,.1),vec3(.004,.008,.022),smoothstep(hz,.95,y));
+      float bd=dot(p-vec2(asp*.55,.8),vec2(.5,.87));float band=exp(-bd*bd*18.);
+      float dust=fbm(p*vec2(5.,5.)+3.);
+      col+=vec3(.25,.25,.36)*band*smoothstep(.35,.75,fbm(p*3.+1.))*.45;
+      col*=1.-.6*band*smoothstep(.55,.7,dust);
+      vec2 g=p*170.;vec2 id=floor(g);float h=hash(id);float sz=pow(hash(id+2.),5.);
+      col+=vec3(.8,.85,1.)*step(.985-.03*band,h)*smoothstep(.12+.2*sz,0.,length(fract(g)-.5))*(.4+.6*sz)*(.6+.4*sin(u_t*2.+h*50.));
+      col*=smoothstep(hz,hz+.06,y)*.6+.4;
+      col+=bio*.06*exp(-(y-hz)*30.)+vec3(.05,.08,.12)*exp(-(y-hz)*40.);
+    }else{
+      float shore=.135+.012*sin(p.x*2.3+1.)+.008*sin(p.x*5.7);
+      float T=u_t*.3,wash=min(shore-.03-.028*sin(T+p.x*.6)-.008*fbm(vec2(p.x*4.,u_t*.15)),shore-.018);
+      if(y>shore){
+        float d=hz-y+.002,Z=1./d;
+        float xs=(p.x-asp*.5)*Z;
+        float ph=Z*1.3+u_t*.16+.25*fbm(vec2(p.x*1.5,Z*.05))+.35*sin(p.x*1.7+Z*.2+u_t*.1)*(1.-smoothstep(.0,.25,hz-y-.2));
+        float cr=fract(ph);
+        float near=smoothstep(.22,.0,y-shore);
+        float line=pow(cr,mix(16.,6.,near))*smoothstep(1.,.96,cr);
+        float foam=smoothstep(.3,.75,fbm(vec2(xs*.35,floor(ph)*3.7+u_t*.2)))*smoothstep(.2,.6,noise(vec2(xs*.12,floor(ph)*1.3)));
+        col=vec3(0.,.014,.03)+vec3(.02,.05,.08)*exp(-d*14.);
+        col+=vec3(.25,.3,.45)*.05*smoothstep(.5,.9,noise(vec2(xs*.8,Z*2.)))*(1.-near);
+        float brk=.6+.8*smoothstep(.7,1.,sin(p.x*.8-u_t*.5+floor(ph)));
+        float L=line*(.12+1.3*near*brk)*(.25+1.2*foam)*smoothstep(.06,.14,d);
+        float dcr=min(cr,1.-cr);
+        float halo=exp(-dcr*mix(16.,5.,near))*near*(.35+.6*foam)*.9*smoothstep(.06,.14,d);
+        col+=vec3(.02,.16,.2)*near*(.5+.8*fbm(vec2(xs*.2,Z*.6-u_t*.1)));
+        col+=mix(vec3(.05,.45,.55),vec3(.13,.83,.93),near)*halo;
+        float face=smoothstep(.5,1.,cr)*near*.35;col+=vec3(.03,.3,.36)*face;
+        float drift=smoothstep(.6,.85,noise(vec2(xs*.25-u_t*.2,floor(ph)*2.1)))*(1.-near);
+        L+=line*drift*.5*smoothstep(.03,.08,d);
+        float flare=smoothstep(.85,1.,sin(p.x*.6-u_t*.35))*near;
+        col+=mix(bio,vec3(.85,1.,1.),clamp(L*.8-.2+flare*.6,0.,1.))*L*(1.+flare*1.2);
+      }else{
+        col=vec3(.05,.04,.035)*(.75+.4*noise(p*140.));
+        if(y>wash){
+          float e=exp(-(y-wash)*110.)*smoothstep(-.002,.003,y-wash);
+          col=mix(col,vec3(0.,.02,.035),.7)+bio*(e*(.6+.8*smoothstep(.3,.7,fbm(vec2(p.x*18.,u_t*.4))))+.03);
+        }else{
+          float wet=smoothstep(wash-.08,wash,y);col*=1.-.4*wet;
+          float rf=fbm(vec2(p.x*30.,y*4.-u_t*.2));
+          col+=bio*.6*wet*rf*smoothstep(wash-.07,wash,y)*smoothstep(.3,.7,fbm(vec2(p.x*9.,u_t*.3)));
+          vec2 g=p*90.;float h=hash(floor(g));
+          col+=mix(bio,vec3(.8,1.,1.),.4)*step(.9,h)*smoothstep(.3,.0,length(fract(g)-.5-(vec2(h,fract(h*7.))-.5)*.3))*wet*pow(.5+.5*sin(u_t*2.5+h*30.),3.)*1.4;
+        }
+      }
+      col*=side;
+    }
+    gl_FragColor=vec4(post(col,uv),1.);
+  }`,
+  // The night side of a planet from orbit: the sun breaking over the limb, a twilight band at the
+  // terminator, city lights clustered on coasts, aurora curtains on the far limb.
+  orbit: `void main(){
+    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);
+    vec2 C=vec2(asp*.42,-2.2);float R=2.5;vec2 d=p-C;float r=length(d);float h=r-R;
+    vec2 sdir=normalize(vec2(.3,1.));vec2 sp=C+sdir*R;
+    float ang=dot(d/r,sdir);
     vec3 col=vec3(0.);
-    vec2 a=vec2(asp*(.28+.08*sin(u_t*.05)),.68+.12*cos(u_t*.04));
-    vec2 b=vec2(asp*(.78+.07*cos(u_t*.037)),.28+.1*sin(u_t*.05+1.));
-    vec2 c=vec2(asp*(.55+.1*sin(u_t*.03+2.)),-.15);
-    col+=vec3(.54,.71,.98)*exp(-length(p-a)*2.8)*.32;
-    col+=vec3(.58,.89,.84)*exp(-length(p-b)*3.2)*.26;
-    col+=vec3(.80,.65,.97)*exp(-length(p-c)*2.4)*.22;
-    col+=(hash(gl_FragCoord.xy+fract(u_t*.5)*97.)-.5)*.02;
-    gl_FragColor=vec4(post(col,uv),1.);
-  }`,
-  aurora: `void main(){
-    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);
-    vec3 col=vec3(0.);
-    float s=hash(floor(gl_FragCoord.xy/1.5));
-    col+=vec3(.8)*step(.997,s)*(.4+.6*sin(u_t*1.5+s*90.))*smoothstep(.3,.95,uv.y);
-    for(int i=0;i<3;i++){float fi=float(i);float x=p.x*.8+fi*2.1;
-      float c=.58+fi*.07+.1*sin(x*1.4+u_t*.06+fi*1.3)+.14*(fbm(vec2(x*1.2,u_t*.04+fi))-.5);
-      float d=uv.y-c;float band=d>0.?exp(-d*3.6):exp(d*24.);
-      float rays=(.3+fbm(vec2(x*9.,u_t*.12+fi*4.)))*(.55+.45*sin(x*28.+u_t*.4+fbm(vec2(x*3.,u_t*.1))*6.));
-      col+=mix(vec3(.65,.89,.63),vec3(.8,.65,.97),clamp(fi*.42+.25*sin(x*.7+u_t*.08),0.,1.))*band*max(rays,0.)*.45;}
-    gl_FragColor=vec4(post(col,uv),1.);
-  }`,
-  abyss: `void main(){
-    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);
-    vec3 col=vec3(0.,.03,.07)*pow(uv.y,1.5);
-    vec2 q=p*3.2;float c=0.;
-    for(int i=0;i<3;i++){q+=vec2(sin(q.y*1.3+u_t*.35),cos(q.x*1.1-u_t*.28))*.6;c+=.5/(abs(sin(q.x+q.y))+.45);}
-    col+=vec3(.54,.71,.98)*pow(c/3.4,3.)*.18*uv.y;
-    col+=vec3(.5,.7,.95)*pow(fbm(vec2(p.x*2.6+uv.y*1.1-u_t*.025,u_t*.04)),3.2)*uv.y*uv.y*.7;
-    vec2 g=p*26.;g.y+=u_t*.5;vec2 id=floor(g);vec2 f=fract(g)-.5;float h=hash(id);
-    col+=vec3(.7,.85,.95)*smoothstep(.06,0.,length(f-vec2(h-.5,fract(h*13.)-.5)*.6))*step(.88,h)*.4;
-    gl_FragColor=vec4(post(col,uv),1.);
-  }`,
-  sunrise: `void main(){
-    vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);
-    vec3 col=mix(vec3(.5,.24,.14),vec3(.12,.04,.08),smoothstep(.1,.55,uv.y));
-    col=mix(col,vec3(0.),smoothstep(.45,1.,uv.y));
-    vec2 sc=vec2(asp*.72,.32);float sd=length(p-sc);
-    col+=vec3(.98,.7,.53)*smoothstep(.1,.09,sd)*.6+vec3(.98,.55,.4)*exp(-sd*4.5)*.35;
-    for(int i=0;i<4;i++){float fi=float(i);
-      float h=.3-fi*.065+.04*sin(p.x*(1.6+fi*.7)+fi*2.3+u_t*.012*(fi+1.))+.03*fbm(vec2(p.x*2.5+fi*5.+u_t*.02*(fi+1.),fi));
-      col=mix(col,mix(vec3(.16,.06,.06),vec3(.01),fi/3.),smoothstep(h+.002,h-.002,uv.y));}
+    float bd=dot(p-vec2(asp*.5,.75),vec2(-.5,.87));
+    col+=vec3(.2,.18,.3)*exp(-bd*bd*12.)*pow(fbm(vec2(dot(p,vec2(.87,.5))*3.,bd*4.)),2.)*.45;
+    vec2 g=p*170.;vec2 gid=floor(g);float sh=hash(gid);float ssz=pow(hash(gid+2.),5.);
+    col+=vec3(.85,.88,1.)*step(.986,sh)*smoothstep(.12+.2*ssz,0.,length(fract(g)-.5))*(.35+.65*ssz)*(.7+.3*sin(u_t+sh*70.));
+    vec3 ac=mix(vec3(.1,.25,.85),vec3(.45,.75,1.),smoothstep(.6,.98,ang));
+    ac=mix(ac,vec3(1.,.55,.25),smoothstep(.97,.998,ang)*smoothstep(.05,-.01,h));
+    if(h>0.){
+      col+=ac*exp(-h*26.)*(.12+.88*pow(max(ang,0.),3.))*.9;
+      float side=smoothstep(.0,-.45,d.x/r);
+      float a=atan(d.x,d.y);
+      float cur=fbm(vec2(a*25.+u_t*.02,u_t*.05));
+      float rays=fbm(vec2(a*140.+cur*3.,h*4.-u_t*.1));
+      float hh=h-.01-.03*cur;
+      float au=smoothstep(0.,.01,hh)*exp(-hh*14.)*side*smoothstep(-.95,-.6,d.x/r)*(.4+rays)*(.8+.2*sin(u_t*.7+a*30.));
+      col+=mix(vec3(.15,1.,.5),vec3(.85,.3,.8),smoothstep(.02,.09,hh))*au*.5;
+    }else{
+      vec3 nr=vec3(d/R,sqrt(max(0.,1.-dot(d,d)/(R*R))));
+      vec2 ll=vec2(atan(nr.x,nr.z)+u_t*.003,asin(clamp(nr.y,-1.,1.)))*30.;
+      float cont=fbm(ll*.22);
+      float land=smoothstep(.5,.54,cont);
+      float coast=smoothstep(.07,.0,abs(cont-.52));
+      vec2 cg=ll*3.2;vec2 cid=floor(cg);float ch=hash(cid);
+      vec2 jo=(vec2(hash(cid+1.7),hash(cid+5.3))-.5)*.6;
+      float dens=clamp(smoothstep(.5,.75,fbm(ll*.7+3.))*land+coast*.7,0.,1.);
+      float lum=exp((hash(cid+9.)-1.)*2.2);
+      float spark=step(1.-dens*.9,ch)*(smoothstep(.2,.0,length(fract(cg)-.5-jo))+.25*exp(-length(fract(cg)-.5-jo)*9.))*lum;
+      float glowc=dens*dens*dens*.05;
+      float night=smoothstep(.988,.955,ang);   // the surface is all night side except right under the sunrise
+      float twi=smoothstep(.95,.975,ang)*smoothstep(.998,.985,ang);
+      vec3 pc=vec3(.012,.018,.035)+vec3(.006,.01,.02)*land;
+      vec3 lc=mix(vec3(1.,.6,.25),vec3(1.,.85,.6),hash(cid+3.));
+      float limbm=smoothstep(-.004,-.03,h);
+      pc+=lc*(glowc*3.+spark*3.4)*night*limbm*(1.-.5*smoothstep(.13,.05,p.y));
+      vec2 cw=ll*.6+vec2(u_t*.002,0.);cw+=.5*vec2(fbm(cw*.5),fbm(cw*.5+3.));
+      float cld=smoothstep(.45,.8,fbm(cw));
+      pc=mix(pc,pc*.5+vec3(.07,.085,.12),cld*.6);
+      pc+=vec3(.6,.35,.25)*twi*.2*(.4+cld);
+      pc+=vec3(1.,.8,.6)*smoothstep(.975,.995,ang)*exp(h*35.)*.5;
+      pc+=ac*exp(h*55.)*(.25+.75*pow(max(ang,0.),3.));
+      pc+=vec3(1.,.62,.3)*smoothstep(.62,.85,fbm(ll*.35+7.))*land*night*limbm*.12;
+      pc+=vec3(.55,.6,.75)*smoothstep(.95,1.,ang)*exp(h*25.)*(.3+.6*cld);
+      col=pc;
+    }
+    float sd=length(p-sp);
+    col+=vec3(1.,.9,.75)*exp(-sd*40.)*1.2+vec3(1.,.7,.4)*exp(-sd*7.)*.35;
+    col+=vec3(.9,.82,1.)*exp(-abs(p.y-sp.y)*300.)*exp(-abs(p.x-sp.x)*6.)*.35;
     gl_FragColor=vec4(post(col,uv),1.);
   }`,
 };
@@ -605,7 +1081,7 @@ const sky = (() => {
     const fs = sh(gl.FRAGMENT_SHADER, COMMON + body); if (!vs || !fs) continue;
     const p = gl.createProgram(); gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) continue;
-    progs[k] = { p, a: gl.getAttribLocation(p, 'a'), res: gl.getUniformLocation(p, 'u_res'), t: gl.getUniformLocation(p, 'u_t'), dim: gl.getUniformLocation(p, 'u_dim') };
+    progs[k] = { p, a: gl.getAttribLocation(p, 'a'), res: gl.getUniformLocation(p, 'u_res'), t: gl.getUniformLocation(p, 'u_t'), dim: gl.getUniformLocation(p, 'u_dim'), fx: gl.getUniformLocation(p, 'u_fx') };
   }
   function resize() {
     const s = Math.min(devicePixelRatio || 1, 2) * .5;
@@ -615,12 +1091,13 @@ const sky = (() => {
   resize(); addEventListener('resize', resize);
   return {
     c,
-    draw(scene, t, dim) {
+    draw(scene, t, dim, fx) {
       const P = progs[scene];
       if (!P) { gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT); return; }
       gl.useProgram(P.p); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
       gl.enableVertexAttribArray(P.a); gl.vertexAttribPointer(P.a, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(P.res, c.width, c.height); gl.uniform1f(P.t, t % 3000); gl.uniform1f(P.dim, dim);
+      gl.uniform4fv(P.fx, fx || [0, 0, 0, 0]);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     },
   };
@@ -628,8 +1105,8 @@ const sky = (() => {
 
 /* ================= state ================= */
 const PAGES = ['home', 'tasks', 'dojo', 'machines', 'claude'];
-const SCENE_NAMES = ['glow', 'aurora', 'abyss', 'sunrise', 'off'];
-let scene = SCENE_NAMES.includes(store.get('ss-scene2')) ? store.get('ss-scene2') : 'glow';
+const SCENE_NAMES = ['sunrise', 'cloudsea', 'storm', 'moonlit', 'lanterns', 'koi', 'rain', 'tide', 'orbit', 'off'];
+let scene = SCENE_NAMES.includes(store.get('ss-scene2')) ? store.get('ss-scene2') : 'cloudsea';
 let night = false, pageIndex = 0;
 const native = window.Subscreen || null;          // the Android app's bridge, when running in it
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1421,17 +1898,18 @@ document.addEventListener('pointerdown', e => {
 });
 
 /* ================= fauna: animals that live on the screen ================= */
-// The cat lives on top of the clock digits in every theme. Each ambient adds its own:
-// glow → fireflies, aurora → a fox trotting past, abyss → jellyfish and a fish school,
-// sunrise → a bird flock and a camel caravan on the dunes. Tap the cat.
+// The cat lies on the minute line in every theme. Each ambient adds its own: sunrise → a camel
+// caravan on the far ridge and a bird flock, cloudsea → a hot-air balloon, moonlit → geese across
+// the moon, koi → the koi, tide → ghost crabs, orbit → a space station. Storm's lightning is weather,
+// so it stays with the animals off. Tap the cat.
 const fauna = (() => {
-  const c = $('#fauna'), x = c.getContext('2d');
+  const c = $('#fauna');
+  let x = c.getContext('2d');   // let: the koi draw through an offscreen layer
   let D = 1, W = 0, H = 0, now = 0, alphaNow = 1, eyeCol = '#94e2d5';
   let enabled = store.get('ss-animals', '1') === '1';
   const resize = () => { D = Math.min(devicePixelRatio || 1, 2); W = c.width = Math.round(innerWidth * D); H = c.height = Math.round(innerHeight * D); };
   resize(); addEventListener('resize', resize);
 
-  const tri = (ax, ay, bx, by, cx, cy) => { x.beginPath(); x.moveTo(ax, ay); x.lineTo(bx, by); x.lineTo(cx, cy); x.closePath(); x.fill(); };
 
   /* ---------- the cat ---------- */
   const CAT = '#dedede', INK = '#000';   // carved from the same grey as the digits
@@ -1568,151 +2046,338 @@ const fauna = (() => {
     x.fill(); x.restore();
   }
 
-  /* ---------- side-on walkers: cat, fox, camel ---------- */
-  const KINDS = {
-    cat: { leg: .3, bw: .8, bh: .32, lw: .08, head: .17 },
-    fox: { leg: .3, bw: .9, bh: .28, lw: .065, head: .14 },
-    camel: { leg: .62, bw: .9, bh: .34, lw: .07, head: .1 },
-  };
-  function walker(cx, gy, s, ph, dir, kind, col) {
-    const P = KINDS[kind], L = P.leg * s, bw = P.bw * s, bh = P.bh * s;
-    x.save(); x.translate(cx, gy); x.scale(dir, 1);
-    x.fillStyle = col; x.strokeStyle = col; x.lineCap = 'round'; x.lineJoin = 'round';
-    const by = -L - bh * .35 + Math.sin(ph * 2) * s * .012;
-    x.lineWidth = P.lw * s;
-    for (const [hx, off] of [[bw * .3, 0], [bw * .2, Math.PI], [-bw * .26, Math.PI], [-bw * .36, 0]]) {
-      const a = Math.sin(ph + off) * .42, hy = by + bh * .15, len = -hy;
-      const lift = Math.max(0, Math.cos(ph + off)) * s * .04;
-      x.beginPath(); x.moveTo(hx, hy); x.lineTo(hx + Math.sin(a) * len, hy + Math.cos(a) * len - lift); x.stroke();
+  /* ---------- theme creatures ---------- */
+  const hs = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+  const seeded = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let q = Math.imul(a ^ a >>> 15, 1 | a); q = q + Math.imul(q ^ q >>> 7, 61 | q) ^ q; return ((q ^ q >>> 14) >>> 0) / 4294967296; };
+
+  // sunrise: a caravan on the far dune ridge. dune() mirrors the shader's, so they walk on it.
+  const DUNE_FAR = [.30, .04, 1.7, .15];
+  const dune = (u, [b, a, f, ph]) => { const s = (u * f + ph) * 6.2832;
+    return b + a * (Math.pow(.5 + .5 * Math.sin(s + .8 * Math.sin(s)), 1.4) * (.7 + .3 * Math.sin(s * .37 + ph * 3)) + .3 * Math.sin(s * .41 + ph * 2)); };
+  const ridgeY = px => H * (1 - dune(px / W, DUNE_FAR));
+  const DIR = -1;   // the caravan walks right to left
+  function onRidge(cx, s) {
+    const gy = ridgeY(cx), slope = (ridgeY(cx + s) - ridgeY(cx - s)) / (2 * s);
+    x.translate(cx, gy + s * .05); x.rotate(Math.atan(slope) * .8); x.scale(s * DIR, s);
+  }
+  function camel(cx, s, ph, pack) {
+    x.save(); onRidge(cx, s);
+    x.lineWidth = .055;
+    for (const [hx, off] of [[-.27, 0], [.27, 0], [-.2, Math.PI], [.33, Math.PI]]) {   // pacing: one side at a time
+      const a = Math.sin(ph + off) * .32, lift = Math.max(0, Math.cos(ph + off)) * .05, kx = hx + Math.sin(a) * .2;
+      x.beginPath(); x.moveTo(hx, -.45); x.lineTo(kx, -.24 - lift * .5); x.lineTo(kx + Math.sin(a * 1.4) * .18, -lift); x.stroke();
     }
-    x.beginPath(); x.ellipse(0, by, bw / 2, bh / 2, 0, 0, Math.PI * 2); x.fill();
-    const sway = Math.sin(ph * .5);
-    if (kind === 'cat') {
-      x.lineWidth = s * .07;
-      x.beginPath(); x.moveTo(-bw * .45, by - bh * .1);
-      x.bezierCurveTo(-bw * .75, by - bh * .3, -bw * .7 + sway * s * .05, by - bh * 1.4, -bw * .55 + sway * s * .1, by - bh * 1.7); x.stroke();
-      const hx = bw * .52, hy = by - bh * .55, r = P.head * s;
-      x.beginPath(); x.ellipse(hx, hy, r * 1.05, r * .9, 0, 0, Math.PI * 2); x.fill();
-      tri(hx - r * .7, hy - r * .4, hx - r * .45, hy - r * 1.55, hx - r * .05, hy - r * .7);
-      tri(hx + r * .1, hy - r * .6, hx + r * .5, hy - r * 1.5, hx + r * .85, hy - r * .35);
-      x.fillStyle = eyeCol; x.beginPath(); x.arc(hx + r * .5, hy - r * .1, r * .13, 0, Math.PI * 2); x.fill();
-    } else if (kind === 'fox') {
-      x.save(); x.translate(-bw * .46, by); x.rotate(.35 + sway * .12);
-      x.beginPath(); x.ellipse(-bw * .32, 0, bw * .36, bh * .34, 0, 0, Math.PI * 2); x.fill();
-      x.fillStyle = '#f5efe6'; x.beginPath(); x.ellipse(-bw * .62, 0, bw * .09, bh * .2, 0, 0, Math.PI * 2); x.fill();
-      x.restore(); x.fillStyle = col;
-      const hx = bw * .55, hy = by - bh * .45, r = P.head * s;
-      x.beginPath(); x.arc(hx, hy, r, 0, Math.PI * 2); x.fill();
-      tri(hx + r * .6, hy - r * .5, hx + r * 1.9, hy + r * .25, hx + r * .5, hy + r * .55);
-      tri(hx - r * .7, hy - r * .4, hx - r * .45, hy - r * 1.9, hx, hy - r * .8);
-      tri(hx - r * .05, hy - r * .8, hx + r * .35, hy - r * 1.9, hx + r * .7, hy - r * .45);
-      x.fillStyle = '#000';
-      x.beginPath(); x.arc(hx + r * 1.85, hy + r * .25, r * .14, 0, Math.PI * 2); x.fill();
-      x.beginPath(); x.arc(hx + r * .45, hy - r * .15, r * .13, 0, Math.PI * 2); x.fill();
-    } else {
-      x.beginPath(); x.ellipse(-bw * .05, by - bh * .35, bw * .24, bh * .6, 0, Math.PI, 0); x.fill();
-      x.lineWidth = s * .09;
-      const nx = bw * .64 + Math.sin(ph) * s * .02, ny = by - bh * 1.7;
-      x.beginPath(); x.moveTo(bw * .38, by - bh * .1); x.quadraticCurveTo(bw * .72, by - bh * .2, nx, ny); x.stroke();
-      x.beginPath(); x.ellipse(nx + s * .08, ny, s * .11, s * .05, .15, 0, Math.PI * 2); x.fill();
-      x.lineWidth = s * .03; x.beginPath(); x.moveTo(-bw * .5, by); x.lineTo(-bw * .56, by + bh * .7); x.stroke();
+    x.translate(0, Math.sin(ph * 2) * .012);
+    x.beginPath(); x.moveTo(-.42, -.5);
+    x.bezierCurveTo(-.40, -.85, -.12, -1.02, .02, -.98); x.bezierCurveTo(.18, -.95, .26, -.7, .34, -.62);
+    x.lineTo(.40, -.58); x.bezierCurveTo(.41, -.46, .30, -.40, .22, -.41);
+    x.lineTo(-.30, -.41); x.bezierCurveTo(-.40, -.41, -.45, -.45, -.42, -.5); x.fill();
+    const hb = Math.sin(ph * 2 + .6) * .015;
+    x.lineWidth = .09; x.beginPath(); x.moveTo(.33, -.62); x.bezierCurveTo(.5, -.58, .58, -.62, .6, -.8 + hb); x.lineTo(.62, -.88 + hb); x.stroke();
+    x.beginPath(); x.ellipse(.69, -.9 + hb, .1, .045, .25, 0, Math.PI * 2); x.fill();
+    x.lineWidth = .025; x.beginPath(); x.moveTo(.63, -.93 + hb); x.lineTo(.61, -.99 + hb); x.stroke();
+    x.beginPath(); x.moveTo(-.42, -.52); x.quadraticCurveTo(-.49, -.42 + Math.sin(ph) * .02, -.46, -.3); x.stroke();
+    if (pack) {
+      x.beginPath(); x.ellipse(-.06, -.99, .17, .08, 0, 0, Math.PI * 2); x.fill();
+      x.fillRect(-.2, -.98, .28, .22);
     }
     x.restore();
+    return [cx + DIR * .76 * s, ridgeY(cx) - .9 * s, cx - DIR * .46 * s, ridgeY(cx) - .32 * s];   // head, tail (for the lead rope)
   }
-
-  /* ---------- theme creatures ---------- */
-  function fireflies(t) {
-    for (let i = 0; i < 16; i++) {
-      const sd = i * 12.9898;
-      const px = (.5 + .46 * Math.sin(t * (.05 + (i % 4) * .012) + sd)) * W;
-      const py = (.5 + .42 * Math.sin(t * (.07 + (i % 3) * .01) + sd * 1.7) + .03 * Math.sin(t * .9 + sd)) * H;
-      const g = Math.pow(Math.max(0, Math.sin(t * (.6 + (i % 5) * .1) + sd * 3)), 4);
-      const r = (3 + 10 * g) * D;
-      const gr = x.createRadialGradient(px, py, 0, px, py, r * 2);
-      gr.addColorStop(0, `rgba(249,226,175,${.2 + .8 * g})`);
-      gr.addColorStop(.25, `rgba(166,227,161,${.35 * g})`);
-      gr.addColorStop(1, 'rgba(166,227,161,0)');
-      x.fillStyle = gr; x.beginPath(); x.arc(px, py, r * 2, 0, Math.PI * 2); x.fill();
-    }
+  function guide(cx, s, ph) {
+    x.save(); onRidge(cx, s);
+    x.lineWidth = .06;
+    for (const off of [0, Math.PI]) { const a = Math.sin(ph + off) * .35; x.beginPath(); x.moveTo(0, -.3); x.lineTo(Math.sin(a) * .28, -Math.max(0, Math.cos(ph + off)) * .04); x.stroke(); }
+    x.beginPath(); x.moveTo(-.08, -.66); x.lineTo(.08, -.66); x.lineTo(.12, -.26); x.lineTo(-.13, -.26); x.closePath(); x.fill();
+    x.beginPath(); x.arc(0, -.75, .075, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.moveTo(-.04, -.8); x.lineTo(-.16, -.6); x.lineTo(-.02, -.7); x.fill();
+    x.lineWidth = .035; x.beginPath(); x.moveTo(.06, -.55); x.lineTo(.24, -.9); x.lineTo(.24 + Math.sin(ph) * .02, .0); x.stroke();
+    x.restore();
+    return [cx - DIR * .1 * s, ridgeY(cx) - .5 * s];
   }
-  function fox(t) {
-    const dock = $('#dock').getBoundingClientRect(), gy = (dock.top - 2) * D;
-    const s = 44 * D, speed = s * 1.6, total = W + 5 * s, dur = total / speed, P = dur + 22;
-    const ph = (t + 6) % P; if (ph > dur) return;
-    const dir = Math.floor((t + 6) / P) % 2 ? -1 : 1;
-    walker(dir > 0 ? -2.5 * s + ph * speed : W + 2.5 * s - ph * speed, gy, s, t * 10, dir, 'fox', '#fab387');
-  }
-  function jellies(t) {
-    const hues = ['203,166,247', '137,180,250', '148,226,213'];
-    for (let i = 0; i < 3; i++) {
-      const s = (24 + i * 8) * D, span = H + s * 7;
-      const y = H + s * 3 - ((t * (9 + i * 4) * D + i * span / 3) % span);
-      const px = W * (.14 + i * .34) + Math.sin(t * .2 + i * 2) * 30 * D;
-      const k = .5 + .5 * Math.sin(t * 2.2 + i * 1.7);
-      const rx = s * (.5 + .1 * k), ry = s * (.44 - .08 * k), hue = hues[i];
-      x.strokeStyle = `rgba(${hue},.45)`; x.lineWidth = 1.2 * D;
-      for (let j = 0; j < 5; j++) {
-        const t0 = px - rx * .7 + j * rx * .35;
-        x.beginPath(); x.moveTo(t0, y);
-        for (let q = 1; q <= 6; q++) x.lineTo(t0 + Math.sin(t * 2 + q * .9 + j + i) * s * .1 * q / 3, y + q * s * .3 * (1.1 - k * .2));
-        x.stroke();
+  function caravan(t) {
+    // It sets out from in front of the sun (x≈.7, clear of the text column), walks off the left
+    // edge, and after a rest comes over the ridge again, fading in as it crests.
+    const s = 25 * D, gap = s * 1.45, speed = 8 * D, len = 6 * gap, start = W * .735;
+    // it dawdles across the sun, in the gap between the clock and the text column, then walks on
+    const slow = 3 * D, gapW = W * .1, T1 = gapW / slow;
+    const P = T1 + (start - gapW + len + 2 * s) / speed + 40, ph = (t + 60) % P;
+    const lead = ph < T1 ? start - ph * slow : start - gapW - (ph - T1) * speed;
+    x.save(); x.fillStyle = x.strokeStyle = '#120809'; x.lineCap = x.lineJoin = 'round';
+    const a0 = x.globalAlpha;
+    let hand = guide(lead, s * .86, t * (ph < T1 ? 2 : 4.2));
+    for (let i = 0; i < 5; i++) {
+      const calf = i === 4, k = calf ? .62 : 1;
+      const cx = lead + gap * (i + .9) + (calf ? -gap * .25 : 0);
+      x.globalAlpha = a0 * Math.min(1, Math.max(0, (start + gap * .6 - cx) / gap));   // cresting the ridge
+      const [hx, hy, tx, ty] = camel(cx, s * k, t * (ph < T1 ? 1.6 : 3.4) + i * 1.3, !calf && i % 2 === 0);
+      if (!calf) {
+        x.lineWidth = .7 * D; x.beginPath(); x.moveTo(hand[0], hand[1]);
+        x.quadraticCurveTo((hand[0] + hx) / 2, Math.max(hand[1], hy) + s * .25, hx, hy); x.stroke();
       }
-      const gr = x.createRadialGradient(px, y - ry * .6, 0, px, y - ry * .3, rx * 1.3);
-      gr.addColorStop(0, `rgba(${hue},.55)`); gr.addColorStop(1, `rgba(${hue},.06)`);
-      x.fillStyle = gr; x.beginPath(); x.ellipse(px, y, rx, ry, 0, Math.PI, 0); x.closePath(); x.fill();
-      x.strokeStyle = `rgba(${hue},.7)`; x.lineWidth = D; x.stroke();
+      hand = [tx, ty];
     }
-  }
-  function fish(t) {
-    const P = 26, ph = t % P, dur = 14; if (ph > dur) return;
-    const dir = Math.floor(t / P) % 2 ? -1 : 1, k = ph / dur;
-    for (let i = 0; i < 9; i++) {
-      const ox = (i % 3) * 22 * D + (i * 7 % 5) * 6 * D, oy = Math.floor(i / 3) * 14 * D + Math.sin(i) * 6 * D;
-      const p0 = -80 * D + k * (W + 220 * D) - ox, px = dir > 0 ? p0 : W - p0;
-      const py = H * .6 + oy + Math.sin(t * 1.5 + i + k * 6) * 6 * D, L = 9 * D, w = Math.sin(t * 12 + i) * .3;
-      x.save(); x.translate(px, py); x.scale(dir, 1); x.fillStyle = 'rgba(137,180,250,.75)';
-      x.beginPath(); x.ellipse(0, 0, L, L * .38, 0, 0, Math.PI * 2); x.fill();
-      tri(-L * .8, 0, -L * 1.6, -L * .45 + w * L, -L * 1.6, L * .45 + w * L);
-      x.restore();
-    }
+    x.restore(); x.globalAlpha = a0;
   }
   function birds(t) {
-    const P = 24, ph = t % P, dur = 16; if (ph > dur) return;
+    const P = 34, ph = t % P, dur = 22; if (ph > dur) return;
     const k = ph / dur;
-    x.strokeStyle = 'rgba(18,7,9,.9)'; x.lineWidth = 1.8 * D; x.lineCap = 'round';
+    x.strokeStyle = 'rgba(24,8,14,.85)'; x.lineWidth = 1.4 * D; x.lineCap = 'round';
     for (let i = 0; i < 7; i++) {
-      const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1, s = 9 * D;
-      const px = W + 60 * D - k * (W + 320 * D) + row * 26 * D;
-      const py = H * (.3 - k * .1) + (i ? side * row * 14 * D : 0) + Math.sin(t * 2 + i) * 3 * D;
-      const flap = Math.sin(t * 9 + i * .8);
+      const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1, s = (4.5 + 2 * hs(i + 3)) * D;
+      const px = W + 60 * D - k * (W + 320 * D) + row * 20 * D;
+      const py = H * (.18 + k * .06) + (i ? side * row * 10 * D : 0) + Math.sin(t * 2 + i) * 2 * D;
+      const flap = Math.sin(t * 7 + i * .8);
       x.beginPath(); x.moveTo(px - s, py - flap * s * .6);
       x.quadraticCurveTo(px - s * .4, py - s * .2, px, py); x.quadraticCurveTo(px + s * .4, py - s * .2, px + s, py - flap * s * .6); x.stroke();
     }
   }
-  function camels(t) {
-    const s = 46 * D, gap = s * 1.55, speed = 13 * D;
-    const span = W + 4 * gap + 2 * s, gy = H - 4 * D;
-    const lead = -s + ((t * speed) % span);
-    x.save();
-    x.shadowColor = 'rgba(250,179,135,.75)'; x.shadowBlur = 7 * D;
-    for (let i = 0; i < 4; i++) {
-      const k = i === 3 ? .62 : 1 - i * .07;            // the last one is a calf
-      walker(lead - i * gap, gy, s * k, t * 3.6 + i * 1.3, 1, 'camel', '#140806');
+
+  // cloudsea: a hot-air balloon drifting over the clouds, lit by the low sun on the right
+  function balloon(t) {
+    const P = 240, k = ((t + 60) % P) / P, s = 12 * D;   // stays in the band above the clock
+    const px = W * (.08 + .58 * (.5 - .5 * Math.cos(k * Math.PI * 2))), py = H * (.085 + .01 * Math.sin(t * .15));
+    x.save(); x.translate(px, py); x.rotate(Math.sin(t * .4) * .03);
+    const env = () => { x.beginPath(); x.moveTo(0, s * .8); x.bezierCurveTo(-s * .8, s * .15, -s * .72, -s * .8, 0, -s * .8); x.bezierCurveTo(s * .72, -s * .8, s * .8, s * .15, 0, s * .8); };
+    const gr = x.createLinearGradient(-s * .7, 0, s * .7, 0);
+    gr.addColorStop(0, '#3b1d33'); gr.addColorStop(.6, '#b85a4c'); gr.addColorStop(1, '#ffc79a');
+    env(); x.fillStyle = gr; x.fill();
+    x.save(); env(); x.clip(); x.fillStyle = 'rgba(30,10,30,.35)';
+    for (const sx of [-.5, 0, .5]) { x.beginPath(); x.ellipse(sx * s, 0, s * .12, s, 0, 0, Math.PI * 2); x.fill(); }
+    x.restore();
+    x.strokeStyle = 'rgba(40,20,30,.9)'; x.lineWidth = .6 * D;
+    x.beginPath(); x.moveTo(-s * .24, s * .62); x.lineTo(-s * .12, s * 1.02); x.moveTo(s * .24, s * .62); x.lineTo(s * .12, s * 1.02); x.stroke();
+    x.fillStyle = '#2a1718'; x.fillRect(-s * .14, s * 1.0, s * .28, s * .2);
+    const f = .6 + .4 * Math.sin(t * 13) * Math.sin(t * 5.3);
+    x.fillStyle = `rgba(255,170,90,${.5 * f})`; x.beginPath(); x.arc(0, s * .86, s * .07, 0, Math.PI * 2); x.fill();
+    x.restore();
+  }
+
+  // storm: the flash schedule drives both the shader (u_fx) and the bolt
+  const STORM_P = 4.5;
+  function stormFx(t) {
+    const n = Math.floor(t / STORM_P); let best = [0, 0, 0, 0];
+    for (const m of [n - 1, n]) {
+      const h = hs(m); if (h > .85) continue;
+      const dt = t - (m * STORM_P + hs(m + .37) * 2.5); if (dt < 0) continue;
+      const F = Math.exp(-dt * 7) + (dt > .18 ? .7 * Math.exp(-(dt - .18) * 9) : 0) + (dt > .42 ? .5 * Math.exp(-(dt - .42) * 6) : 0);
+      const bolt = h < .5, side = hs(m + .29);   // bolts strike from the cloud base into the gap right of the clock
+      const bx = bolt ? .665 + .05 * side : .45 + .35 * hs(m + .71);
+      if (F > best[0]) best = [Math.min(1.4, F), bx, bolt ? .45 : .6 + .22 * hs(m + .13), bolt ? m + 1 : 0];
+    }
+    return best;
+  }
+  function bolt(fx) {
+    if (!fx[3] || fx[0] < .04) return;
+    const rnd = seeded(fx[3] * 7919);
+    const top = H * .57, ground = H * .8;   // from the cloud base to the sea horizon
+    x.save(); x.lineCap = x.lineJoin = 'round';
+    // the path is fixed per strike; it is stroked twice, a wide violet glow under a white core
+    const segs = [];
+    const branch = (px, py, end, w, dir) => {
+      const pts = [[px, py]];
+      while (py < end) {
+        py += (3 + rnd() * 9) * D; px += (rnd() - .5 + dir * .25) * 13 * D; pts.push([px, py]);
+        if (w > .8 * D && rnd() < .14) branch(px, py, py + (25 + rnd() * 70) * D, w * .5, rnd() < .5 ? -1 : 1);
+      }
+      segs.push([pts, w]);
+    };
+    branch(fx[1] * W, top, ground, 2.2 * D, 0);
+    const a = Math.min(1, fx[0]);
+    for (const [glow, col, k] of [[22, `rgba(150,140,255,${a * .55})`, 3], [6, `rgba(245,243,255,${a})`, 1]]) {
+      x.strokeStyle = col; x.shadowColor = 'rgba(160,150,255,.9)'; x.shadowBlur = glow * D;
+      for (const [pts, w] of segs) { x.lineWidth = w * k; x.beginPath(); x.moveTo(...pts[0]); for (const q of pts) x.lineTo(...q); x.stroke(); }
+    }
+    // its reflection in the sea: mirrored about the horizon, broken up by the swell
+    x.globalAlpha *= .35; x.strokeStyle = `rgba(200,195,255,${a})`; x.shadowBlur = 16 * D;
+    for (const [pts, w] of segs) {
+      x.lineWidth = w * 1.5; x.beginPath();
+      pts.forEach(([qx, qy], i) => { const ry = 2 * ground - qy; if (ry > H) return; const jx = qx + Math.sin(ry * .15) * 3 * D; if (i % 3 === 2) x.moveTo(jx, ry); else x.lineTo(jx, ry); });
+      x.stroke();
     }
     x.restore();
   }
 
+  // moonlit: a skein of geese crossing the moon
+  function geese(t) {
+    const P = 75, ph = t % P, dur = 40; if (ph > dur) return;
+    const k = ph / dur;
+    x.fillStyle = x.strokeStyle = '#04060c'; x.lineCap = 'round';
+    for (let i = 0; i < 9; i++) {
+      const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1, s = 7 * D;
+      const px = W + 60 * D - k * (W + 420 * D) + row * 17 * D;
+      const py = H * (.19 + k * .1) + (i ? side * row * 9 * D : 0) + Math.sin(t * 1.3 + i) * 1.5 * D;
+      const flap = Math.sin(t * 5 + i * .7);
+      x.beginPath(); x.ellipse(px, py, s * .55, s * .18, 0, 0, Math.PI * 2); x.fill();
+      x.lineWidth = .9 * D; x.beginPath(); x.moveTo(px - s * .5, py); x.lineTo(px - s * 1.05, py - s * .08); x.stroke();
+      x.lineWidth = 1.3 * D; x.beginPath(); x.moveTo(px - s * .05, py);
+      x.quadraticCurveTo(px + s * .1, py - flap * s * .9, px + s * .25, py - flap * s * 1.1); x.stroke();
+    }
+  }
+
+  // koi: each fish follows a smooth looping path; its body is the path it just swam
+  const KOI = [   // four fish, each with its own stretch of the pond
+    { base: '#f2ece2', spots: [['#d8472b', [1, 2, 3, 4]], ['#d8472b', [7, 8]], ['#d8472b', [11]]], cx: .2, cy: .5, ax: .12, ay: .3, w: .09, ph: 0, L: 100 },
+    { base: '#e9a93a', spots: [], cx: .5, cy: .5, ax: .34, ay: .22, w: .07, ph: 2.1, L: 92 },
+    { base: '#1a1a1f', spots: [['#d4452c', [2, 3, 8, 9]], ['#ece6dc', [5, 6, 12]]], cx: .5, cy: .13, ax: .3, ay: .025, w: .06, ph: 4.4, L: 90 },
+    { base: '#ffffff', spots: [['#d8372b', [1]]], cx: .705, cy: .52, ax: .02, ay: .22, wx: .012, w: .07, ph: 1.2, L: 80 },
+  ];
+  const koiPos = (k, t) => { const a = t * k.w + k.ph; return [W * (k.cx + k.ax * Math.sin(a) + (k.wx ?? .07) * Math.sin(a * 2.3 + k.ph)), H * (k.cy + k.ay * Math.sin(a * 1.6 + 1.1 + k.ph) + .06 * Math.cos(a * 3.1))]; };
+  function oneKoi(k, t) {
+    const N = 16, L = k.L * D, seg = L / N, dense = [koiPos(k, t)];
+    for (let j = 1, len = 0; j < 500 && len < L * 1.1; j++) { const q = koiPos(k, t - j * .04), p = dense[j - 1]; len += Math.hypot(q[0] - p[0], q[1] - p[1]); dense.push(q); }
+    const pts = [dense[0]];
+    for (let j = 1, acc = 0; j < dense.length && pts.length <= N; j++) {
+      const a = dense[j - 1], b = dense[j], dl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-6; let pos = 0;
+      while (acc + dl - pos >= seg && pts.length <= N) { pos += seg - acc; acc = 0; pts.push([a[0] + (b[0] - a[0]) * pos / dl, a[1] + (b[1] - a[1]) * pos / dl]); }
+      acc += dl - pos;
+    }
+    if (pts.length <= N) return;
+    const nrm = [], wid = [];
+    for (let i = 0; i <= N; i++) {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+      const u = i / N, sway = Math.sin(t * 5 - u * 6) * L * .07 * Math.pow(u, 1.3);
+      nrm.push([-dy / l, dx / l]);
+      pts[i] = [pts[i][0] + nrm[i][0] * sway, pts[i][1] + nrm[i][1] * sway];
+      wid.push(L * .135 * (u < .28 ? .7 + .3 * Math.sin(u / .28 * Math.PI / 2) : 1 - .84 * Math.pow((u - .28) / .72, 1.3)));
+    }
+    const fwd = [-nrm[0][1], nrm[0][0]];   // points from head toward tail
+    const body = () => {
+      x.beginPath(); x.moveTo(pts[0][0] - fwd[0] * wid[0] * .9, pts[0][1] - fwd[1] * wid[0] * .9);
+      for (let i = 0; i <= N; i++) x.lineTo(pts[i][0] + nrm[i][0] * wid[i], pts[i][1] + nrm[i][1] * wid[i]);
+      for (let i = N; i >= 0; i--) x.lineTo(pts[i][0] - nrm[i][0] * wid[i], pts[i][1] - nrm[i][1] * wid[i]);
+      x.closePath();
+    };
+    const head = () => {   // a rounded head, its own path so it never cuts a wedge out of the body
+      x.beginPath(); x.ellipse(pts[1][0], pts[1][1], wid[1] * 1.75, wid[1] * 1.02, Math.atan2(fwd[1], fwd[0]), 0, Math.PI * 2);
+    };
+    const fins = (alpha) => {
+      x.fillStyle = k.fin || k.base; x.globalAlpha = alphaNow * alpha;
+      const tp = pts[N], tb = pts[N - 2], tn = nrm[N], back = [tp[0] - tb[0], tp[1] - tb[1]], bl = Math.hypot(...back) || 1;
+      const bx = back[0] / bl, by = back[1] / bl, flap = Math.sin(t * 5 - 6);
+      for (const sd of [1, -1]) {   // the tail: two soft lobes fanning out behind
+        const sp = L * (.15 + .03 * flap * sd);
+        x.beginPath(); x.moveTo(tb[0], tb[1]);
+        x.bezierCurveTo(tp[0] + tn[0] * sd * sp * .5, tp[1] + tn[1] * sd * sp * .5,
+          tp[0] + bx * L * .18 + tn[0] * sd * sp, tp[1] + by * L * .18 + tn[1] * sd * sp,
+          tp[0] + bx * L * .2 + tn[0] * sd * sp * .7, tp[1] + by * L * .2 + tn[1] * sd * sp * .7);
+        x.quadraticCurveTo(tp[0] + bx * L * .08, tp[1] + by * L * .08, tp[0], tp[1]); x.closePath(); x.fill();
+        x.save(); x.globalAlpha = alphaNow * alpha * .5; x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = .6 * D;
+        for (const f of [.35, .7, 1]) { x.beginPath(); x.moveTo(tb[0], tb[1]);
+          x.lineTo(tp[0] + bx * L * .19 * f + tn[0] * sd * sp * f * .9, tp[1] + by * L * .19 * f + tn[1] * sd * sp * f * .9); x.stroke(); }
+        x.restore();
+      }
+      for (const sd of [1, -1]) {   // pectoral fins: rounded paddles near the head
+        const f = pts[3], n = nrm[3], fl = .25 * Math.sin(t * 3 + sd * 1.3), r = L * .1;
+        const ang = Math.atan2(n[1] * sd, n[0] * sd) + Math.atan2(-fwd[1], -fwd[0]) * 0 + (fl + .7) * sd * -1;
+        x.save(); x.translate(f[0] + n[0] * sd * wid[3] * .8, f[1] + n[1] * sd * wid[3] * .8);
+        x.rotate(Math.atan2(n[1] * sd, n[0] * sd) + sd * (.55 + fl));
+        x.beginPath(); x.moveTo(0, -r * .25); x.quadraticCurveTo(r * 1.1, -r * .6, r * 1.05, r * .1); x.quadraticCurveTo(r * .6, r * .5, 0, r * .25); x.closePath(); x.fill();
+        x.restore();
+      }
+      x.globalAlpha = alphaNow;
+    };
+    x.save();
+    x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 15 * D; x.shadowOffsetX = 11 * D; x.shadowOffsetY = 14 * D;
+    fins(.55); x.fillStyle = k.base; body(); x.fill(); head(); x.fill();
+    x.restore();
+    for (const part of [body, head]) {
+      x.save(); part(); x.clip();
+      for (const [c, idx] of k.spots) { x.fillStyle = c; for (const i of idx) { x.beginPath(); x.arc(pts[i][0], pts[i][1], wid[i] * 1.2 + D, 0, Math.PI * 2); x.fill(); } }
+      x.restore();
+    }
+    x.save(); body(); x.clip();
+    x.strokeStyle = 'rgba(0,0,0,.07)'; x.lineWidth = wid[4] * .5; x.stroke();   // darker flanks, rounder body
+    const sg = x.createLinearGradient(pts[0][0], pts[0][1], pts[N][0], pts[N][1]);
+    sg.addColorStop(0, 'rgba(255,255,255,.28)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    x.strokeStyle = sg; x.lineWidth = wid[4] * .35; x.beginPath(); x.moveTo(pts[1][0], pts[1][1]);
+    for (let i = 2; i < N - 2; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke();
+    x.restore();
+    x.fillStyle = '#111';
+    for (const sd of [1, -1]) { x.beginPath(); x.arc(pts[1][0] + nrm[1][0] * sd * wid[1] * .62, pts[1][1] + nrm[1][1] * sd * wid[1] * .62, 1.4 * D, 0, Math.PI * 2); x.fill(); }
+  }
+  let kc = null;
+  function koi(t) {
+    const cr = $('#drift .stack')?.getBoundingClientRect();   // the digits, the date and the minute line
+    KOI.forEach((k, i) => {
+      const te = Math.floor((t + i * 4.7) / 13) * 13 - i * 4.7, age = t - te;
+      if (age < 4) {
+        const [rx, ry] = koiPos(k, te);
+        x.lineWidth = 1 * D;
+        for (const d of [0, .6]) { const a = age - d; if (a <= 0) continue;
+          x.strokeStyle = `rgba(190,235,225,${(1 - a / 4) * .3})`; x.beginPath(); x.arc(rx, ry, a * 16 * D, 0, Math.PI * 2); x.stroke(); }
+      }
+    });
+    if (!kc) kc = document.createElement('canvas');
+    if (kc.width !== W || kc.height !== H) { kc.width = W; kc.height = H; }
+    const main = x, a0 = alphaNow; x = kc.getContext('2d'); x.clearRect(0, 0, W, H); alphaNow = 1; x.globalAlpha = 1;
+    KOI.forEach(k => oneKoi(k, t));
+    if (cr) {   // the fish swim under the clock: fade them there, feathered, so the digits stay clean
+      x.save(); x.globalCompositeOperation = 'destination-out'; x.filter = `blur(${24 * D}px)`; x.fillStyle = 'rgba(0,0,0,.8)';
+      x.fillRect((cr.left - 16) * D, (cr.top - 16) * D, (cr.width + 32) * D, (cr.height + 32) * D);
+      const dk = $('#dock')?.getBoundingClientRect(); if (dk) x.fillRect((dk.left - 10) * D, (dk.top - 6) * D, (dk.width + 20) * D, (dk.height + 12) * D);
+      x.restore();
+    }
+    x = main; alphaNow = a0; x.globalAlpha = a0;
+    x.drawImage(kc, 0, 0);
+  }
+
+  // tide: ghost crabs scuttling about on the dark sand
+  function crabs(t) {
+    for (let i = 0; i < 2; i++) {
+      const P = 7, n = Math.floor((t + i * 3.1) / P), local = (t + i * 3.1) - n * P;
+      const spot = m => [W * (.72 + .12 * i + .1 * hs(m * 3.7 + i)), H * (.935 + .03 * hs(m * 5.3 + i * 2.2))];
+      const a = spot(n), b = spot(n + 1), mv = Math.min(1, local / 1.4), e = mv * mv * (3 - 2 * mv);
+      const px = a[0] + (b[0] - a[0]) * e, py = a[1] + (b[1] - a[1]) * e, moving = mv < 1, s = 6.8 * D;
+      x.save(); x.translate(px, py);
+      x.fillStyle = 'rgba(40,160,220,.12)'; x.beginPath(); x.ellipse(s * .3, s * .5, s * 1.8, s * .6, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = x.strokeStyle = '#07090c'; x.lineWidth = 1.1 * D; x.lineCap = 'round';
+      x.shadowColor = 'rgba(40,190,255,.7)'; x.shadowBlur = 4 * D;
+      for (const sd of [1, -1]) for (let l = 0; l < 4; l++) {
+        const j = moving ? Math.sin(t * 30 + l * 1.7 + sd) * .3 : 0, ang = (l - 1.5) * .35 + j;
+        x.beginPath(); x.moveTo(sd * s * .6, ang * s * .5); x.lineTo(sd * s * 1.25, ang * s * 1.2 - s * .2); x.lineTo(sd * s * 1.45, ang * s * 1.5 + s * .35); x.stroke();
+      }
+      x.beginPath(); x.ellipse(0, 0, s * .8, s * .55, 0, 0, Math.PI * 2); x.fill();
+      for (const sd of [1, -1]) { x.beginPath(); x.arc(sd * s * .55, -s * .7, s * .2, 0, Math.PI * 2); x.fill(); }
+      x.restore();
+    }
+  }
+
+  // orbit: a space station sliding past, its solar wings catching the sun
+  function satellite(t) {
+    const P = 110, ph = t % P, dur = 70; if (ph > dur) return;
+    const k = ph / dur, s = 7 * D, px = -50 * D + k * (W + 100 * D), py = H * (.05 + .06 * k);
+    x.save(); x.translate(px, py); x.rotate(.16 + Math.sin(t * .05) * .02);
+    x.fillStyle = '#9aa0ad'; x.fillRect(-s * 1.4, -s * .03, s * 2.8, s * .06);
+    for (const sx of [-1.2, -.75, .75, 1.2]) for (const sy of [-1, 1]) {
+      const g = x.createLinearGradient(0, sy * s * .08, 0, sy * s * .7);
+      g.addColorStop(0, '#3a3220'); g.addColorStop(.5, '#a88a52'); g.addColorStop(1, '#30281a');
+      x.fillStyle = g; x.fillRect(sx * s - s * .14, sy > 0 ? s * .08 : -s * .7, s * .28, s * .62);
+    }
+    x.fillStyle = '#6d7180'; x.fillRect(-s * .38, -s * .07, s * .76, s * .14);
+    x.fillRect(-s * .06, -s * .3, s * .12, s * .6);
+    x.fillStyle = '#7d808c'; x.fillRect(-s * .3, s * .1, s * .14, s * .28); x.fillRect(s * .16, -s * .38, s * .14, s * .28);
+    const glint = Math.pow(Math.max(0, Math.sin(t * .35)), 30);
+    if (glint > .01) { const g = x.createRadialGradient(0, 0, 0, 0, 0, s * 2.2); g.addColorStop(0, `rgba(255,245,220,${glint})`); g.addColorStop(1, 'rgba(255,245,220,0)'); x.fillStyle = g; x.beginPath(); x.arc(0, 0, s * 2.2, 0, Math.PI * 2); x.fill(); }
+    if ((t % 1.6) < .12) { x.fillStyle = '#ff5050'; x.beginPath(); x.arc(s * 1.4, 0, 1.4 * D, 0, Math.PI * 2); x.fill(); }
+    x.restore();
+  }
+
   return {
-    frame(t, dt, page, scene, night, alpha) {
+    fx(scene, t) { return scene === 'storm' ? stormFx(t) : null; },
+    frame(t, dt, page, scene, night, alpha, fx) {
       now = t; alphaNow = alpha; eyeCol = css('--accent') || '#94e2d5';
       x.clearRect(0, 0, W, H);
       if (page !== 'home' || alpha < .02) { cat.box = null; return; }
       x.globalAlpha = alpha;
+      if (scene === 'storm' && fx) bolt(fx);
       if (!enabled) { lyingCat(t); x.globalAlpha = 1; return; }
-      if (scene === 'glow') fireflies(t);
-      else if (scene === 'aurora') fox(t);
-      else if (scene === 'abyss') { jellies(t); fish(t); }
-      else if (scene === 'sunrise') { camels(t); birds(t); }
+      if (scene === 'sunrise') { caravan(t); birds(t); }
+      else if (scene === 'cloudsea') balloon(t);
+      else if (scene === 'moonlit') geese(t);
+      else if (scene === 'koi') koi(t);
+      else if (scene === 'tide') crabs(t);
+      else if (scene === 'orbit') satellite(t);
       lyingCat(t);
       x.globalAlpha = 1;
     },
@@ -1737,9 +2402,10 @@ function frame(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
   t += dt * (reduce ? .05 : 1);
   dim += ((PAGES[pageIndex] === 'home' ? 0 : 1) - dim) * Math.min(1, dt * 3);
-  if (sky) sky.draw(scene, t, dim);
+  const fx = fauna.fx(scene, t);
+  if (sky) sky.draw(scene, t, dim, fx);
   if (PAGES[pageIndex] === 'claude') drawCrab(t);
-  fauna.frame(t, dt, PAGES[pageIndex], scene, night, 1 - dim);
+  fauna.frame(t, dt, PAGES[pageIndex], scene, night, 1 - dim, fx);
   requestAnimationFrame(frame);
 }
 
