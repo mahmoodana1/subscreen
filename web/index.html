@@ -2365,18 +2365,23 @@ const fauna = (() => {
     { base: '#8aa0b4', spots: [['#e0763a', [7, 8, 9, 10, 11]], ['#dfe6ec', [1, 2]]], cx: .62, cy: .3, ax: .18, ay: .12, w: .075, ph: 5.6, L: 84 },
   ];
   // a fish glides and pushes: its speed rises and falls slowly, and the tail beats with the distance swum
-  const koiA = (k, t) => t * k.w + k.ph + .35 * Math.sin(t * .13 + k.ph * 2);
+  const koiA = (k, t) => t * k.w + k.ph + .25 * Math.sin(t * .13 + k.ph * 2);
   const koiPos = (k, t) => { const a = koiA(k, t); return [W * (k.cx + k.ax * Math.sin(a) + (k.wx ?? .07) * Math.sin(a * 2.3 + k.ph)), H * (k.cy + k.ay * Math.sin(a * 1.6 + 1.1 + k.ph) + .06 * Math.cos(a * 3.1))]; };
   function oneKoi(k, t) {
     const N = 16, L = k.L * D, seg = L / N, dense = [koiPos(k, t)], swim = koiA(k, t) * 70;
-    for (let j = 1, len = 0; j < 500 && len < L * 1.1; j++) { const q = koiPos(k, t - j * .04), p = dense[j - 1]; len += Math.hypot(q[0] - p[0], q[1] - p[1]); dense.push(q); }
+    for (let j = 1, len = 0; j < 900 && len < L * 1.1; j++) { const q = koiPos(k, t - j * .04), p = dense[j - 1]; len += Math.hypot(q[0] - p[0], q[1] - p[1]); dense.push(q); }
     const pts = [dense[0]];
     for (let j = 1, acc = 0; j < dense.length && pts.length <= N; j++) {
       const a = dense[j - 1], b = dense[j], dl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-6; let pos = 0;
       while (acc + dl - pos >= seg && pts.length <= N) { pos += seg - acc; acc = 0; pts.push([a[0] + (b[0] - a[0]) * pos / dl, a[1] + (b[1] - a[1]) * pos / dl]); }
       acc += dl - pos;
     }
-    if (pts.length <= N) return;
+    while (pts.length <= N) {   // a slow fish has not swum a body's length yet: carry its body on straight behind it
+      const b = pts[pts.length - 1], a2 = pts.length > 1 ? pts[pts.length - 2] : dense[Math.min(1, dense.length - 1)];
+      let dx = b[0] - a2[0], dy = b[1] - a2[1], l = Math.hypot(dx, dy);
+      if (l < 1e-6) { dx = 1; dy = 0; l = 1; }
+      pts.push([b[0] + dx / l * seg, b[1] + dy / l * seg]);
+    }
     const nrm = [], wid = [];
     for (let i = 0; i <= N; i++) {
       const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
@@ -2448,6 +2453,16 @@ const fauna = (() => {
   let kc = null;
   function koi(t) {
     const cr = $('#drift .stack')?.getBoundingClientRect();   // the digits, the date and the minute line
+    // a wake: each fish leaves soft rings as it swims; they spread and fade behind it
+    x.lineWidth = 1 * D;
+    KOI.forEach((k, i) => {
+      const step = .7, ph = (t + i * .29) % step;
+      for (let j = 0; j < 5; j++) {
+        const age = ph + j * step, life = 5 * step, [rx, ry] = koiPos(k, t - age);
+        x.strokeStyle = `rgba(200,235,228,${.14 * (1 - age / life) * Math.min(1, age / .4)})`;
+        x.beginPath(); x.arc(rx, ry, (k.L * .12 + age * 13) * D, 0, Math.PI * 2); x.stroke();
+      }
+    });
     KOI.forEach((k, i) => {
       const te = Math.floor((t + i * 4.7) / 13) * 13 - i * 4.7, age = t - te;
       if (age < 4) {
