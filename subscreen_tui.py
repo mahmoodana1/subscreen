@@ -230,7 +230,7 @@ def _scene_geometry(theme, height):
 def _clock_colon_cell(width, height):
     """Approximate the terminal cell at the centre of the clock's ':' glyph.
 
-    Duplicates compose()'s clock-sizing loop so a theme's colon-creature
+    Shares clock_scale() with compose() so a theme's colon-creature
     sprite lands on the right spot without compose having to publish its
     layout. Returns (cell_col, cell_row, scale_x, scale_y). If width or
     height are too small for any clock, returns None.
@@ -239,16 +239,7 @@ def _clock_colon_cell(width, height):
     if rows_for_clock < GLYPH_ROWS or width < 12:
         return None
     clock_text = "00:00"
-    scale_x, scale_y = 1, 1
-    for tall in range(THEME.get("clock_max_tall", 6), 0, -1):
-        wide = tall * 2
-        off_x, off_y = shadow_offset(wide, tall)
-        while wide > 1 and clock_width(clock_text, wide) + off_x > width - 2:
-            wide -= 1
-            off_x = shadow_offset(wide, tall)[0]
-        if GLYPH_ROWS * tall + off_y <= rows_for_clock:
-            scale_x, scale_y = wide, tall
-            break
+    scale_x, scale_y = clock_scale(width, height)
     gap = glyph_gap(scale_x)
     block = clock_width(clock_text, scale_x) + shadow_offset(scale_x, scale_y)[0]
     pad = max(0, (width - block) // 2)
@@ -2241,6 +2232,29 @@ def clock_width(text, scale_x):
     )
 
 
+def clock_scale(columns, lines):
+    """The biggest (scale_x, scale_y) the block clock gets on this terminal.
+
+    Takes the full terminal size and nothing else, so the answer only
+    changes when the window does. Below the clock sit the shared
+    date/prayer line, the rule and three column rows — five, plus one of
+    slack.
+    """
+    rows_for_clock = lines - 6
+    # Rows are the scarce resource, so size from height first and take the
+    # matching width. Deriving height from width instead leaves the clock
+    # far narrower than it needs to be whenever rows run out first.
+    for tall in range(THEME.get("clock_max_tall", 6), 0, -1):
+        wide = tall * 2                      # a cell is ~2x as tall as wide
+        off_x, off_y = shadow_offset(wide, tall)
+        while wide > 1 and clock_width("00:00", wide) + off_x > columns - 2:
+            wide -= 1
+            off_x = shadow_offset(wide, tall)[0]
+        if GLYPH_ROWS * tall + off_y <= rows_for_clock:
+            return wide, tall
+    return 1, 1
+
+
 def big_lines(text, scale_x, scale_y, colour, colon_colour, shadow):
     """Render text as blocks of coloured spaces, over an offset shadow.
 
@@ -2777,8 +2791,14 @@ def visible_len(text):
     return out
 
 
-def compose(state, width, height, now, prayer, alert=None):
-    """Build the whole frame as a list of lines, sized to the terminal."""
+def compose(state, width, height, now, prayer, alert=None, shift=0, scale=None):
+    """Build the whole frame as a list of lines, sized to the terminal.
+
+    width and height are the area left after the burn-in drift; shift is
+    the horizontal drift itself, applied here so the clock can be placed
+    against the real screen edge. scale is the clock size from
+    clock_scale(), worked out by the caller from the undrifted terminal.
+    """
     seconds_left = (prayer["next_at"] - now).total_seconds()
     close = seconds_left <= 15 * 60
 
@@ -2789,33 +2809,26 @@ def compose(state, width, height, now, prayer, alert=None):
     # 3:5 proportion. Scaling x and y independently is what made them look
     # squat: a cell is twice as tall as it is wide, so the vertical scale
     # has to be about half the horizontal one to come out square.
-    # Below the clock: the shared date/prayer line, the rule and three
-    # column rows — five, plus one of slack. The banner needs four more, so
-    # the clock gives way to it rather than being truncated off the bottom.
-    rows_for_clock = height - 6 - (4 if alert else 0)
-    scale_x, scale_y = 1, 1
-    # Rows are the scarce resource, so size from height first and take the
-    # matching width. Deriving height from width instead leaves the clock
-    # far narrower than it needs to be whenever rows run out first.
+    #
+    # The size comes from the whole terminal, never from the drifted or
+    # banner-reduced area: sizing from those made the digits jump between
+    # scales every time the burn-in offset moved or an alert went up.
     clock_text = now.strftime("%H:%M")
-    for tall in range(THEME.get("clock_max_tall", 6), 0, -1):
-        wide = tall * 2                      # a cell is ~2x as tall as wide
-        off_x, off_y = shadow_offset(wide, tall)
-        while wide > 1 and clock_width(clock_text, wide) + off_x > width - 2:
-            wide -= 1
-            off_x = shadow_offset(wide, tall)[0]
-        if GLYPH_ROWS * tall + off_y <= rows_for_clock:
-            scale_x, scale_y = wide, tall
-            break
+    scale_x, scale_y = scale or clock_scale(width + shift, height)
     shadow = mix(accent, INK, SHADOW_MIX)
 
-    body = []
+    # The clock keeps its size, so at the far end of the drift it may no
+    # longer fit beside the offset. It then stops short of the right edge
+    # instead of shrinking; everything else still drifts the full distance.
     block = clock_width(clock_text, scale_x) + shadow_offset(scale_x, scale_y)[0]
-    pad = max(0, (width - block) // 2)
-    body.extend(
-        trans(pad) + line
+    clock_left = shift + max(0, (width - block) // 2)
+    clock_left = max(0, min(clock_left, width + shift - block))
+    clock_lines = [
+        trans(clock_left) + line
         for line in big_lines(clock_text, scale_x, scale_y, accent, colon, shadow)
-    )
+    ]
+
+    body = []
 
     # Date and prayer share one line under the clock: date centred, prayer
     # right-aligned. If they would collide the date gives up its centring
@@ -2844,6 +2857,7 @@ def compose(state, width, height, now, prayer, alert=None):
     if gap < 1:                       # no room to share — give prayer its own row
         body.append(trans(max(0, width - len(corner) - 1)) + fg(accent) + corner + RESET)
     body.append(rule(width, LINE))
+    fixed_rows = len(body)            # date and rule: never trimmed
 
     # Lower half is two columns: tasks on the left, progress on the right,
     # divided by a hairline. Both are built to a fixed width so the rule
@@ -2913,9 +2927,24 @@ def compose(state, width, height, now, prayer, alert=None):
         # A band you cannot miss from across the room. It blinks on the
         # same one-second beat as the colon — deliberate, not fluttering.
         band = LIME if now.microsecond < 500_000 else mix(LIME, INK, 0.45)
-        body.append(bg(band) + " " * width + RESET)
+        # The clock no longer shrinks to make room, so when rows are short
+        # the banner takes them from the bottom of the task columns.
+        over = len(clock_lines) + len(body) + 3 - (height - 1)
+        if over > 0:
+            del body[max(fixed_rows, len(body) - over):]
+        # With the columns gone and still no room, the band loses its
+        # padding rows before it loses its text.
+        room = height - 1 - len(clock_lines) - len(body)
+        blank = bg(band) + " " * width + RESET
+        if room < 1:
+            del body[-1:]
+        if room >= 2:
+            body.append(blank)
         body.append(bg(band) + fg(INK) + alert.center(width) + RESET)
-        body.append(bg(band) + " " * width + RESET)
+        if room >= 3:
+            body.append(blank)
+
+    body = clock_lines + [trans(shift) + line if line else "" for line in body]
 
     slack = height - len(body) - 1
     if slack > 1:
@@ -3079,8 +3108,9 @@ def main():
             frame = compose(
                 state or OFFLINE, size.columns - dx, size.lines - dy,
                 now, prayer_state, alert,
+                shift=dx, scale=clock_scale(size.columns, size.lines),
             )
-            frame = [""] * dy + [(trans(dx) + line if line else "") for line in frame]
+            frame = [""] * dy + frame
 
             if stale:
                 # The whole offline hint: a single dot in the top-right,

@@ -175,6 +175,32 @@ def build_state():
             # timetable.schedule() says which of the two it used.
             "estimated": schedule.get("source", "computed") == "computed",
             "current": schedule["current_prayer"],
+            # Adhan and iqama times for the prayer whose window we are in
+            # right now, so the phone can stick on that prayer until iqama
+            # passes instead of jumping to the next one at adhan time.
+            "current_at": (
+                schedule["times"][schedule["current_prayer"]].strftime("%H:%M")
+                if schedule.get("current_prayer") in schedule["times"]
+                else None
+            ),
+            "current_iqama": (
+                schedule["iqamas"][schedule["current_prayer"]].strftime("%H:%M")
+                if schedule.get("current_prayer") in schedule.get("iqamas", {})
+                else None
+            ),
+            "current_display": (
+                prayer.DISPLAY_NAMES.get(
+                    schedule["current_prayer"],
+                    schedule["current_prayer"].title(),
+                )
+                if schedule.get("current_prayer")
+                else None
+            ),
+            "current_iqama_seconds": (
+                int((schedule["iqamas"][schedule["current_prayer"]] - now).total_seconds())
+                if schedule.get("current_prayer") in schedule.get("iqamas", {})
+                else None
+            ),
         },
         "tasks": tasks,
         "open_tasks": open_count,
@@ -227,9 +253,7 @@ def render(state, width=46):
             if task["due"]:
                 meta.append(("overdue " if task["overdue"] else "due ") + task["due"])
             lines.append("│" + _clip("     " + " · ".join(meta), inner).ljust(inner) + "│")
-        lines.append(
-            "│" + _clip(f" {state['open_tasks']} open", inner).ljust(inner) + "│"
-        )
+        lines.append("│" + " " * inner + "│")
 
     lines.append("└" + "─" * inner + "┘")
     return "\n".join(lines) + "\n"
