@@ -8,6 +8,7 @@ serves it as JSON to the Subscreen app on the phone, over Tailscale:
     GET  /health            "ok"
     GET  /state             everything the phone shows, one JSON document
     GET  /prayer?days=N     the next N days of prayer times (the phone caches them)
+    GET  /scene/NAME        a video or picture for a media scene, from SCENE_DIR (the phone keeps a copy)
     POST /action            {"id": "ws2"} runs one of a fixed set of actions
     POST /task              {"id": 12} completes (or reopens) a taskvim task
 
@@ -50,6 +51,9 @@ CONFIG_FILE = HOME / ".config/subscreen/agent.json"
 TASKVIM_FILE = HOME / ".local/share/taskvim/data.json"
 DOJO_DB = HOME / ".local/share/dojo/dojo.db"
 CLAUDE_DIR = HOME / ".cache/subscreen/claude"
+SCENE_DIR = HOME / ".config/subscreen/scenes"   # lumiere.mp4 etc.: kept out of the repo
+SCENE_TYPES = {".mp4": "video/mp4", ".webm": "video/webm", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+               ".png": "image/png", ".webp": "image/webp"}
 PANEL_DIRS = [HOME / ".config/hypr/panel", HOME / "dotfiles/hypr/.config/hypr/panel"]
 HEAT_DAYS = 16 * 7
 TAILNET = [ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48")]
@@ -698,7 +702,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, If-None-Match")
+        self.send_header("Access-Control-Expose-Headers", "ETag")
         self.send_header("Access-Control-Allow-Private-Network", "true")
         self.end_headers()
 
@@ -729,10 +734,38 @@ class Handler(BaseHTTPRequestHandler):
                 days = int(parse_qs(url.query).get("days", ["40"])[0])
                 data = prayer_days(days)
                 return self._json(data if data else {"error": "no prayer module on this machine"}, 200 if data else 404)
+            if url.path.startswith("/scene/"):
+                return self.send_scene(url.path[len("/scene/"):])
         except Exception as exc:  # a broken source must not kill the server
             log("GET", url.path, "failed:", repr(exc))
             return self._json({"error": str(exc)}, 500)
         self._json({"error": "not found"}, 404)
+
+    def send_scene(self, name):
+        if not name.isascii() or not name.replace("-", "").isalnum():
+            return self._json({"error": "bad name"}, 400)
+        path = next((SCENE_DIR / (name + ext) for ext in SCENE_TYPES if (SCENE_DIR / (name + ext)).is_file()), None)
+        if not path:
+            return self._json({"error": f"no {name} in {SCENE_DIR}"}, 404)
+        st = path.stat()
+        tag = f'"{path.suffix[1:]}-{int(st.st_mtime)}-{st.st_size}"'
+        if self.headers.get("If-None-Match") == tag:
+            self.send_response(304)
+            self.send_header("ETag", tag)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Expose-Headers", "ETag")
+            self.send_header("Content-Length", "0")
+            return self.end_headers()
+        self.send_response(200)
+        self.send_header("Content-Type", SCENE_TYPES[path.suffix.lower()])
+        self.send_header("Content-Length", str(st.st_size))
+        self.send_header("ETag", tag)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Expose-Headers", "ETag")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.end_headers()
+        with open(path, "rb") as fp:
+            shutil.copyfileobj(fp, self.wfile, 1 << 20)
 
     def do_POST(self):
         ip = self.client_ip()

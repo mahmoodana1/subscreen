@@ -32,6 +32,10 @@ This installs the `subscreen-agent` systemd user service and a Claude Code hook
 (`agent/claude_hook.py`) that feeds the Claude page. `./agent/install.sh --remove` undoes both.
 For idle detection the user should be in the `input` group.
 
+The **Lumière** scene plays a clip or picture instead of a drawn sky: put `lumiere.mp4` (or `.webm`,
+`.jpg`, `.png`, `.webp`) in `~/.config/subscreen/scenes/` on any computer. The phone downloads it once,
+keeps it, and fetches it again only when the file changes. It never goes in the repo.
+
 ## Set up the phone
 
 1. Open the [latest release](https://github.com/mahmoodana1/subscreen/releases/tag/latest)
