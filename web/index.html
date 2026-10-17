@@ -105,7 +105,8 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
    digit first like an odometer. Only transform and opacity animate, so it runs on the compositor. */
 .flipclock{--ch:min(56vh,42cqw);display:flex;align-items:center;justify-content:center;font:300 calc(var(--ch)*1.2)/.84 var(--f-flip);color:rgba(255,255,255,.88);letter-spacing:.005em;font-variant-numeric:tabular-nums;text-shadow:0 0 calc(var(--ch)*.16) rgba(0,0,0,.22),0 calc(var(--ch)*.008) calc(var(--ch)*.03) rgba(0,0,0,.2)}
 .roll{display:flex}
-.sep{font-size:.55em;margin:0 calc(var(--ch)*.07);opacity:.32;transform:translateY(-.04em)}
+/* the separator: one small, faint dot between the hours and the minutes */
+.sep{flex:none;width:calc(var(--ch)*.035);height:calc(var(--ch)*.035);margin:0 calc(var(--ch)*.09);border-radius:50%;background:currentColor;opacity:.22}
 .dg{position:relative;display:block}
 .dg i{display:block;font-style:normal;will-change:transform,opacity}
 .dg i + i{position:absolute;left:0;top:0;opacity:0}
@@ -132,7 +133,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .app.idle .home{grid-template-columns:minmax(0,1fr)}
 .app.idle .flipclock{--ch:min(66vh,44cqw)}
 .app.idle{padding-top:calc(env(safe-area-inset-top,0px) + 4px)}
-.app.idle #p-home{padding-block:0}
+.app.idle #p-home{padding-block:0 22vh}   /* centred, then lifted well above the middle */
 .app.idle #p-home .fit{align-items:center}
 .app.idle .stack .when{margin-top:14px}
 /* the cat's shelf: it lies on this hairline at the top of the side panel, legs and tail hanging into the gap */
@@ -366,7 +367,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
       <section class="page on" id="p-home" aria-label="Home"><div class="fit">
         <div class="home">
           <div class="clockblock" id="drift"><div class="stack">
-            <div class="flipclock" id="clock" role="timer" aria-label="Time"><div class="roll" id="fH"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div><span class="sep" aria-hidden="true">:</span><div class="roll" id="fM"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div></div>
+            <div class="flipclock" id="clock" role="timer" aria-label="Time"><div class="roll" id="fH"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div><span class="sep" aria-hidden="true"></span><div class="roll" id="fM"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div></div>
             <div class="when"><span id="dateG"></span><span class="wp" id="whenP"><b id="wPn"></b><span id="wPt"></span><span class="cd" id="wPc"></span></span></div>
           </div></div>
           <nav class="glance" aria-label="At a glance">
