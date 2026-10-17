@@ -984,6 +984,30 @@ const SCENES = {
     float life=fract(u_t*.025+h*7.);float a=smoothstep(0.,.04,life)*smoothstep(1.,.8,life)*step(1.-dens,hash(id+8.+sd));
     vec2 d=(f-o)/r;d.y*=1.1;float l=length(d);float m=smoothstep(1.,.8,l)*a;
     return vec4(d,m,l);}
+  float saw(float b,float t){return smoothstep(0.,b,t)*smoothstep(1.,b,t);}
+  // Drops running down the glass. The grid creeps down the screen and each drop rides it, clinging
+  // in place (it climbs its cell as fast as the cell falls), then letting go and sliding a stretch,
+  // weaving left and right as it goes. Behind it a cleared trail with a few beads left on the glass.
+  // Returns the refraction offset (xy), the drop/bead mask (z) and the trail (w).
+  vec4 glide(vec2 p,float sc,float dens,float sp,float sd){
+    float tm=u_t*sp;vec2 g=p*sc*vec2(2.,1.);g.y+=tm;
+    g.y+=hash(vec2(floor(g.x),sd));
+    vec2 id=floor(g);vec2 st=fract(g)-vec2(.5,0.);
+    float h=hash(id+sd),h2=hash(id+sd+3.7),h3=hash(id+sd+7.1);
+    if(hash(id+sd+9.3)>dens)return vec4(0.);
+    float wy=p.y*sc*4.+h2*6.;
+    float x=h-.5;x+=sin(wy+sin(wy))*(.5-abs(x))*(h3-.5);x*=.7;
+    float y=.1+.65*saw(.85,fract(tm+h3));
+    vec2 d=(st-vec2(x,y))*vec2(1.,2.);d.y*=st.y>y?.75:1.15;   // heavier at the bottom, tapering up
+    float rd=.22+.1*h2;float ld=length(d);float md=smoothstep(rd,rd*.7,ld);
+    float r=sqrt(smoothstep(1.,y,st.y));float above=smoothstep(-.02,.02,st.y-y);
+    float cx=abs(st.x-x);
+    float tr=smoothstep(.07*r,.02*r,cx)*above*r*r*r;
+    float by=fract(p.y*sc*5.)+(st.y-.5);   // beads stay put on the glass while the trail passes
+    vec2 bd=(st-vec2(x,by))*vec2(1.,1.);float bl=length(bd);
+    float bead=smoothstep(.12,.06,bl)*r*above*step(.4,hash(vec2(floor(p.y*sc*5.),id.x+sd)));
+    vec2 off=md>bead?d/rd:bd/.12;
+    return vec4(off,max(md,bead),tr);}
   float streaks(vec2 p,float sc,float sp,float len,float dens,float sd){   // rain falling past the window
     float cx=(p.x+p.y*.22)*sc;float id=floor(cx);float h=hash(vec2(id,sd));
     float v=p.y*(1.1+.5*h)+u_t*sp*(.8+.4*h)+h*17.;float fv=fract(v);
@@ -995,16 +1019,9 @@ const SCENES = {
     vec2 uv=gl_FragCoord.xy/u_res;float asp=u_res.x/u_res.y;vec2 p=vec2(uv.x*asp,uv.y);
     float cut=1.-.6*smoothstep(.76,.82,uv.x)-.5*smoothstep(.88,.93,uv.y);
     vec4 a=drop(p,7.,.3*cut,0.),b=drop(p,26.,.35*cut,11.);
-    float trail=0.,sm=0.;vec2 so=vec2(0.);
-    for(int i=0;i<2;i++){float fi=float(i);float cw=3.5+fi*2.;float cid=floor(p.x*cw);float ch=hash(vec2(cid,9.+fi));
-      float tt=u_t*(.09+.05*ch)+ch*5.;float yd=1.2-(floor(tt)+smoothstep(.0,.35,fract(tt)))*.17;yd=1.2-mod(1.2-yd,1.6);
-      float xd=(cid+.5+.35*(ch-.5))/cw+.006*sin(yd*40.+ch*9.);
-      vec2 dd=vec2(p.x-xd,p.y-yd)/.03;float ls=length(dd*vec2(1.,.85));float s2=smoothstep(1.,.8,ls)*step(.2,ch)*cut;
-      so+=dd*s2;sm=max(sm,s2);
-      float wx=abs(p.x-xd-.004*sin((p.y-yd)*60.+ch*7.));
-      float tr=step(0.,p.y-yd)*smoothstep(.35,0.,p.y-yd)*smoothstep(.012*(1.-.5*(p.y-yd)/.35),.002,wx)*step(.45,ch)*cut;trail=max(trail,tr);
-      float bead=smoothstep(.35,.1,length(vec2((p.x-xd)/.006,fract((p.y-yd)*28.)-.5)))*tr*step(.5,hash(vec2(floor((p.y-yd)*28.),cid)));
-      sm=max(sm,bead*.8);}
+    vec4 g1=glide(p,3.,.42,.22,21.),g2=glide(p,5.5,.3,.3,37.);   // big slow runners, smaller quicker ones
+    float trail=max(g1.w,g2.w)*cut,sm=max(g1.z,g2.z)*cut;vec2 so=g1.z>g2.z?g1.xy:g2.xy;
+    a.z*=1.-smoothstep(.05,.4,trail);b.z*=1.-smoothstep(.05,.4,trail);   // a runner sweeps the beads off its path
     vec3 bg=bokeh(p,uv.y);
     float rn=streaks(p,60.,.8,.07,.22,1.)*.55+streaks(p,30.,1.1,.09,.18,2.);   // light rain: a few drops falling at a time
     bg+=vec3(.65,.75,.9)*rn*(.45+2.*dot(bg,vec3(.3,.4,.3)));   // the streaks light up where the city is bright behind them
@@ -1015,9 +1032,9 @@ const SCENES = {
     vec2 off=(a.z>b.z?a.xy:b.xy);if(sm>m*.99)off=so;
     vec3 inner=bokeh(p-off*.09,uv.y+off.y*.12)*1.5+vec3(.02,.025,.035);
     col=mix(col,inner,m);
-    float rl=max(a.z*smoothstep(.55,1.,a.w),b.z*smoothstep(.55,1.,b.w));
-    col+=vec3(.75,.8,.9)*rl*smoothstep(-.2,-.9,(a.z>b.z?a.y:b.y))*.12;
-    col+=vec3(1.)*m*smoothstep(.3,.0,length((a.z>b.z?a.xy:b.xy)-vec2(-.35,.45)))*.35;
+    float rl=max(max(a.z*smoothstep(.55,1.,a.w),b.z*smoothstep(.55,1.,b.w)),sm*smoothstep(.55,1.,length(so)));
+    col+=vec3(.75,.8,.9)*rl*smoothstep(-.2,-.9,off.y)*.12;
+    col+=vec3(1.)*m*smoothstep(.3,.0,length(off-vec2(-.35,.45)))*.35;
     gl_FragColor=vec4(post(col,uv),1.);
   }`,
   // The night side of a planet from orbit: the sun breaking over the limb, a twilight band at the
