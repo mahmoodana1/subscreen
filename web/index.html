@@ -103,7 +103,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
    ambient shows everywhere but the strokes; a wide faint shadow keeps them readable over bright skies.
    A changed digit rolls: the old one rises and fades while the new one comes up from below, right-hand
    digit first like an odometer. Only transform and opacity animate, so it runs on the compositor. */
-.flipclock{--ch:min(56vh,42cqw);display:flex;align-items:center;justify-content:center;font:500 calc(var(--ch)*1.2)/.84 var(--f-flip);color:rgba(255,255,255,.88);letter-spacing:.005em;font-variant-numeric:tabular-nums;text-shadow:0 0 calc(var(--ch)*.16) rgba(0,0,0,.22),0 calc(var(--ch)*.008) calc(var(--ch)*.03) rgba(0,0,0,.2)}
+.flipclock{--ch:min(56vh,42cqw);display:flex;align-items:center;justify-content:center;font:300 calc(var(--ch)*1.2)/.84 var(--f-flip);color:rgba(255,255,255,.88);letter-spacing:.005em;font-variant-numeric:tabular-nums;text-shadow:0 0 calc(var(--ch)*.16) rgba(0,0,0,.22),0 calc(var(--ch)*.008) calc(var(--ch)*.03) rgba(0,0,0,.2)}
 .roll{display:flex}
 .sep{font-size:.55em;margin:0 calc(var(--ch)*.07);opacity:.32;transform:translateY(-.04em)}
 .dg{position:relative;display:block}
@@ -113,12 +113,13 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .dg.go i + i{animation:rollIn .6s calc(var(--d,0s) + .16s) cubic-bezier(.16,.8,.3,1) both}
 @keyframes rollOut{to{transform:translateY(-.22em);opacity:0}}
 @keyframes rollIn{from{transform:translateY(.26em);opacity:0}to{transform:none;opacity:1}}
-/* one bold row under the clock: the date on the left, the next prayer and its countdown on the right */
-.when{display:flex;justify-content:space-between;align-items:baseline;gap:4px 18px;margin-top:10px;font:600 clamp(17px,2.6vw,30px)/1.1 var(--f-flip);letter-spacing:.06em;text-transform:uppercase;color:#fff;white-space:nowrap;text-shadow:0 1px 10px rgba(0,0,0,.75)}
+/* one quiet line under the clock: the date, then the next prayer and its countdown, thin and white
+   so it reads without pulling the eye off the scene */
+.when{display:flex;justify-content:center;align-items:baseline;gap:.6em;margin-top:10px;font:300 clamp(14px,1.8vw,20px)/1.1 var(--f-flip);letter-spacing:.08em;text-transform:uppercase;color:#fff;white-space:nowrap;text-shadow:0 1px 8px rgba(0,0,0,.6)}
 .when .wp{display:flex;align-items:baseline;gap:.45em;min-width:0}
-.when .wp b{font-weight:600;color:var(--sand)}
-.when .cd{font-variant-numeric:tabular-nums;color:var(--accent)}
-.when .wp.iq .cd{color:var(--teal)}
+.when .wp:not(:empty)::before{content:"·";opacity:.6}
+.when .wp b{font-weight:300}
+.when .cd{font-variant-numeric:tabular-nums}
 
 /* idle: the header, the dock and the glance fade out, then the clock grows to fill the screen
    (a FLIP transform, so the growth is one smooth compositor animation); a tap brings it all back */
