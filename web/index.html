@@ -99,12 +99,11 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .home{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,.27fr);gap:clamp(18px,3vw,48px);align-items:center;width:100%}
 .clockblock{min-width:0;transition:transform 6s ease-in-out;container-type:inline-size;display:grid;justify-content:center}
 .stack{display:flex;flex-direction:column;min-width:0}
-.stack .when{justify-content:center}
 /* the clock: light, slightly see-through digits floating on the scene with no card behind them, so the
    ambient shows everywhere but the strokes; a wide faint shadow keeps them readable over bright skies.
    A changed digit rolls: the old one rises and fades while the new one comes up from below, right-hand
    digit first like an odometer. Only transform and opacity animate, so it runs on the compositor. */
-.flipclock{--ch:min(56vh,42cqw);display:flex;align-items:center;justify-content:center;font:300 calc(var(--ch)*1.2)/.84 var(--f-flip);color:rgba(255,255,255,.88);letter-spacing:.005em;font-variant-numeric:tabular-nums;text-shadow:0 0 calc(var(--ch)*.16) rgba(0,0,0,.22),0 calc(var(--ch)*.008) calc(var(--ch)*.03) rgba(0,0,0,.2)}
+.flipclock{--ch:min(56vh,42cqw);display:flex;align-items:center;justify-content:center;font:500 calc(var(--ch)*1.2)/.84 var(--f-flip);color:rgba(255,255,255,.88);letter-spacing:.005em;font-variant-numeric:tabular-nums;text-shadow:0 0 calc(var(--ch)*.16) rgba(0,0,0,.22),0 calc(var(--ch)*.008) calc(var(--ch)*.03) rgba(0,0,0,.2)}
 .roll{display:flex}
 .sep{font-size:.55em;margin:0 calc(var(--ch)*.07);opacity:.32;transform:translateY(-.04em)}
 .dg{position:relative;display:block}
@@ -114,10 +113,12 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .dg.go i + i{animation:rollIn .6s calc(var(--d,0s) + .16s) cubic-bezier(.16,.8,.3,1) both}
 @keyframes rollOut{to{transform:translateY(-.22em);opacity:0}}
 @keyframes rollIn{from{transform:translateY(.26em);opacity:0}to{transform:none;opacity:1}}
-.when{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:clamp(12px,1.5vw,15px);color:var(--sub)}
-.when .hijri{color:var(--sand)}
-.minute{margin-top:8px;max-width:100%}
-.minute i{width:100%!important;transform-origin:0 50%;transform:scaleX(0);will-change:transform}
+/* one bold row under the clock: the date on the left, the next prayer and its countdown on the right */
+.when{display:flex;justify-content:space-between;align-items:baseline;gap:4px 18px;margin-top:10px;font:600 clamp(17px,2.6vw,30px)/1.1 var(--f-flip);letter-spacing:.06em;text-transform:uppercase;color:#fff;white-space:nowrap;text-shadow:0 1px 10px rgba(0,0,0,.75)}
+.when .wp{display:flex;align-items:baseline;gap:.45em;min-width:0}
+.when .wp b{font-weight:600;color:var(--sand)}
+.when .cd{font-variant-numeric:tabular-nums;color:var(--accent)}
+.when .wp.iq .cd{color:var(--teal)}
 
 /* idle: the header, the dock and the glance fade out, then the clock grows to fill the screen
    (a FLIP transform, so the growth is one smooth compositor animation); a tap brings it all back */
@@ -129,14 +130,10 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .app.idle .glance{display:none}
 .app.idle .home{grid-template-columns:minmax(0,1fr)}
 .app.idle .flipclock{--ch:min(66vh,44cqw)}
-/* the clock sits high so the cat, lying on the minute line, has room to hang its legs and tail */
 .app.idle{padding-top:calc(env(safe-area-inset-top,0px) + 4px)}
 .app.idle #p-home{padding-block:0}
 .app.idle #p-home .fit{align-items:flex-start}
 .app.idle .stack .when{margin-top:14px}
-.idlep{display:none;margin-top:12px;text-align:right;font:600 13px var(--f-num);letter-spacing:.03em;color:#fff;white-space:nowrap;text-shadow:0 1px 8px rgba(0,0,0,.7)}
-.idlep .in{font-weight:400;color:rgba(255,255,255,.72)}
-.app.idle .idlep{display:block;animation:fade .8s .35s both}
 /* the cat's shelf: it lies on this hairline at the top of the side panel, legs and tail hanging into the gap */
 .perch{height:64px;margin:0 -8px;border-top:1px solid rgba(255,255,255,.12);flex:none}
 .app.idle .perch{display:none}
@@ -370,9 +367,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
         <div class="home">
           <div class="clockblock" id="drift"><div class="stack">
             <div class="flipclock" id="clock" role="timer" aria-label="Time"><div class="roll" id="fH"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div><span class="sep" aria-hidden="true">:</span><div class="roll" id="fM"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div></div>
-            <div class="when"><span id="dateG"></span></div>
-            <div class="line minute"><i id="minute"></i></div>
-            <div class="idlep num" id="idleP"></div>
+            <div class="when"><span id="dateG"></span><span class="wp" id="whenP"><b id="wPn"></b><span id="wPt"></span><span class="cd" id="wPc"></span></span></div>
           </div></div>
           <nav class="glance" aria-label="At a glance">
             <div class="perch" id="perch" aria-hidden="true"></div>
@@ -1316,10 +1311,7 @@ function tickHome(now) {
   setFlip('fM', pad(now.getMinutes()));
   $('#clock').setAttribute('aria-label', hm(now));
   $('#mini').textContent = hm(now);
-  const mi = $('#minute');
-  if (now.getSeconds() === 0) { mi.style.transition = 'none'; mi.style.transform = 'scaleX(0)'; void mi.offsetWidth; }
-  else { mi.style.transition = 'transform 1s linear'; mi.style.transform = `scaleX(${now.getSeconds() / 59})`; }
-  $('#dateG').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('#dateG').textContent = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
   const st = lastPrayer = prayerState(now);
   $('#gPrayer').classList.toggle('iqama', st?.mode === 'iqama');
@@ -1328,12 +1320,14 @@ function tickHome(now) {
     $('#gPv').textContent = st.mode === 'iqama' ? `${st.p.en} · ${hm(st.end)}` : `${st.p.en} · ${st.p.t}${st.p.tomorrow ? ' tomorrow' : ''}`;
     $('#gPr').textContent = 'in ' + countdown(st.end - now);
     $('#gPbar').style.width = (clamp((now - st.start) / (st.end - st.start), 0, 1) * 100) + '%';
-    $('#idleP').innerHTML = (st.mode === 'iqama' ? `Iqama ${esc(st.p.en)} ${hm(st.end)}` : `${esc(st.p.en)} ${st.p.t}${st.p.tomorrow ? ' tomorrow' : ''}`)
-      + ` <span class="in">· in ${countdown(st.end - now)}</span>`;
+    $('#whenP').classList.toggle('iq', st.mode === 'iqama');
+    $('#wPn').textContent = st.mode === 'iqama' ? `${st.p.en} iqama` : st.p.en;
+    $('#wPt').textContent = st.mode === 'iqama' ? hm(st.end) : st.p.t + (st.p.tomorrow ? ' +1' : '');
+    $('#wPc').textContent = countdown(st.end - now);
     checkAthan(now, st);
   } else {
     $('#gPk').textContent = 'Prayer'; $('#gPv').textContent = 'Waiting for a computer'; $('#gPr').textContent = ''; $('#gPbar').style.width = '0';
-    $('#idleP').textContent = '';
+    $('#wPn').textContent = $('#wPt').textContent = $('#wPc').textContent = '';
   }
 }
 // Home shows only what matters right now: the prayer always; the most important open task and the
@@ -2474,7 +2468,7 @@ const fauna = (() => {
   }
   let kc = null;
   function koi(t) {
-    const cr = $('#drift .stack')?.getBoundingClientRect();   // the digits, the date and the minute line
+    const cr = $('#drift .stack')?.getBoundingClientRect();   // the digits and the date/prayer row
     // a wake: each fish leaves soft rings as it swims; they spread and fade behind it
     x.lineWidth = 1 * D;
     KOI.forEach((k, i) => {
