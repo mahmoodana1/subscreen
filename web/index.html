@@ -311,6 +311,70 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .athan-en{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--sub);margin-top:4px}
 .athan-note{font-size:11.5px;color:var(--muted);margin-top:22px}
 
+/* ---------- reminders ----------
+   Three strengths, picked by how close a deadline is: a live "due soon" row on Home (and a pill under the
+   idle clock), a card that slides in when something enters its window, and, in the last fifteen minutes,
+   a full-screen alert with a draining ring. Quiet mutes the last two; the Home row always stays. */
+.g.soon .k{color:var(--u,var(--warm))}
+.g.soon .r{color:var(--text)}
+.g.soon .bar i{background:var(--u,var(--warm));transition:width 1s linear}
+.g.soon.hot .k::before{content:"";display:inline-block;width:5px;height:5px;margin:0 6px 1px 0;border-radius:50%;background:var(--u);vertical-align:middle;animation:ping 1.6s infinite}
+.g.soon .more{color:var(--muted);letter-spacing:0;text-transform:none;font-weight:400;margin-left:6px}
+.pill{display:none;justify-content:center;margin-top:14px}
+.app.idle .pill.on{display:flex}
+.pill > span{display:inline-flex;align-items:center;gap:.55em;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--u,var(--warm)) 45%,transparent);font:400 clamp(12px,1.5vw,16px)/1 var(--f-flip);letter-spacing:.08em;text-transform:uppercase;color:#fff;max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:fade .8s}
+.pill i{flex:none;width:6px;height:6px;border-radius:50%;background:var(--u,var(--warm));animation:ping 1.8s infinite}
+.pill b{font-weight:400;color:var(--u,var(--warm))}
+
+.notes{position:fixed;top:calc(env(safe-area-inset-top,0px) + 46px);right:16px;z-index:35;display:flex;flex-direction:column;gap:8px;width:min(340px,calc(100vw - 32px));pointer-events:none}
+.note{pointer-events:auto;position:relative;display:grid;grid-template-columns:3px minmax(0,1fr) auto;gap:2px 12px;padding:11px 12px 12px 12px;border-radius:14px;background:rgba(12,12,12,.9);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px var(--faint),0 14px 40px rgba(0,0,0,.6);overflow:hidden;animation:noteIn .55s cubic-bezier(.2,1.25,.35,1) both;transition:opacity .35s,transform .35s,margin .35s}
+.note.out{opacity:0;transform:translateX(30px) scale(.97);margin-bottom:calc(var(--h,70px) * -1)}
+.note::before{content:"";grid-row:1 / 4;grid-column:1;border-radius:3px;background:var(--u,var(--warm))}
+.note .nk{grid-column:2;font:500 9px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--u,var(--warm))}
+.note .nt{grid-column:2 / 4;font-size:13.5px;line-height:1.3;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note .nt small{display:block;font-size:11px;color:var(--sub);margin-bottom:1px}
+.note .nx{grid-row:1;grid-column:3;color:var(--muted);font-size:15px;line-height:1;padding:0 2px;margin:-3px -2px 0 0}
+.note .na{grid-column:2 / 4;display:flex;gap:16px;margin-top:6px;font-size:12px}
+.note .na button{color:var(--sub)}
+.note .na button:first-child{color:var(--accent);font-weight:500}
+.note .life{position:absolute;left:0;bottom:0;height:1.5px;width:100%;background:var(--u,var(--warm));opacity:.5;transform-origin:left;animation:life var(--life,14s) linear forwards}
+.note:active .life,.note:hover .life{animation-play-state:paused}
+@keyframes noteIn{from{opacity:0;transform:translate(24px,-6px) scale(.96)}}
+@keyframes life{to{transform:scaleX(0)}}
+
+.nudge{position:fixed;inset:0;z-index:49;display:grid;place-items:center;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--u) 10%,#000) 0,rgba(0,0,0,.96) 70%);animation:fade .5s ease-out;overflow:hidden}
+.nudge.late{animation:fade .5s ease-out,breathe 3.2s ease-in-out infinite}
+.nudge-in{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:clamp(24px,5vw,64px);padding:24px;max-width:min(980px,100%);box-sizing:border-box}
+.dial{position:relative;width:min(38vmin,260px);aspect-ratio:1}
+.dial svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.dial circle{fill:none;stroke-width:3}
+.dial .trk{stroke:var(--faint)}
+.dial .arc{stroke:var(--u);stroke-linecap:round;transition:stroke-dashoffset 1s linear;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--u) 60%,transparent))}
+.dial .halo{position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 1px var(--u);opacity:0;animation:ring 3.2s cubic-bezier(.2,.6,.3,1) infinite}
+.dial .halo + .halo{animation-delay:1.6s}
+.dial-t{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.dial-t b{font:300 min(12vmin,82px)/1 var(--f-flip);color:#fff;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.dial-t span{font:500 9.5px var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--sub);margin-top:6px}
+.nudge-k{font:500 11px var(--f-ui);letter-spacing:.24em;text-transform:uppercase;color:var(--u)}
+.nudge-c{font-size:13px;margin-top:14px;color:var(--sub)}
+.nudge-t{font:300 clamp(26px,5.4vw,58px)/1.08 var(--f-flip);color:#fff;margin-top:4px;letter-spacing:.01em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.nudge-a{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+.nudge-a .btn.ghost{color:var(--text)}
+.nudge-x{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:18px;font-size:12px;color:var(--muted);padding:8px}
+body:has(.nudge:not([hidden])) .notes{opacity:0;pointer-events:none}
+@keyframes breathe{50%{background-color:color-mix(in srgb,var(--u) 9%,transparent)}}
+@media (max-aspect-ratio:1/1){
+  .nudge-in{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}
+  .nudge-a{justify-content:center}
+}
+
+.quiet{display:flex;align-items:center;gap:5px;color:var(--sub);font:12px var(--f-num);animation:fade .4s}
+.quiet svg{width:13px;height:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 10px;border-top:1px solid var(--hair)}
+.chips .lbl{width:100%;display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.chip{font-size:11.5px;padding:6px 11px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--faint);color:var(--sub);transition:background .2s,color .2s}
+.chip.on{background:var(--text);color:#000;box-shadow:none}
+
 .empty{color:var(--muted);font-size:13px;margin:10px 0}
 .host.off,.mach.off{opacity:.4}
 .key:disabled{opacity:.35}
@@ -354,6 +418,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
   <header class="top">
     <div class="hosts" id="hosts"></div>
     <div class="status">
+      <button class="quiet" id="quietBtn" type="button" hidden aria-label="Reminders are quiet. Tap to turn them back on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.6A6 6 0 0 1 18 9.5c0 3 .7 5 1.5 6.5H8M6.2 7.5A6 6 0 0 0 6 9.5C6 13 5 15 4.5 16H8"/><path d="M10 20a2.2 2.2 0 0 0 4 0M3 3l18 18"/></svg><span id="quietTxt"></span></button>
       <span class="mini num" id="mini">--:--</span>
       <span class="net"><i id="netDot"></i><span id="netTxt">tailnet</span></span>
       <button class="menu-btn" id="menuBtn" type="button" aria-label="Display settings" aria-expanded="false" aria-controls="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
@@ -369,6 +434,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
           <div class="clockblock" id="drift"><div class="stack">
             <div class="flipclock" id="clock" role="timer" aria-label="Time"><div class="roll" id="fH"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div><span class="sep" aria-hidden="true"></span><div class="roll" id="fM"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div></div>
             <div class="when"><span id="dateG"></span><span class="wp" id="whenP"><b id="wPn"></b><span id="wPt"></span><span class="cd" id="wPc"></span></span></div>
+            <div class="pill" id="pill"><span><i></i><b id="pillW"></b><span id="pillT"></span></span></div>
           </div></div>
           <nav class="glance" aria-label="At a glance">
             <div class="perch" id="perch" aria-hidden="true"></div>
@@ -376,6 +442,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
               <span class="k" id="gPk">Prayer</span><span class="v" id="gPv"></span><span class="r num" id="gPr"></span>
               <span class="line bar"><i id="gPbar" style="width:0"></i></span>
             </button>
+            <button class="g soon" id="gSoon" type="button" hidden><span class="k" id="gSk"></span><span class="v" id="gSv"></span><span class="r num" id="gSr"></span><span class="line bar"><i id="gSbar" style="width:0"></i></span></button>
             <button class="g" id="gTask" type="button" data-go="1" hidden><span class="k" id="gTk">Task</span><span class="v" id="gTv"></span><span class="r" id="gTr"></span></button>
             <button class="g" id="gDojo" type="button" data-go="2" hidden><span class="k">Dojo</span><span class="v" id="gDv"></span><span class="r" id="gDr"></span></button>
             <button class="g" id="gNext" type="button" data-go="1" hidden><span class="k">Next up</span><span class="v" id="gCv"></span><span class="r num" id="gCr"></span></button>
@@ -491,6 +558,13 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
     <button class="rowt" type="button" id="animalsBtn" aria-pressed="true">Animals<span class="switch"></span></button>
     <button class="rowt" type="button" id="nightBtn" aria-pressed="false">Night mode<span class="switch"></span></button>
     <button class="rowt" type="button" id="athanBtn">Preview athan<span style="color:var(--sand);font-size:11px">▶</span></button>
+    <h3 style="margin-top:12px">Reminders</h3>
+    <button class="rowt" type="button" id="remindBtn" aria-pressed="true">Task reminders<span class="switch"></span></button>
+    <button class="rowt" type="button" id="chimeBtn" aria-pressed="true">Chime<span class="switch"></span></button>
+    <div class="chips" id="quietChips"><span class="lbl">Quiet for<span class="rowv" id="quietState">off</span></span>
+      <button class="chip" type="button" data-q="30">30 min</button><button class="chip" type="button" data-q="60">1 h</button><button class="chip" type="button" data-q="120">2 h</button><button class="chip" type="button" data-q="morning">Until morning</button><button class="chip" type="button" data-q="0">Off</button>
+    </div>
+    <button class="rowt" type="button" id="nudgeTestBtn">Preview an alert<span style="color:var(--rose);font-size:11px">▶</span></button>
   </div>
   <div class="menu-col">
     <h3>Rest</h3>
@@ -507,6 +581,28 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
       <button class="rowt" id="homeAppBtn" type="button">Use as the home screen<span>›</span></button>
       <button class="rowt" id="bootBtn" type="button">Start after a reboot<span>›</span></button>
       <div class="ver" id="appVer"></div>
+    </div>
+  </div>
+</div>
+
+<div class="notes" id="notes" aria-live="polite"></div>
+
+<div class="nudge" id="nudge" role="alertdialog" aria-labelledby="nudgeT" hidden>
+  <button class="nudge-x" type="button" data-n="dismiss">Got it ✕</button>
+  <div class="nudge-in">
+    <div class="dial"><i class="halo"></i><i class="halo"></i>
+      <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="trk" cx="50" cy="50" r="46"/><circle class="arc" id="nudgeArc" cx="50" cy="50" r="46" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"/></svg>
+      <div class="dial-t"><b id="nudgeCd"></b><span id="nudgeCdL"></span></div>
+    </div>
+    <div>
+      <div class="nudge-k" id="nudgeK"></div>
+      <div class="nudge-c" id="nudgeC"></div>
+      <div class="nudge-t" id="nudgeT"></div>
+      <div class="nudge-a">
+        <button class="btn" type="button" data-n="done" id="nudgeDone">Mark done</button>
+        <button class="btn ghost" type="button" data-n="snooze">Snooze 10 min</button>
+        <button class="btn ghost" type="button" data-n="quiet">Quiet 1 h</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1297,9 +1393,9 @@ function setFlip(id, v) {
   });
 }
 function beltFor(xp) { let i = 0; BELTS.forEach((b, k) => { if (xp >= b[2]) i = k; }); return { cur: BELTS[i], next: BELTS[i + 1] }; }
-function firstTask(tv) {
+function firstTask(tv, skip) {
   if (!tv) return null;
-  for (const k of ['important', 'general', 'agent']) { const t = (tv.groups[k] || []).find(t => !t.done); if (t) return t; }
+  for (const k of ['important', 'general', 'agent']) { const t = (tv.groups[k] || []).find(t => !t.done && t.id !== skip); if (t) return t; }
   return null;
 }
 function whenText(isoStr) {
@@ -1312,6 +1408,7 @@ function tickHome(now) {
   setFlip('fM', pad(now.getMinutes()));
   $('#clock').setAttribute('aria-label', hm(now));
   $('#mini').textContent = hm(now);
+  checkReminders(now); renderQuiet();
   $('#dateG').textContent = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
   const st = lastPrayer = prayerState(now);
@@ -1336,7 +1433,9 @@ function tickHome(now) {
 // when a session is waiting for you.
 function renderGlance() {
   const tv = source('taskvim'), dj = source('dojo');
-  const t = firstTask(tv?.data);
+  soonData = tv?.data?.soon || [];
+  const skip = /^task-/.test($('#gSoon').dataset.key || '') && !$('#gSoon').hidden ? +$('#gSoon').dataset.key.slice(5) : null;
+  const t = firstTask(tv?.data, skip);
   $('#gTask').hidden = !t;
   if (t) {
     $('#gTk').textContent = (tv.data.groups.important || []).includes(t) ? 'Important' : 'Task';
@@ -1426,7 +1525,7 @@ function renderTasks() {
   fitPages();
 }
 
-async function toggleTask(id, el) {
+async function toggleTask(id, el, label) {
   const src = source('taskvim');
   if (!src?.live) return toast('No computer with taskvim is reachable right now');
   const a = agents.find(x => x.addr === src.addr);
@@ -1439,8 +1538,8 @@ async function toggleTask(id, el) {
     const r = await fetch(`http://${a.addr}/task`, { method: 'POST', body: JSON.stringify({ id }), headers: { 'Content-Type': 'text/plain' } });
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || 'failed');
-    const text = el ? $('.t', el).textContent : 'Task';
-    if (d.result === 'done') toast(`Done · <b>${esc(text)}</b>`, { label: 'Undo', run: () => toggleTask(id, null) });
+    const text = el ? $('.t', el).textContent : label || 'Task';
+    if (d.result === 'done') toast(`Done · <b>${esc(text)}</b>`, { label: 'Undo', run: () => toggleTask(id, null, text) });
     else toast(`Reopened · <b>${esc(text)}</b>`);
   } catch (err) {
     if (el) el.classList.toggle('done', undo);
@@ -1450,6 +1549,268 @@ async function toggleTask(id, el) {
 }
 $('#taskGroups').addEventListener('click', e => {
   const b = e.target.closest('.task'); if (b) toggleTask(+b.dataset.id, b);
+});
+
+/* ================= reminders: tasks and events that are due soon ================= */
+// The computers send everything dated in the next two days (taskvim `soon`); the phone decides how
+// loud to be. A timed deadline gets a card two hours out and a full-screen alert fifteen minutes out
+// and again when it is due; a dated one gets a card on the morning it is due (and the evening before).
+// Each step fires once, only inside its own window, so being away or quiet never leaves a backlog.
+const MIN = 60e3, HOUR = 3600e3;
+const notifyCfg = { on: true, chime: true, quietUntil: 0, ...loadJSON('ss-notify', {}) };
+const seen = loadJSON('ss-nseen', {}), snoozed = loadJSON('ss-nsnooze', {});
+const prune = o => { for (const k in o) if (o[k] < Date.now() - 3 * DAY) delete o[k]; };
+prune(seen); for (const k in snoozed) if (snoozed[k] < Date.now()) delete snoozed[k];
+const quietNow = () => !notifyCfg.on || Date.now() < notifyCfg.quietUntil;
+const itemKey = it => `${it.kind}-${it.id}`;
+
+let soonData = [];
+function reminders(now) {
+  const list = soonData, t0 = startOfDay(now), out = [];
+  for (const s of list) {
+    const timed = s.at.includes('T'), at = new Date(timed ? s.at : s.at + 'T00:00');
+    if (isNaN(at)) continue;
+    const day = Math.round((startOfDay(at) - t0) / DAY), ms = at - now;
+    const it = { ...s, timed, at, ms, day, u: s.color ? `var(--${s.color})` : 'var(--warm)' };
+    if (timed) {
+      if (ms < -HOUR && day < 0) it.level = 'late';                    // missed, from an earlier day
+      else if (ms <= 15 * MIN && ms > -HOUR) it.level = 'now';
+      else if (ms <= 2 * HOUR) it.level = ms < 0 ? 'late' : 'soon';
+      else it.level = day === 0 ? 'today' : 'later';
+    } else it.level = day < 0 ? 'late' : day === 0 ? 'today' : 'later';
+    it.urgency = it.level === 'now' ? 0 : it.level === 'soon' ? 1 : it.level === 'today' ? 2 : it.level === 'late' ? 3 : 4;
+    out.push(it);
+  }
+  return out.sort((a, b) => a.urgency - b.urgency || a.at - b.at);
+}
+// how the deadline reads, as a short label and a colour
+function dueLabel(it, now) {
+  const late = it.ms < 0;
+  if (it.timed && Math.abs(it.ms) < 12 * HOUR && it.day === 0 || it.timed && it.level === 'now')
+    return late ? (it.kind === 'event' ? 'Started ' : 'Late ') + countdown(-it.ms) : (it.kind === 'event' ? 'Starts in ' : 'Due in ') + countdown(it.ms);
+  if (it.day < 0) return 'Overdue · ' + it.at.toLocaleDateString('en-GB', { weekday: 'short' });
+  const when = it.day === 0 ? 'today' : it.day === 1 ? 'tomorrow' : it.at.toLocaleDateString('en-GB', { weekday: 'short' });
+  return `Due ${when}${it.timed ? ' ' + hm(it.at) : ''}`;
+}
+const isLate = it => it.timed ? it.ms < 0 : it.day < 0;   // a dated task is late only from the next day
+const urgentColor = it => it.level === 'now' || isLate(it) ? 'var(--rose)' : it.level === 'soon' && it.ms < HOUR ? 'var(--warm)' : it.u;
+
+// which step (if any) is due to fire for this item right now
+function stepFor(it, now) {
+  const ms = it.ms, h = now.getHours();
+  if (it.timed) {
+    const pre = it.kind === 'event' ? 10 * MIN : 15 * MIN, heads = it.kind === 'event' ? HOUR : 2 * HOUR;
+    if (ms > pre && ms <= heads) return { k: 'heads', hard: false };
+    if (ms > 0 && ms <= pre) return { k: 'pre', hard: true };
+    if (ms <= 0 && ms > (it.kind === 'event' ? -5 * MIN : -HOUR)) return { k: 'due', hard: true };
+    return null;
+  }
+  if (it.day === 0 && h >= 8) return { k: 'today-' + iso(now), hard: false };
+  if (it.day === 1 && h >= 19) return { k: 'eve', hard: false };
+  if (it.day < 0 && h >= 9) return { k: 'late-' + iso(now), hard: false };
+  return null;
+}
+
+function checkReminders(now) {
+  const items = reminders(now);
+  renderSoon(items, now);
+  if (nudgeItem?.id === 'preview') { nudgeItem.ms = nudgeItem.at - now; tickNudge(now); }
+  else if (nudgeItem) {
+    const cur = items.find(i => itemKey(i) === itemKey(nudgeItem));
+    if (!cur) closeNudge();                                            // completed somewhere else
+    else { nudgeItem = cur; tickNudge(now); }
+  }
+  $$('.note').forEach(n => { if (!items.some(i => itemKey(i) === n.dataset.key)) dropNote(n); });
+  if (quietNow()) return;
+  for (const it of items) {
+    const key = itemKey(it), sz = snoozed[key];
+    if (sz && sz > now) continue;
+    let st = stepFor(it, now);
+    if (sz) { delete snoozed[key]; saveJSON('ss-nsnooze', snoozed); if (it.level === 'now') st = { k: 'snooze-' + sz, hard: true }; }
+    if (!st) continue;
+    const sk = `${key}|${st.k}|${it.at.getTime()}`;
+    if (seen[sk]) continue;
+    if (st.hard) {
+      if (nudgeItem && !$('#nudge').hidden) continue;                  // one alert at a time; the next waits
+      if (!$('#athan').hidden) continue;
+      seen[sk] = Date.now(); saveJSON('ss-nseen', seen);
+      openNudge(it, now, st.k);
+    } else {
+      if (resting || $$('.note:not(.out)').length >= 2) continue;      // keep it for when someone is here
+      seen[sk] = Date.now(); saveJSON('ss-nseen', seen);
+      showNote(it, now);
+    }
+  }
+}
+
+/* ----- Home: the most urgent thing, with a live countdown and a bar that drains ----- */
+let soonShown = null;
+function renderSoon(items, now) {
+  const top = items.find(i => i.level === 'now' || i.level === 'soon') || items.find(i => i.level === 'today' || i.level === 'late');
+  const row = $('#gSoon');
+  if (!top) { if (!row.hidden) { row.hidden = true; fitPages(); } soonShown = null; $('#pill').classList.remove('on'); return; }
+  const more = items.filter(i => i !== top && i.urgency <= 3).length;
+  const col = urgentColor(top);
+  row.style.setProperty('--u', col);
+  row.classList.toggle('hot', top.level === 'now' || top.ms > 0 && top.ms < 30 * MIN);
+  row.dataset.key = itemKey(top);
+  $('#gSk').innerHTML = esc(top.kind === 'event' ? 'Coming up' : isLate(top) ? 'Overdue' : top.level === 'today' ? 'Due today' : 'Due soon') + (more ? `<span class="more">+${more}</span>` : '');
+  $('#gSv').textContent = (top.course ? top.course + ' · ' : '') + top.text;
+  $('#gSr').textContent = top.timed && top.day === 0 ? (top.ms < 0 ? 'late ' + countdown(-top.ms) : 'in ' + countdown(top.ms)) : dueLabel(top, now).replace(/^Due /, '');
+  const span = top.timed ? 2 * HOUR : DAY, left = top.timed ? top.ms : startOfDay(addDays(top.at, 1)) - now;
+  $('#gSbar').style.width = (clamp(left / span, 0, 1) * 100) + '%';
+  if (row.hidden) { row.hidden = false; fitPages(); }
+  if (soonShown !== row.dataset.key && !reduce) row.animate([{ opacity: 0, transform: 'translateX(12px)' }, { opacity: 1, transform: 'none' }], { duration: 500, easing: 'cubic-bezier(.2,1,.3,1)' });
+  soonShown = row.dataset.key;
+  // the idle clock: a small pill when something is close
+  const close = top.timed && top.ms < HOUR && top.ms > -HOUR;
+  $('#pill').classList.toggle('on', close);
+  if (close) {
+    $('#pill').style.setProperty('--u', col);
+    $('#pillW').textContent = top.ms < 0 ? 'late ' + countdown(-top.ms) : countdown(top.ms);
+    $('#pillT').textContent = top.text;
+  }
+}
+$('#gSoon').addEventListener('click', () => {
+  const it = reminders(new Date()).find(i => itemKey(i) === $('#gSoon').dataset.key);
+  if (it && it.level === 'now') openNudge(it, new Date(), 'tap'); else go(1);
+});
+
+/* ----- cards: a heads-up that slides in and leaves by itself ----- */
+function showNote(it, now) {
+  const n = document.createElement('div');
+  n.className = 'note'; n.dataset.key = itemKey(it);
+  n.style.setProperty('--u', urgentColor(it));
+  n.style.setProperty('--life', (it.level === 'soon' ? 20 : 14) + 's');
+  n.innerHTML = `<span class="nk">${esc(dueLabel(it, now))}</span><button class="nx" type="button" data-n="x" aria-label="Dismiss">×</button>
+    <div class="nt">${it.course ? `<small>${esc(it.course)}</small>` : ''}${esc(it.text)}</div>
+    <div class="na">${it.kind === 'task' ? '<button type="button" data-n="done">Done</button>' : ''}<button type="button" data-n="later">Remind me in 1 h</button><button type="button" data-n="open">Open</button></div>
+    <i class="life"></i>`;
+  $('#notes').prepend(n);
+  $('.life', n).addEventListener('animationend', () => dropNote(n));
+  chime(false);
+}
+function dropNote(n) {
+  if (n.classList.contains('out')) return;
+  n.style.setProperty('--h', n.offsetHeight + 8 + 'px'); n.classList.add('out');
+  setTimeout(() => n.remove(), 400);
+}
+$('#notes').addEventListener('click', e => {
+  const n = e.target.closest('.note'); if (!n) return;
+  const b = e.target.closest('[data-n]'), what = b?.dataset.n || 'open';
+  const it = reminders(new Date()).find(i => itemKey(i) === n.dataset.key);
+  dropNote(n);
+  if (!it) return;
+  if (what === 'done') completeItem(it);
+  else if (what === 'later') { snooze(it, 60); toast(`Again at <b>${hm(new Date(Date.now() + HOUR))}</b>`); }
+  else if (what === 'open') go(1);
+});
+
+/* ----- the alert: full screen, for the last fifteen minutes ----- */
+let nudgeItem = null, nudgeStep = '', nudgeChimes = [];
+function openNudge(it, now, step) {
+  nudgeItem = it; nudgeStep = step;
+  $$('.note').forEach(n => { if (n.dataset.key === itemKey(it)) dropNote(n); });
+  if (resting) setRest(false);
+  if (idleUI) setIdle(false);
+  setMenu(false);
+  $('#nudgeT').textContent = it.text;
+  $('#nudgeC').textContent = it.course || (it.kind === 'event' ? 'Calendar' : '');
+  $('#nudgeDone').hidden = it.kind !== 'task';
+  $('#nudge').hidden = false;
+  tickNudge(now);
+  // a soft bell now, and twice more if nobody answers
+  nudgeChimes.forEach(clearTimeout);
+  chime(true);
+  nudgeChimes = [45e3, 120e3].map(d => setTimeout(() => { if (!$('#nudge').hidden) chime(true); }, d));
+  lastTouch = Date.now();
+}
+function tickNudge(now) {
+  const it = nudgeItem, late = it.ms <= 0, col = late ? 'var(--rose)' : urgentColor(it);
+  const el = $('#nudge');
+  el.style.setProperty('--u', col);
+  el.classList.toggle('late', late);
+  $('#nudgeK').textContent = late ? (it.kind === 'event' ? 'Starting now' : 'Due now') : it.kind === 'event' ? 'Starting soon' : 'Due very soon';
+  $('#nudgeCd').textContent = countdown(Math.abs(it.ms));
+  $('#nudgeCdL').textContent = late ? (it.kind === 'event' ? 'since start' : 'overdue') : 'left · ' + hm(it.at);
+  // the ring empties over the last fifteen minutes, then sits full and breathing once it is due
+  const span = it.kind === 'event' ? 10 * MIN : 15 * MIN;
+  $('#nudgeArc').style.strokeDashoffset = late ? 0 : 100 - clamp(it.ms / span, 0, 1) * 100;
+}
+function closeNudge() {
+  nudgeChimes.forEach(clearTimeout); nudgeChimes = [];
+  $('#nudge').hidden = true; nudgeItem = null;
+}
+$('#nudge').addEventListener('click', e => {
+  const b = e.target.closest('[data-n]'), it = nudgeItem;
+  if (!it) return closeNudge();
+  if (!b && e.target.closest('.nudge-in')) return;                    // a tap on the text is not a dismissal
+  const what = b ? b.dataset.n : 'dismiss';
+  closeNudge();
+  if (what === 'done') completeItem(it);
+  else if (what === 'snooze') { snooze(it, 10); toast(`Snoozed · back at <b>${hm(new Date(Date.now() + 10 * MIN))}</b>`); }
+  else if (what === 'quiet') setQuiet(60);
+});
+
+function snooze(it, minutes) { snoozed[itemKey(it)] = Date.now() + minutes * MIN; saveJSON('ss-nsnooze', snoozed); }
+function completeItem(it) {
+  if (it.kind !== 'task') return;
+  toggleTask(it.id, null, it.text);
+  pop($('#gSoon'), css('--green'), 16);
+}
+
+/* ----- sound: a small two-note bell, made here so it needs no file ----- */
+function chime(strong) {
+  if (!notifyCfg.chime || quietNow()) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    const t = actx.currentTime + .05, notes = strong ? [659.3, 987.8, 1318.5] : [880, 1174.7];
+    notes.forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain(), o2 = actx.createOscillator(), g2 = actx.createGain();
+      const s = t + i * .16, v = strong ? .16 : .08;
+      o.type = 'sine'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2.76;   // a bell's bright partial
+      g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(v, s + .012); g.gain.exponentialRampToValueAtTime(.0001, s + 1.6);
+      g2.gain.setValueAtTime(0, s); g2.gain.linearRampToValueAtTime(v * .18, s + .008); g2.gain.exponentialRampToValueAtTime(.0001, s + .45);
+      o.connect(g).connect(actx.destination); o2.connect(g2).connect(actx.destination);
+      o.start(s); o2.start(s); o.stop(s + 1.7); o2.stop(s + .5);
+    });
+  } catch {}
+}
+
+/* ----- quiet: off for a while, or off ----- */
+function setQuiet(v) {
+  let until = 0;
+  if (v === 'morning') { const m = new Date(); if (m.getHours() >= 5) m.setDate(m.getDate() + 1); m.setHours(7, 0, 0, 0); until = m.getTime(); }
+  else if (+v) until = Date.now() + v * MIN;
+  notifyCfg.quietUntil = until; saveJSON('ss-notify', notifyCfg);
+  if (until) {
+    closeNudge(); $$('.note').forEach(dropNote);
+    toast(`Reminders quiet until <b>${hm(new Date(until))}</b>`, { label: 'Undo', run: () => setQuiet(0) });
+  } else toast('Reminders are back on');
+  renderQuiet();
+}
+function renderQuiet() {
+  const now = Date.now(), q = notifyCfg.quietUntil > now;
+  if (notifyCfg.quietUntil && !q) { notifyCfg.quietUntil = 0; saveJSON('ss-notify', notifyCfg); }
+  $('#remindBtn').setAttribute('aria-pressed', String(notifyCfg.on));
+  $('#chimeBtn').setAttribute('aria-pressed', String(notifyCfg.chime));
+  const left = notifyCfg.quietUntil - now;
+  $('#quietBtn').hidden = !(q || !notifyCfg.on);
+  $('#quietTxt').textContent = !notifyCfg.on ? 'off' : q ? (left > 3 * HOUR ? 'until ' + hm(new Date(notifyCfg.quietUntil)) : countdown(left)) : '';
+  $('#quietState').textContent = q ? 'until ' + hm(new Date(notifyCfg.quietUntil)) : 'off';
+  $$('#quietChips .chip').forEach(c => c.classList.toggle('on', c.dataset.q === '0' ? !q : false));
+}
+$('#quietChips').addEventListener('click', e => { const c = e.target.closest('.chip'); if (c) setQuiet(c.dataset.q); });
+$('#quietBtn').addEventListener('click', () => {
+  if (!notifyCfg.on) { notifyCfg.on = true; saveJSON('ss-notify', notifyCfg); renderQuiet(); return toast('Reminders are back on'); }
+  setQuiet(0);
+});
+$('#remindBtn').addEventListener('click', () => { notifyCfg.on = !notifyCfg.on; saveJSON('ss-notify', notifyCfg); if (!notifyCfg.on) { closeNudge(); $$('.note').forEach(dropNote); } renderQuiet(); });
+$('#chimeBtn').addEventListener('click', () => { notifyCfg.chime = !notifyCfg.chime; saveJSON('ss-notify', notifyCfg); renderQuiet(); if (notifyCfg.chime) chime(false); });
+$('#nudgeTestBtn').addEventListener('click', () => {
+  const at = new Date(Date.now() + 9 * MIN + 30e3);
+  openNudge({ kind: 'event', id: 'preview', text: 'This is how a deadline looks', course: 'Preview', at, timed: true, ms: at - Date.now(), day: 0, level: 'now', u: 'var(--warm)' }, new Date(), 'preview');
 });
 
 /* ================= dojo ================= */
@@ -1832,7 +2193,7 @@ function poke() { lastTouch = Date.now(); if (idleUI) setIdle(false); }
 document.addEventListener('pointerdown', poke, true);
 addEventListener('keydown', poke, true);
 setInterval(() => {
-  if (idleUI || resting || !menu.hidden || !$('#athan').hidden || document.hidden) return;
+  if (idleUI || resting || !menu.hidden || !$('#athan').hidden || !$('#nudge').hidden || document.hidden) return;
   const home = PAGES[pageIndex] === 'home';
   if (Date.now() - lastTouch < (home ? IDLE_HOME : IDLE_AWAY)) return;
   if (!home) go(0);

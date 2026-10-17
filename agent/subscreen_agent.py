@@ -57,6 +57,7 @@ SCENE_TYPES = {".mp4": "video/mp4", ".webm": "video/webm", ".jpg": "image/jpeg",
 PANEL_DIRS = [HOME / ".config/hypr/panel", HOME / "dotfiles/hypr/.config/hypr/panel"]
 HEAT_DAYS = 16 * 7
 TAILNET = [ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48")]
+SOON_DAYS, LATE_DAYS, SOON_MAX = 2, 3, 24   # reminders: days ahead, days overdue still worth a nudge, at most this many
 PALETTE = ["blue", "warm", "teal", "rose", "green", "sand"]   # taskvim's course colours, in order
 
 
@@ -405,6 +406,29 @@ def taskvim():
             upcoming.append((at, f"{proj['name']} · {t['text']}" if proj else t["text"]))
     upcoming.sort()
 
+    # Everything with a date in the next few days (and anything overdue), for the phone's
+    # reminders. Times are left as they are so the phone works out how close each one is.
+    soon = []
+    horizon = (today + timedelta(days=SOON_DAYS)).isoformat()
+    stale = (today - timedelta(days=LATE_DAYS)).isoformat()
+    for t in data.get("tasks", []):
+        if t.get("completed") or t.get("repeat") or not stale <= (t.get("due") or "") <= horizon:
+            continue
+        proj = projects.get(t.get("project"))
+        soon.append({
+            "kind": "task", "id": t["id"], "text": t.get("text", ""),
+            "at": f"{t['due']}T{t['start_time']}" if t.get("start_time") else t["due"],
+            "course": proj["name"] if proj else None,
+            "color": PALETTE[proj.get("color", 0) % len(PALETTE)] if proj else None,
+        })
+    for ev in data.get("calendar_events", []):
+        d = ev.get("date") or ""
+        if not ev.get("start_time") or not today.isoformat() <= d <= horizon:
+            continue
+        soon.append({"kind": "event", "id": f"ev-{ev.get('id', d + ev['start_time'])}",
+                     "text": ev.get("title", ""), "at": f"{d}T{ev['start_time']}"})
+    soon.sort(key=lambda x: x["at"])
+
     value = {
         "mtime": mtime,
         "groups": groups,
@@ -413,6 +437,7 @@ def taskvim():
         "heat": heat,
         "courses": courses,
         "next": [{"title": title, "at": at.isoformat(timespec="minutes")} for at, title in upcoming[:3]],
+        "soon": soon[:SOON_MAX],
     }
     _taskvim_cache.update(mtime=mtime, value=value, day=today)
     return value
