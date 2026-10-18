@@ -4,3 +4,4 @@ __pycache__/
 # Screenshots pulled off the phone while checking the layout.
 *.xwd
 *.png
+!plan/icon.png

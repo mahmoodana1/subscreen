@@ -9,6 +9,9 @@ serves it as JSON to the Subscreen app on the phone, over Tailscale:
     GET  /state             everything the phone shows, one JSON document
     GET  /prayer?days=N     the next N days of prayer times (the phone caches them)
     GET  /scene/NAME        a video or picture for a media scene, from SCENE_DIR (the phone keeps a copy)
+    GET  /plan/             the iPhone's calendar and tasks app (plan/), over HTTPS from `tailscale serve`
+    GET  /plan/data         its data: taskvim's tasks, dashboard and events, and the Yedion classes
+    POST /plan/edit         {"op": "task.add", ...} one edit to taskvim (see PLAN_OPS)
     POST /action            {"id": "ws2"} runs one of a fixed set of actions
     POST /task              {"id": 12} completes (or reopens) a taskvim task
 
@@ -22,14 +25,21 @@ Sources, each optional — a machine without dojo simply reports none:
     claude          ~/.cache/subscreen/claude/*.json, written by claude_hook.py
     prayer          the hypr panel's prayer.py / timetable.py
 
-Reads are open to the tailnet. Actions are accepted only from the phone:
-Android peers on the tailnet, or the addresses in the config file.
+Reads are open to the tailnet. Actions are accepted only from the phones:
+Android and iOS peers on the tailnet, or the addresses in the config file.
+
+With "ntfy" set, the agent also pushes task reminders to that ntfy topic, for
+the iPhone (which cannot keep the page running in the background).
 
 Standard library only. Config (optional): ~/.config/subscreen/agent.json
-    {"port": 8765, "kind": "Desktop", "allow_actions_from": ["100.x.y.z"]}
+    {"port": 8765, "kind": "Desktop", "allow_actions_from": ["100.x.y.z"],
+     "ntfy": "https://ntfy.sh/some-long-secret-topic", "ntfy_token": "tk_..."}
+
+    python3 agent/subscreen_agent.py --test-push    send one test notification and exit
 """
 
 import glob
+import hashlib
 import ipaddress
 import json
 import os
@@ -45,6 +55,7 @@ from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+from urllib.request import Request, urlopen
 
 HOME = Path.home()
 CONFIG_FILE = HOME / ".config/subscreen/agent.json"
@@ -54,6 +65,10 @@ CLAUDE_DIR = HOME / ".cache/subscreen/claude"
 SCENE_DIR = HOME / ".config/subscreen/scenes"   # lumiere.mp4 etc.: kept out of the repo
 SCENE_TYPES = {".mp4": "video/mp4", ".webm": "video/webm", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
                ".png": "image/png", ".webp": "image/webp"}
+YEDION_FILE = HOME / ".local/share/taskvim/yedion.ics"   # taskvim's cached class feed
+PLAN_DIR = Path(__file__).resolve().parent.parent / "plan"   # the iPhone's calendar and tasks app
+PLAN_TYPES = {".html": "text/html; charset=utf-8", ".png": "image/png", ".js": "text/javascript; charset=utf-8",
+              ".webmanifest": "application/manifest+json"}
 PANEL_DIRS = [HOME / ".config/hypr/panel", HOME / "dotfiles/hypr/.config/hypr/panel"]
 HEAT_DAYS = 16 * 7
 TAILNET = [ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48")]
@@ -488,6 +503,313 @@ def toggle_task(tid):
 
 
 # ---------------------------------------------------------------------------
+# Planner: the iPhone's calendar and tasks (plan/). Reads and edits taskvim's
+# data.json the way taskvim itself does (src/app/actions.rs), so a running
+# taskvim reloads it and Syncthing carries it to the other computer.
+# ---------------------------------------------------------------------------
+
+FEED_START = "2026-10-11"    # taskvim's own cut-off: feed entries before this semester are dropped
+SECTIONS = ("important", "general", "agent")
+
+
+class PlanError(Exception):
+    """An edit the phone asked for that cannot be made; the message is shown there."""
+
+
+def room_code(room):
+    # "כיתה C-104 (מינוס) קמפוס המכללה" → "C-104", as taskvim's calendar::room_code
+    for word in room.split():
+        if word[:1].isascii() and word[:1].isalpha() and any(c.isdigit() for c in word):
+            return word
+    return room.replace("חדר לימוד :", "").replace("קמפוס המכללה", "").strip()
+
+
+def yedion_feed():
+    """The class timetable from taskvim's cached Yedion feed, oldest first."""
+    try:
+        text = YEDION_FILE.read_text()
+    except OSError:
+        return []
+    lines = []
+    for line in text.splitlines():
+        if line[:1] in (" ", "\t") and lines:
+            lines[-1] += line.lstrip()
+        else:
+            lines.append(line.rstrip("\r"))
+    unescape = lambda v: v.replace("\\n", " ").replace("\\N", " ").replace("\\,", ",").replace("\\;", ";").replace("\\\\", "\\")
+    def when(v):
+        v = v.strip().rstrip("Z")
+        try:
+            d = datetime.strptime(v[:8], "%Y%m%d").date().isoformat()
+        except ValueError:
+            return None
+        return d, (f"{v[9:11]}:{v[11:13]}" if len(v) >= 13 else "00:00")
+    out, fields = [], None
+    for line in lines:
+        if line == "BEGIN:VEVENT":
+            fields = {}
+        elif line == "END:VEVENT":
+            start = when(fields.get("DTSTART", "")) if fields is not None else None
+            if start and fields.get("STATUS") != "CANCELLED" and start[0] >= FEED_START:
+                end = when(fields.get("DTEND", "")) or start
+                out.append({"id": fields.get("UID", ""), "title": unescape(fields.get("SUMMARY", "אירוע")),
+                            "date": start[0], "start": start[1], "end": end[1],
+                            "note": room_code(unescape(fields.get("LOCATION", "")))})
+            fields = None
+        elif fields is not None and ":" in line:
+            name, value = line.split(":", 1)
+            fields[name.split(";")[0].upper()] = value
+    out.sort(key=lambda c: (c["date"], c["start"]))
+    return out
+
+
+def plan_data():
+    """Everything the iPhone draws, in one document. Repeating events go as rules;
+    the phone works out their days, as taskvim's calendar::occurs_on does."""
+    try:
+        st = TASKVIM_FILE.stat()
+        data = json.loads(TASKVIM_FILE.read_text())
+    except (OSError, ValueError):
+        return {"error": "no taskvim data on this computer"}
+    today = date.today()
+    projects = {p["id"]: p for p in data.get("projects", [])}
+    tasks = []
+    for t in data.get("tasks", []):
+        rep = t.get("repeat")
+        done = bool(t.get("completed")) and (not rep or t.get("period") == habit_period_start(today, rep).isoformat())
+        if done and not rep:
+            continue
+        tasks.append({"id": t["id"], "text": t.get("text", ""), "project": t.get("project"),
+                      "due": None if rep else t.get("due"), "start": t.get("start_time"), "end": t.get("end_time"),
+                      "section": t.get("dash_section") or "general", "habit": habit_label(rep) if rep else None,
+                      "done": done})
+    hidden = set(data.get("calendar_hidden_feed", []))
+    edits = {e["id"]: e for e in data.get("calendar_class_edits", [])}
+    classes = []
+    for c in yedion_feed():
+        if c["id"] in hidden or c["date"] < (today - timedelta(days=21)).isoformat():
+            continue
+        e = edits.get(c["id"], {})
+        classes.append({**c, "title": e.get("title") or c["title"], "note": e.get("note") if e.get("note") is not None else c["note"],
+                        "start": e.get("start_time") or c["start"], "end": e.get("end_time") or c["end"]})
+    return {
+        "host": socket.gethostname(),
+        "version": st.st_mtime_ns,
+        "projects": [{"id": p["id"], "name": p["name"], "color": PALETTE[p.get("color", 0) % len(PALETTE)],
+                      "archived": bool(p.get("archived"))} for p in projects.values()],
+        "tasks": tasks,
+        "dashboard": data.get("dashboard", []),
+        "events": [{"id": e["id"], "title": e.get("title", ""), "date": e.get("date"), "start": e.get("start_time", ""),
+                    "end": e.get("end_time", ""), "note": e.get("note", ""), "repeat": e.get("repeat"),
+                    "skip": e.get("skip", [])} for e in data.get("calendar_events", [])],
+        "classes": classes,
+    }
+
+
+def _date(v, optional=True):
+    if v in (None, "") and optional:
+        return None
+    try:
+        return date.fromisoformat(str(v)).isoformat()
+    except ValueError:
+        raise PlanError(f"not a date: {v}")
+
+
+def _time(v, optional=True):
+    if v in (None, "") and optional:
+        return None
+    try:
+        return datetime.strptime(str(v), "%H:%M").strftime("%H:%M")
+    except ValueError:
+        raise PlanError(f"not a time: {v}")
+
+
+def _text(v, field="title"):
+    v = " ".join(str(v or "").split())[:300]
+    if not v:
+        raise PlanError(f"give it a {field}")
+    return v
+
+
+def _span(req):
+    """A start–end pair, both or neither; an end before the start becomes an hour after it."""
+    start, end = _time(req.get("start")), _time(req.get("end"))
+    if not start:
+        return None, None
+    if not end or end <= start:
+        h, m = map(int, start.split(":"))
+        end = f"{min(h + 1, 23):02d}:{m if h < 23 else 59:02d}"
+    return start, end
+
+
+def _repeat(v, first):
+    if not v:
+        return None
+    unit = v.get("unit")
+    if unit not in ("day", "week", "month"):
+        raise PlanError("repeat: daily, weekly or monthly")
+    until = _date(v.get("until"))
+    if until and until < first:
+        raise PlanError("it stops repeating before it starts")
+    days = sorted({int(d) for d in v.get("days") or [] if 0 <= int(d) <= 6}) if unit == "week" else []
+    return {"every": max(1, min(int(v.get("every") or 1), 99)), "unit": unit, "days": days, "until": until}
+
+
+def _new_id(data):
+    ids = [x.get("id", 0) for key in ("tasks", "projects", "sections", "log", "calendar_events") for x in data.get(key, [])]
+    nid = max([data.get("next_id", 1)] + [i + 1 for i in ids])
+    data["next_id"] = nid + 1
+    return nid
+
+
+def _find(items, i, what):
+    found = next((x for x in items if x.get("id") == i), None)
+    if found is None:
+        raise PlanError(f"that {what} no longer exists")
+    return found
+
+
+def _task_add(data, req):
+    due = _date(req.get("due"))
+    start, end = _span(req)
+    section = req.get("section") if req.get("section") in SECTIONS else "general"
+    project = req.get("project") if any(p["id"] == req.get("project") for p in data.get("projects", [])) else None
+    nid = _new_id(data)
+    data["tasks"].append({"id": nid, "text": _text(req.get("text"), "name"), "project": project, "section": None,
+                          "due": due, "start_time": start if due else None, "end_time": end if due else None,
+                          "completed": False, "dash_section": section, "repeat": None, "period": None, "relink": False})
+    data.setdefault("dashboard", []).append(nid)   # added from the calendar = linked to the dashboard, as in taskvim
+
+
+def _task_set(data, req):
+    t = _find(data["tasks"], req.get("id"), "task")
+    if "text" in req:
+        t["text"] = _text(req["text"], "name")
+    if "project" in req:
+        project = req["project"] if any(p["id"] == req["project"] for p in data.get("projects", [])) else None
+        if project != t.get("project"):
+            t["project"], t["section"] = project, None    # a course's sections are its own
+    if "due" in req and not t.get("repeat"):     # a habit never carries a due date
+        t["due"] = _date(req["due"])
+    if "start" in req:
+        t["start_time"], t["end_time"] = _span(req)
+    if not t.get("due"):
+        t["start_time"] = t["end_time"] = None
+
+
+def _task_delete(data, req):
+    t = _find(data["tasks"], req.get("id"), "task")
+    data["tasks"].remove(t)
+    data["dashboard"] = [i for i in data.get("dashboard", []) if i != t["id"]]
+
+
+def _task_place(data, req):
+    """Into a dashboard section, before another task (or last in it): taskvim's 1/2/3 and J/K."""
+    t = _find(data["tasks"], req.get("id"), "task")
+    section = req.get("section")
+    if section not in SECTIONS:
+        raise PlanError("no such section")
+    t["dash_section"] = section
+    order = [i for i in data.get("dashboard", []) if i != t["id"]]
+    before = req.get("before")
+    order.insert(order.index(before) if before in order else len(order), t["id"])
+    data["dashboard"] = order
+
+
+def _event_fields(req, ev):
+    ev["title"] = _text(req.get("title"))
+    ev["note"] = " ".join(str(req.get("note") or "").split())[:200]
+    first = _date(req.get("date"), optional=False)
+    start, end = _span(req)
+    if not start:
+        raise PlanError("an event needs a time")
+    repeat = _repeat(req.get("repeat"), first)
+    if ev.get("date") != first or ev.get("repeat") != repeat:
+        ev["skip"] = []     # a new start or rule re-lays every occurrence
+    ev.update(date=first, start_time=start, end_time=end, repeat=repeat)
+
+
+def _event_add(data, req):
+    ev = {"id": _new_id(data), "skip": []}
+    _event_fields(req, ev)
+    data.setdefault("calendar_events", []).append(ev)
+
+
+def _event_set(data, req):
+    _event_fields(req, _find(data.get("calendar_events", []), req.get("id"), "event"))
+
+
+def _event_move(data, req):
+    """Drag one occurrence to another day or time. A repeating event keeps its series;
+    the moved day becomes an event of its own, like Google Calendar's "this event"."""
+    ev = _find(data.get("calendar_events", []), req.get("id"), "event")
+    day, start, end = _date(req.get("date"), optional=False), *_span(req)
+    if not start:
+        raise PlanError("an event needs a time")
+    if not ev.get("repeat"):
+        ev.update(date=day, start_time=start, end_time=end)
+        return
+    ev.setdefault("skip", []).append(_date(req.get("from"), optional=False))
+    data["calendar_events"].append({"id": _new_id(data), "date": day, "title": ev["title"], "start_time": start,
+                                    "end_time": end, "note": ev.get("note", ""), "repeat": None, "skip": []})
+
+
+def _event_delete(data, req):
+    ev = _find(data.get("calendar_events", []), req.get("id"), "event")
+    if ev.get("repeat") and req.get("date"):
+        ev.setdefault("skip", []).append(_date(req["date"]))   # just this occurrence
+    else:
+        data["calendar_events"].remove(ev)
+
+
+def _class_set(data, req):
+    """Local overrides of a feed class, keeping only what differs from the feed, as taskvim does."""
+    cls = next((c for c in yedion_feed() if c["id"] and c["id"] == req.get("id")), None)
+    if not cls:
+        raise PlanError("that class is not in the feed any more")
+    start, end = _span(req)
+    want = {"title": " ".join(str(req.get("title") or "").split()) or cls["title"],
+            "note": " ".join(str(req.get("note") or "").split()), "start_time": start or cls["start"], "end_time": end or cls["end"]}
+    feed = {"title": cls["title"], "note": cls["note"], "start_time": cls["start"], "end_time": cls["end"]}
+    edit = {"id": cls["id"], **{k: (v if v != feed[k] else None) for k, v in want.items()}}
+    edits = [e for e in data.get("calendar_class_edits", []) if e.get("id") != cls["id"]]
+    if any(edit[k] is not None for k in feed):
+        edits.append(edit)
+    data["calendar_class_edits"] = edits
+
+
+def _class_hide(data, req):
+    hidden = data.setdefault("calendar_hidden_feed", [])
+    if req.get("id") and req["id"] not in hidden:
+        hidden.append(req["id"])
+
+
+PLAN_OPS = {
+    "task.add": _task_add, "task.set": _task_set, "task.delete": _task_delete, "task.place": _task_place,
+    "event.add": _event_add, "event.set": _event_set, "event.move": _event_move, "event.delete": _event_delete,
+    "class.set": _class_set, "class.hide": _class_hide,
+}
+
+
+def plan_edit(req):
+    if req.get("op") == "task.done":
+        ok, msg = toggle_task(req.get("id"))
+        if not ok:
+            raise PlanError(msg)
+        return
+    fn = PLAN_OPS.get(req.get("op"))
+    if not fn:
+        raise PlanError("unknown edit")
+    with _task_lock:
+        data = json.loads(TASKVIM_FILE.read_text())
+        fn(data, req)
+        tmp = TASKVIM_FILE.with_name(TASKVIM_FILE.name + ".subscreen-tmp")
+        tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        os.replace(tmp, TASKVIM_FILE)
+        _taskvim_cache["mtime"] = None
+
+
+# ---------------------------------------------------------------------------
 # dojo (read-only)
 # ---------------------------------------------------------------------------
 
@@ -651,8 +973,8 @@ ACTIONS = {
 
 
 # ---------------------------------------------------------------------------
-# Who may run actions: the phone. Android peers on this tailnet are trusted
-# automatically; the config can add more.
+# Who may run actions: the phones. Android and iOS peers on this tailnet are
+# trusted automatically; the config can add more.
 # ---------------------------------------------------------------------------
 
 _phones = {"ips": set(), "at": 0}
@@ -667,7 +989,7 @@ def action_allowed(ip):
         if code == 0:
             try:
                 for peer in (json.loads(out).get("Peer") or {}).values():
-                    if (peer.get("OS") or "").lower() == "android":
+                    if (peer.get("OS") or "").lower() in ("android", "ios"):
                         ips.update(peer.get("TailscaleIPs") or [])
             except ValueError:
                 pass
@@ -681,6 +1003,80 @@ def read_allowed(ip):
     except ValueError:
         return False
     return addr.is_loopback or any(addr in net for net in TAILNET) or ip in CONFIG.get("allow_reads_from", [])
+
+
+# ---------------------------------------------------------------------------
+# Push: task reminders, as ntfy notifications for the iPhone. The page does
+# the same on the Android phone; iOS stops a page in the background, so here
+# the computers do the remembering instead. Every computer
+# with "ntfy" set pushes, so each one waits its own few seconds and checks the
+# topic first: whatever the other computer already sent is not sent twice.
+# ---------------------------------------------------------------------------
+
+PUSH_WINDOW = timedelta(minutes=10)    # a step that is this late is skipped, so a restart never sends a backlog
+
+
+def ntfy_request(url, body=None):
+    req = Request(url, data=json.dumps(body).encode() if body else None, headers={"Content-Type": "application/json"})
+    if CONFIG.get("ntfy_token"):
+        req.add_header("Authorization", f"Bearer {CONFIG['ntfy_token']}")
+    with urlopen(req, timeout=10) as r:
+        return r.read().decode()
+
+
+def ntfy_send(title, message, priority=3):
+    # JSON to the server root rather than headers to the topic, so titles may be Arabic.
+    server, _, topic = CONFIG["ntfy"].rstrip("/").rpartition("/")
+    ntfy_request(server, {"topic": topic, "title": title, "message": message, "priority": priority})
+
+
+def push(title, message, priority=3):
+    # Wait this machine's own few seconds, then skip it if another computer already sent it.
+    time.sleep(int(hashlib.sha1(socket.gethostname().encode()).hexdigest(), 16) % 20)
+    try:
+        recent = [json.loads(line) for line in ntfy_request(CONFIG["ntfy"].rstrip("/") + "/json?poll=1&since=20m").splitlines() if line]
+        if any(m.get("title") == title and m.get("message") == message for m in recent):
+            return
+    except (OSError, ValueError) as exc:
+        log("push: could not read the topic:", exc)
+    try:
+        ntfy_send(title, message, priority)
+        log("pushed", title, "·", message)
+    except OSError as exc:
+        log("push failed:", exc)
+
+
+def push_steps(now):
+    """Everything worth a notification around now: (key, when, title, message, priority)."""
+    steps = []
+    for it in (taskvim() or {}).get("soon", []):
+        name = f"{it['course']} · {it['text']}" if it.get("course") else it["text"]
+        if "T" in it["at"]:
+            at = datetime.fromisoformat(it["at"])
+            event = it["kind"] == "event"
+            heads, pre = (timedelta(hours=1), timedelta(minutes=10)) if event else (timedelta(hours=2), timedelta(minutes=15))
+            verb = "Starts" if event else "Due"
+            steps.append((f"{it['kind']}-{it['id']}-{at:%FT%H%M}-heads", at - heads, name,
+                          f"{verb} at {at:%H:%M}", 3))
+            steps.append((f"{it['kind']}-{it['id']}-{at:%FT%H%M}-pre", at - pre, name,
+                          f"{verb} in {int(pre.total_seconds() // 60)} minutes · {at:%H:%M}", 4))
+        elif it["at"] == now.date().isoformat():
+            steps.append((f"{it['kind']}-{it['id']}-{it['at']}-today", now.replace(hour=8, minute=0, second=0, microsecond=0),
+                          name, "Due today", 3))
+    return steps
+
+
+def push_loop():
+    sent = set()
+    while True:
+        now = datetime.now()
+        for key, at, title, message, priority in push_steps(now):
+            if key not in sent and at <= now < at + PUSH_WINDOW:
+                sent.add(key)
+                threading.Thread(target=push, args=(title, message, priority), daemon=True).start()
+        if len(sent) > 500:
+            sent.clear()
+        time.sleep(20)
 
 
 # ---------------------------------------------------------------------------
@@ -742,7 +1138,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def client_ip(self):
         ip = self.client_address[0]
-        return ip[7:] if ip.startswith("::ffff:") else ip
+        ip = ip[7:] if ip.startswith("::ffff:") else ip
+        # Behind `tailscale serve` every request arrives from loopback; the phone's
+        # own address is the one tailscale adds as X-Forwarded-For.
+        forwarded = self.headers.get("X-Forwarded-For")
+        if forwarded and ipaddress.ip_address(ip).is_loopback:
+            return forwarded.split(",")[-1].strip()
+        return ip
 
     def do_GET(self):
         if not read_allowed(self.client_ip()):
@@ -761,6 +1163,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(data if data else {"error": "no prayer module on this machine"}, 200 if data else 404)
             if url.path.startswith("/scene/"):
                 return self.send_scene(url.path[len("/scene/"):])
+            if url.path == "/plan/data":
+                return self._json(plan_data())
+            if url.path in ("/", "/plan"):
+                self.send_response(302)
+                self.send_header("Location", "/plan/")
+                self.send_header("Content-Length", "0")
+                return self.end_headers()
+            if url.path.startswith("/plan/"):
+                path = (PLAN_DIR / (url.path[len("/plan/"):] or "index.html")).resolve()
+                if path.is_relative_to(PLAN_DIR) and path.is_file() and path.suffix in PLAN_TYPES:
+                    return self.send_file(path, PLAN_TYPES[path.suffix])
         except Exception as exc:  # a broken source must not kill the server
             log("GET", url.path, "failed:", repr(exc))
             return self._json({"error": str(exc)}, 500)
@@ -772,6 +1185,9 @@ class Handler(BaseHTTPRequestHandler):
         path = next((SCENE_DIR / (name + ext) for ext in SCENE_TYPES if (SCENE_DIR / (name + ext)).is_file()), None)
         if not path:
             return self._json({"error": f"no {name} in {SCENE_DIR}"}, 404)
+        self.send_file(path, SCENE_TYPES[path.suffix.lower()])
+
+    def send_file(self, path, ctype):
         st = path.stat()
         tag = f'"{path.suffix[1:]}-{int(st.st_mtime)}-{st.st_size}"'
         if self.headers.get("If-None-Match") == tag:
@@ -782,7 +1198,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", "0")
             return self.end_headers()
         self.send_response(200)
-        self.send_header("Content-Type", SCENE_TYPES[path.suffix.lower()])
+        self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(st.st_size))
         self.send_header("ETag", tag)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -795,16 +1211,37 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         ip = self.client_ip()
         route = urlparse(self.path).path
-        if route not in ("/action", "/task"):
+        # The body is read before anything is refused: `tailscale serve` reuses the
+        # connection, and an unread body would be taken for the next request.
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = -1
+        if not 0 <= length <= 65536:
+            self.close_connection = True
+            return self._json({"error": "bad request"}, 400)
+        body = self.rfile.read(length)
+        if route not in ("/action", "/task", "/plan/edit"):
             return self._json({"error": "not found"}, 404)
         if not action_allowed(ip):
             log("refused action from", ip)
             return self._json({"error": "actions are only accepted from the phone"}, 403)
         try:
-            length = min(int(self.headers.get("Content-Length") or 0), 4096)
-            req = json.loads(self.rfile.read(length) or b"{}")
+            req = json.loads(body[:4096] or b"{}")
         except ValueError:
             return self._json({"error": "bad request"}, 400)
+        if route == "/plan/edit":
+            try:
+                plan_edit(req)
+            except PlanError as exc:
+                return self._json({"error": str(exc)}, 400)
+            except (OSError, ValueError) as exc:
+                log("plan edit", req.get("op"), "failed:", repr(exc))
+                return self._json({"error": str(exc)}, 500)
+            log("plan", req.get("op"), "from", ip)
+            with _state_lock:
+                _state["at"] = 0
+            return self._json(plan_data())
         if route == "/task":
             try:
                 ok, msg = toggle_task(int(req.get("id")))
@@ -841,11 +1278,19 @@ class Server(ThreadingHTTPServer):
 
 
 def main():
+    if "--test-push" in sys.argv:
+        if not CONFIG.get("ntfy"):
+            sys.exit(f"no \"ntfy\" in {CONFIG_FILE}")
+        ntfy_send("Subscreen", "If this reached the iPhone, task reminders will too.")
+        return print("sent to", CONFIG["ntfy"])
     port = int(CONFIG.get("port", 8765))
     server = Server((CONFIG.get("bind", "::"), port), Handler)
     threading.Thread(target=refresh_timetable_daily, daemon=True).start()
+    if CONFIG.get("ntfy"):
+        threading.Thread(target=push_loop, daemon=True).start()
     log(f"subscreen agent on :{port} · idle via {IDLE.method} · prayer {'yes' if timetable else 'no'}"
-        f" · taskvim {'yes' if TASKVIM_FILE.exists() else 'no'} · dojo {'yes' if DOJO_DB.exists() else 'no'}")
+        f" · taskvim {'yes' if TASKVIM_FILE.exists() else 'no'} · dojo {'yes' if DOJO_DB.exists() else 'no'}"
+        f" · push {'yes' if CONFIG.get('ntfy') else 'no'}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
