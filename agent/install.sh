@@ -53,6 +53,13 @@ fi
 command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 1; }
 id -nG | grep -qw input || echo "note: $USER is not in the 'input' group; idle detection will fall back to the cursor (sudo usermod -aG input $USER, then log in again)"
 
+# The old serve.py service holds the same port 8765, so the agent could never start.
+if [ -f "$UNIT_DIR/subscreen.service" ]; then
+    systemctl --user disable --now subscreen.service 2>/dev/null || true
+    rm -f "$UNIT_DIR/subscreen.service"
+    echo "removed the old subscreen.service (serve.py), which held port 8765"
+fi
+
 mkdir -p "$UNIT_DIR"
 cat > "$UNIT" <<EOF
 [Unit]
