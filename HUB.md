@@ -64,8 +64,15 @@ Tasks tab is taskvim's dashboard: Important, General, Agent.
 
 Every edit goes through an agent (`POST /plan/edit`) into taskvim's `data.json`, the way taskvim
 itself would make it; a running taskvim reloads the file and Syncthing carries it to the other
-computer. Only phones may edit. With every computer off the app still opens and shows what it last
-saw, read-only.
+computers. Only phones may edit.
+
+Edits never wait: each one shows on the iPhone at once and joins a queue kept on the phone, which is
+sent, in order, to whichever agent answers (a computer or the hub). With nothing answering, the header
+says how many are waiting, and they go the moment something does, even after the app was closed.
+Each carries an id, so one whose answer got lost is never applied twice; one that no longer fits (the
+task was deleted elsewhere meanwhile) is dropped with a note. While the app is open it keeps one
+request waiting on the agent (`/plan/watch`), which answers the moment taskvim's file changes, so an
+edit made anywhere shows within a second or two.
 
 **Set up.** Plan needs HTTPS (iOS only keeps an app's copy for HTTPS pages). On each computer, once:
 
@@ -76,6 +83,26 @@ tailscale serve --bg 8765               # https://<name>.<tailnet>.ts.net → th
 
 Then on the iPhone, with Tailscale on, open `https://omarchy.<tailnet>.ts.net/plan/` in Safari
 (`tailscale status --json` shows the name under `CertDomains`) and Share › **Add to Home Screen**.
+
+**Syncthing.** Set taskvim's folder to send a change after one second instead of ten, once on each computer:
+`syncthing cli config folders taskvim-data fswatcher-delays set 1`. The computers only sync while both are
+on: an edit made in taskvim on one reaches the other the next time both are on together, and edits made on
+both meanwhile end in a Syncthing conflict copy. Edits from the iPhone never conflict.
+
+**The hub (optional, not set up).** An always-on device would close that gap: the old Android phone can keep
+a copy of taskvim and run the same agent in Termux, under its own Tailscale name `a73-hub` (add it to
+`HOSTS` in `plan/index.html`). Once, on the phone, in Termux (F-Droid):
+
+```sh
+pkg install -y git && git clone -b hub https://github.com/mahmoodana1/subscreen ~/subscreen
+~/subscreen/agent/hub-termux.sh      # installs, signs in to Tailscale, prints the phone's Syncthing id
+```
+
+On each computer, `./agent/hub-pair.sh <that id>` shares taskvim's folder with it and prints a line to
+run back on the phone (`hub-termux.sh --pair <computer id>`). Install **Termux:Boot**, open it once, and
+set Termux's battery use to Unrestricted. `hub-termux.sh --status` shows what runs; `git pull` and a
+rerun updates it. Two devices editing the same file while they cannot see each other still makes a
+Syncthing conflict copy, but with the hub always on and a one-second Syncthing delay that window is small.
 
 **Reminders.** Put one ntfy topic in `~/.config/subscreen/agent.json` on every computer (the same
 topic everywhere, a long random name: anyone who knows it can read it):

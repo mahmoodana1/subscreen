@@ -11,7 +11,9 @@ serves it as JSON to the Subscreen app on the phone, over Tailscale:
     GET  /scene/NAME        a video or picture for a media scene, from SCENE_DIR (the phone keeps a copy)
     GET  /plan/             the iPhone's calendar and tasks app (plan/), over HTTPS from `tailscale serve`
     GET  /plan/data         its data: taskvim's tasks, dashboard and events, and the Yedion classes
-    POST /plan/edit         {"op": "task.add", ...} one edit to taskvim (see PLAN_OPS)
+    GET  /plan/watch?v=V    the same, once taskvim's file is no longer version V (held up to 25 s)
+    POST /plan/edit         {"op": "task.add", "qid": "...", ...} one edit to taskvim (see PLAN_OPS);
+                            a qid seen before is not applied twice
     POST /action            {"id": "ws2"} runs one of a fixed set of actions
     POST /task              {"id": 12} completes (or reopens) a taskvim task
 
@@ -31,9 +33,13 @@ Android and iOS peers on the tailnet, or the addresses in the config file.
 With "ntfy" set, the agent also pushes task reminders to that ntfy topic, for
 the iPhone (which cannot keep the page running in the background).
 
+The same agent runs on the old Android phone in Termux as the always-on hub
+(agent/hub-termux.sh): with no desktop around it only serves Plan and pushes.
+
 Standard library only. Config (optional): ~/.config/subscreen/agent.json
     {"port": 8765, "kind": "Desktop", "allow_actions_from": ["100.x.y.z"],
-     "ntfy": "https://ntfy.sh/some-long-secret-topic", "ntfy_token": "tk_..."}
+     "ntfy": "https://ntfy.sh/some-long-secret-topic", "ntfy_token": "tk_...",
+     "tailscale_socket": "/path/to/tailscaled.sock"}
 
     python3 agent/subscreen_agent.py --test-push    send one test notification and exit
 """
@@ -60,6 +66,7 @@ from urllib.request import Request, urlopen
 HOME = Path.home()
 CONFIG_FILE = HOME / ".config/subscreen/agent.json"
 TASKVIM_FILE = HOME / ".local/share/taskvim/data.json"
+APPLIED_FILE = HOME / ".cache/subscreen/plan-applied.json"   # recent edit ids from the iPhone, so a retry is not applied twice
 DOJO_DB = HOME / ".local/share/dojo/dojo.db"
 CLAUDE_DIR = HOME / ".cache/subscreen/claude"
 SCENE_DIR = HOME / ".config/subscreen/scenes"   # lumiere.mp4 etc.: kept out of the repo
@@ -179,6 +186,10 @@ class Idle:
                     self.last = time.time()
             else:
                 # No access to /dev/input: a moving cursor is the next best sign of life.
+                if not shutil.which("hyprctl"):
+                    self.method = "none"
+                    time.sleep(30)
+                    continue
                 _, out = run(["hyprctl", "cursorpos"], timeout=2)
                 if out and out != cursor:
                     if cursor is not None:
@@ -679,6 +690,7 @@ def _task_add(data, req):
                           "due": due, "start_time": start if due else None, "end_time": end if due else None,
                           "completed": False, "dash_section": section, "repeat": None, "period": None, "relink": False})
     data.setdefault("dashboard", []).append(nid)   # added from the calendar = linked to the dashboard, as in taskvim
+    return nid
 
 
 def _task_set(data, req):
@@ -733,6 +745,7 @@ def _event_add(data, req):
     ev = {"id": _new_id(data), "skip": []}
     _event_fields(req, ev)
     data.setdefault("calendar_events", []).append(ev)
+    return ev["id"]
 
 
 def _event_set(data, req):
@@ -750,8 +763,10 @@ def _event_move(data, req):
         ev.update(date=day, start_time=start, end_time=end)
         return
     ev.setdefault("skip", []).append(_date(req.get("from"), optional=False))
-    data["calendar_events"].append({"id": _new_id(data), "date": day, "title": ev["title"], "start_time": start,
+    nid = _new_id(data)
+    data["calendar_events"].append({"id": nid, "date": day, "title": ev["title"], "start_time": start,
                                     "end_time": end, "note": ev.get("note", ""), "repeat": None, "skip": []})
+    return nid
 
 
 def _event_delete(data, req):
@@ -791,22 +806,66 @@ PLAN_OPS = {
 }
 
 
+_applied_lock = threading.Lock()
+
+
+def _applied():
+    try:
+        return json.loads(APPLIED_FILE.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
 def plan_edit(req):
+    """Apply one edit; returns the id of anything it created. The iPhone queues edits while no
+    computer answers and sends each with a qid, so one whose answer was lost is never made twice."""
+    qid = str(req.get("qid") or "")[:64]
+    with _applied_lock:
+        seen = _applied() if qid else {}
+        if qid in seen:
+            return seen[qid]
+        added = _plan_apply(req)
+        if qid:
+            seen[qid] = added
+            APPLIED_FILE.parent.mkdir(parents=True, exist_ok=True)
+            APPLIED_FILE.write_text(json.dumps(dict(list(seen.items())[-300:])))
+        return added
+
+
+def _plan_apply(req):
     if req.get("op") == "task.done":
         ok, msg = toggle_task(req.get("id"))
         if not ok:
             raise PlanError(msg)
-        return
+        return None
     fn = PLAN_OPS.get(req.get("op"))
     if not fn:
         raise PlanError("unknown edit")
     with _task_lock:
         data = json.loads(TASKVIM_FILE.read_text())
-        fn(data, req)
+        added = fn(data, req)
         tmp = TASKVIM_FILE.with_name(TASKVIM_FILE.name + ".subscreen-tmp")
         tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False))
         os.replace(tmp, TASKVIM_FILE)
         _taskvim_cache["mtime"] = None
+        return added
+
+
+def plan_watch(version, wait=25):
+    """Hold the request until taskvim's file changes (an edit here, taskvim, or Syncthing
+    bringing another device's), so the iPhone sees it at once instead of at its next poll."""
+    end = time.time() + wait
+    while time.time() < end:
+        try:
+            if str(TASKVIM_FILE.stat().st_mtime_ns) != version:
+                time.sleep(0.2)          # let a writer that is not atomic finish
+                data = plan_data()
+                if "error" not in data:
+                    return data
+        except OSError:
+            pass
+        time.sleep(0.4)
+    return plan_data()
 
 
 # ---------------------------------------------------------------------------
@@ -984,7 +1043,8 @@ def action_allowed(ip):
     if ip in ("127.0.0.1", "::1") or ip in CONFIG.get("allow_actions_from", []):
         return True
     if time.time() - _phones["at"] > 300:
-        code, out = run(["tailscale", "status", "--json"], timeout=5)
+        sock = [f"--socket={CONFIG['tailscale_socket']}"] if CONFIG.get("tailscale_socket") else []
+        code, out = run(["tailscale", *sock, "status", "--json"], timeout=5)
         ips = set()
         if code == 0:
             try:
@@ -1165,6 +1225,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_scene(url.path[len("/scene/"):])
             if url.path == "/plan/data":
                 return self._json(plan_data())
+            if url.path == "/plan/watch":
+                return self._json(plan_watch(parse_qs(url.query).get("v", [""])[0]))
             if url.path in ("/", "/plan"):
                 self.send_response(302)
                 self.send_header("Location", "/plan/")
@@ -1232,7 +1294,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"error": "bad request"}, 400)
         if route == "/plan/edit":
             try:
-                plan_edit(req)
+                added = plan_edit(req)
             except PlanError as exc:
                 return self._json({"error": str(exc)}, 400)
             except (OSError, ValueError) as exc:
@@ -1241,7 +1303,7 @@ class Handler(BaseHTTPRequestHandler):
             log("plan", req.get("op"), "from", ip)
             with _state_lock:
                 _state["at"] = 0
-            return self._json(plan_data())
+            return self._json({**plan_data(), "added": added})
         if route == "/task":
             try:
                 ok, msg = toggle_task(int(req.get("id")))

@@ -5,3 +5,4 @@ __pycache__/
 *.xwd
 *.png
 !plan/icon.png
+!plan/icon-512.png

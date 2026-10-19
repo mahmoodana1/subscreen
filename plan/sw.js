@@ -1,8 +1,8 @@
 // Keeps a copy of the app on the iPhone, so it opens with every computer off and
 // shows the last calendar and tasks it saw (the data itself is in localStorage).
 // The page is fetched fresh whenever a computer answers, so an update shows on the next open.
-const CACHE = 'plan-v1';
-const FILES = ['./', 'manifest.webmanifest', 'icon.png'];
+const CACHE = 'plan-v4';
+const FILES = ['./', 'manifest.webmanifest', 'icon.png', 'icon-512.png'];
 const url = f => new URL(f, self.registration.scope).href;
 
 self.addEventListener('install', e => {
