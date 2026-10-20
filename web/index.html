@@ -193,17 +193,26 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 
 /* ---------- tasks ---------- */
 .group{margin-top:8px}
-.group-h{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--sub);margin-bottom:2px}
-.group-h b{font-weight:500;color:var(--text)}
-.task{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:12px;align-items:center;padding:6px 0;transition:opacity .4s;width:100%;text-align:left}
+.group-h{display:flex;gap:8px;align-items:baseline;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
+.group:first-child .group-h{margin-top:4px}
+.group-h b{font-weight:500;color:var(--sub)}
+/* a task row is a big, easy target on the phone: the whole row toggles it */
+.task{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:16px;align-items:center;min-height:58px;padding:9px 0;border-bottom:1px solid var(--hair);transition:opacity .4s,background .2s;width:100%;text-align:left;box-sizing:border-box}
+.task:last-child{border-bottom:0}
+.task:active{background:var(--sel)}
 .chk{width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--muted);position:relative;transition:background .25s,box-shadow .25s}
 .chk::after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #000;border-width:0 1.5px 1.5px 0;transform:rotate(45deg) scale(0);transition:transform .2s}
-.task.done .chk{background:var(--green);box-shadow:none}
-.task.done .chk::after{transform:rotate(45deg) scale(1)}
-.task.done{opacity:.35}
-.task.done .t{text-decoration:line-through}
+.task .chk,.ev .chk{width:24px;height:24px;box-shadow:inset 0 0 0 2px var(--sub)}
+.task .chk::after,.ev .chk::after{left:8px;top:3px;width:6px;height:12px;border-width:0 2px 2px 0}
+.task.done .chk,.ev.done .chk{background:var(--green);box-shadow:none}
+.task.done .chk::after,.ev.done .chk::after{transform:rotate(45deg) scale(1)}
+.task.done,.ev.done{opacity:.35}
+.task.done .t,.ev.done .t{text-decoration:line-through}
 .t{font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.t .proj{font-size:12px;margin-right:6px}
+.task .tx{min-width:0}
+.task .t{display:block;font-size:18px;line-height:1.3;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.task .proj{display:block;font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task .due{font-size:14px}
 .due{font:400 11.5px var(--f-num);color:var(--muted);white-space:nowrap}
 .due.late{color:var(--rose)}
 .due.today{color:var(--sand)}
@@ -219,21 +228,44 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .heat i{border-radius:2px;background:#151515}
 .heat .l1{background:#466048}.heat .l2{background:#648c62}.heat .l3{background:#85b981}.heat .l4{background:#a6e3a1}
 .heat .today{box-shadow:0 0 0 1px var(--text)}
-.course{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:7px 0;font-size:13px}
-.course .line{grid-column:1 / 3}
-.course .p{font:400 11.5px var(--f-num);color:var(--sub)}
+.course{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:10px 0 9px;font-size:16px}
+.course .line{grid-column:1 / 3;height:3px}
+.course .p{font:400 14px var(--f-num);color:var(--sub)}
 
-/* ---------- dojo ---------- */
-.belt{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.belt .kanji{font-size:13px;color:var(--muted);letter-spacing:.2em}
-.belt-name{font-weight:300;font-size:clamp(34px,5vw,56px);letter-spacing:-.03em;line-height:1}
-.xp{display:flex;justify-content:space-between;font:400 12px var(--f-num);color:var(--sub);margin:12px 0 6px}
-.review{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 0;font-size:13.5px;border-bottom:1px solid var(--hair)}
-.review:last-child{border-bottom:0}
-.review .n{font:400 11px var(--f-num);color:var(--muted);min-width:2.6em}
-.diff{font:400 11px var(--f-num)}
-.diff.Easy{color:var(--teal)}.diff.Medium{color:var(--sand)}.diff.Hard{color:var(--rose)}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+/* ---------- calendar ----------
+   taskvim's calendar: the chosen day's agenda on the left, the month on the right. Classes, events and
+   tasks with a date, all from the computers' /plan/data (the same document the iPhone's Plan draws) */
+.calcols{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:clamp(20px,4vw,56px);align-items:start}
+.ev{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:16px;align-items:center;min-height:58px;padding:9px 0;border-bottom:1px solid var(--hair);width:100%;text-align:left;box-sizing:border-box;transition:opacity .4s,background .2s}
+.ev:last-child{border-bottom:0}
+.ev.is-task:active{background:var(--sel)}
+.ev .at{display:flex;flex-direction:column;font-family:var(--f-num);font-variant-numeric:tabular-nums;line-height:1.2}
+.ev .at b{font-weight:500;font-size:17px}
+.ev .at span{font-size:13px;color:var(--muted)}
+.ev .body{min-width:0;text-align:start}
+.ev .t{display:block;font-size:18px;line-height:1.3;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ev .n{font-size:13px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.untimed{grid-template-columns:minmax(0,1fr) auto}
+.ev.past .at,.ev.past .t{color:var(--muted)}
+.ev .due{font-size:14px}
+.nowline{height:0;border-top:1px solid var(--accent);margin:-1px 0 0;position:relative}
+.nowline::before{content:"";position:absolute;left:-3px;top:-4px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.cal-sub{margin:16px 0 2px;font:500 10.5px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.month{position:sticky;top:0}
+.month-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 4px;padding-bottom:6px;border-bottom:1px solid var(--hair)}
+.month-h .mt{font:500 15px var(--f-ui);letter-spacing:.02em;padding:6px 10px}
+.month-h .icon{width:40px;height:40px;margin:-8px -10px}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px 0;text-align:center}
+.mgrid .wd{font:500 10px var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 0 4px}
+.md{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:40px;border-radius:10px;font:400 15px var(--f-num);color:var(--text);transition:background .2s}
+.md.out{color:var(--faint)}
+.md.today{color:var(--accent);font-weight:600}
+.md.on{background:var(--sel);box-shadow:inset 0 0 0 1px var(--faint)}
+.md .dots{display:flex;gap:3px;height:4px}
+.md .dots i{width:4px;height:4px;border-radius:50%;background:var(--sub)}
+.md.out .dots i{background:var(--faint)}
+.page.scroll{overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
+.page.scroll .fit{height:auto;min-height:100%}
 
 /* ---------- machines ---------- */
 .machs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:clamp(20px,4vw,48px)}
@@ -441,15 +473,14 @@ body:has(.nudge:not([hidden])) .notes{opacity:0;pointer-events:none}
             </button>
             <button class="g soon" id="gSoon" type="button" hidden><span class="k" id="gSk"></span><span class="v" id="gSv"></span><span class="r num" id="gSr"></span><span class="line bar"><i id="gSbar" style="width:0"></i></span></button>
             <button class="g" id="gTask" type="button" data-go="1" hidden><span class="k" id="gTk">Task</span><span class="v" id="gTv"></span><span class="r" id="gTr"></span></button>
-            <button class="g" id="gDojo" type="button" data-go="2" hidden><span class="k">Dojo</span><span class="v" id="gDv"></span><span class="r" id="gDr"></span></button>
-            <button class="g" id="gNext" type="button" data-go="1" hidden><span class="k">Next up</span><span class="v" id="gCv"></span><span class="r num" id="gCr"></span></button>
+            <button class="g" id="gNext" type="button" data-go="2" hidden><span class="k">Next up</span><span class="v" id="gCv"></span><span class="r num" id="gCr"></span></button>
             <button class="g" id="gClaude" type="button" data-go="4" hidden><span class="k">Claude</span><span class="v" id="gAv"></span><span class="r" id="gAr"></span></button>
           </nav>
         </div>
       </div></section>
 
       <!-- TASKS -->
-      <section class="page" id="p-tasks" aria-label="Tasks"><div class="fit">
+      <section class="page scroll" id="p-tasks" aria-label="Tasks"><div class="fit">
         <div class="cols">
           <div class="sec">
             <h2 class="sec-h">Dashboard <span class="src" id="tvSrc">taskvim</span></h2>
@@ -470,28 +501,20 @@ body:has(.nudge:not([hidden])) .notes{opacity:0;pointer-events:none}
         </div>
       </div></section>
 
-      <!-- DOJO -->
-      <section class="page" id="p-dojo" aria-label="Dojo"><div class="fit">
-        <div class="cols">
-          <div>
-            <div class="sec">
-              <h2 class="sec-h">Rank <span class="src" id="dojoSrc">dojo</span></h2>
-              <div class="belt"><span class="belt-name" id="beltName"></span><span class="kanji">道場</span></div>
-              <div class="xp num"><span id="xpTxt"></span><span id="xpNext"></span></div>
-              <div class="line"><i id="xpLine" style="width:0"></i></div>
-            </div>
-            <div class="sec">
-              <h2 class="sec-h">Practice</h2>
-              <div class="kv" id="dojoKv"></div>
-              <div class="heat" id="dojoHeat" aria-label="Practice, last 16 weeks"></div>
-            </div>
-          </div>
+      <!-- CALENDAR -->
+      <section class="page scroll" id="p-cal" aria-label="Calendar"><div class="fit">
+        <div class="calcols">
           <div class="sec">
-            <h2 class="sec-h">Due for review <span class="src" id="dueCount"></span></h2>
-            <div id="reviews"></div>
-            <div class="actions">
-              <button class="btn" type="button" id="startReview">Open dojo</button>
+            <h2 class="sec-h"><span id="dayTitle">Today</span> <span class="src" id="calSrc">taskvim</span></h2>
+            <div id="agenda"></div>
+          </div>
+          <div class="month">
+            <div class="month-h">
+              <button class="icon" type="button" id="mPrev" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+              <button type="button" id="mTitle" class="mt" aria-label="Back to today"></button>
+              <button class="icon" type="button" id="mNext" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
             </div>
+            <div class="mgrid" id="mgrid"></div>
           </div>
         </div>
       </div></section>
@@ -529,7 +552,7 @@ body:has(.nudge:not([hidden])) .notes{opacity:0;pointer-events:none}
   <nav class="dock" id="dock" aria-label="Pages">
     <button type="button" data-go="0" class="on">Home</button>
     <button type="button" data-go="1">Tasks</button>
-    <button type="button" data-go="2">Dojo</button>
+    <button type="button" data-go="2">Calendar</button>
     <button type="button" data-go="3">Machines</button>
     <button type="button" data-go="4">Claude<span class="badge" id="badge"></span></button>
   </nav>
@@ -1222,7 +1245,7 @@ const sky = (() => {
 })();
 
 /* ================= state ================= */
-const PAGES = ['home', 'tasks', 'dojo', 'machines', 'claude'];
+const PAGES = ['home', 'tasks', 'calendar', 'machines', 'claude'];
 const SCENE_NAMES = ['sunrise', 'cloudsea', 'storm', 'moonlit', 'lanterns', 'koi', 'rain', 'lumiere', 'orbit', 'off'];
 let scene = SCENE_NAMES.includes(store.get('ss-scene2')) ? store.get('ss-scene2') : 'cloudsea';
 let night = false, pageIndex = 0;
@@ -1254,8 +1277,6 @@ const KEYS = [
   { id: 'mic', icon: 'mic', label: 'Mic off', toggle: 'mic' }, { id: 'quiet', icon: 'moon', label: 'Quiet' },
   { id: 'lock', icon: 'lock', label: 'Lock' },
 ];
-const BELTS = [['White', 'text', 0], ['Yellow', 'sand', 100], ['Orange', 'warm', 300], ['Green', 'green', 700], ['Blue', 'blue', 1400],
-  ['Purple', 'purple', 2500], ['Brown', 'brown', 4000], ['Red', 'rose', 6000], ['Black', 'muted', 9000]];
 
 /* ================= agents: the PC and the laptop ================= */
 // Each computer runs agent/subscreen_agent.py. The phone polls every one of
@@ -1286,7 +1307,7 @@ function activeAgent() {
   if (pinned) { const p = live.find(a => a.addr === pinned); if (p) return p; }
   return live.slice().sort((x, y) => x.state.idle - y.state.idle)[0] || null;
 }
-// taskvim and dojo: the freshest copy any computer has; remembered for when none answer
+// taskvim: the freshest copy any computer has; remembered for when none answer
 function source(key) {
   const live = agents.filter(a => a.ok && a.state?.[key]);
   if (key === 'taskvim') live.sort((x, y) => y.state.taskvim.mtime - x.state.taskvim.mtime);
@@ -1391,7 +1412,6 @@ function setFlip(id, v) {
     d._t = setTimeout(done, 2500);   // in case the animation never runs (hidden tab)
   });
 }
-function beltFor(xp) { let i = 0; BELTS.forEach((b, k) => { if (xp >= b[2]) i = k; }); return { cur: BELTS[i], next: BELTS[i + 1] }; }
 function firstTask(tv, skip) {
   if (!tv) return null;
   for (const k of ['important', 'general', 'agent']) { const t = (tv.groups[k] || []).find(t => !t.done && t.id !== skip); if (t) return t; }
@@ -1427,11 +1447,11 @@ function tickHome(now) {
     $('#wPn').textContent = $('#wPt').textContent = $('#wPc').textContent = '';
   }
 }
-// Home shows only what matters right now: the prayer always; the most important open task and the
-// dojo when there is something; the next event only when it is within three hours; Claude only
-// when a session is waiting for you.
+// Home shows only what matters right now: the prayer always; the most important open task when
+// there is one; the next event only when it is within three hours; Claude only when a session is
+// waiting for you.
 function renderGlance() {
-  const tv = source('taskvim'), dj = source('dojo');
+  const tv = source('taskvim');
   soonData = tv?.data?.soon || [];
   const skip = /^task-/.test($('#gSoon').dataset.key || '') && !$('#gSoon').hidden ? +$('#gSoon').dataset.key.slice(5) : null;
   const t = firstTask(tv?.data, skip);
@@ -1441,12 +1461,6 @@ function renderGlance() {
     $('#gTv').textContent = t.text;
     const d = dueInfo(t);
     $('#gTr').innerHTML = d ? `<span class="due ${d.cls}">${esc(d.txt)}</span>` : '';
-  }
-  $('#gDojo').hidden = !dj;
-  if (dj) {
-    const b = beltFor(dj.data.xp);
-    $('#gDv').textContent = dj.data.dueCount ? `${dj.data.dueCount} review${dj.data.dueCount > 1 ? 's' : ''} due` : 'All caught up';
-    $('#gDr').innerHTML = `<span style="color:var(--${b.cur[1]})">${b.cur[0].toLowerCase()} belt</span>`;
   }
   const nx = tv?.data?.next?.[0], soon = nx && new Date(nx.at) - Date.now() < 3 * 3600e3;
   $('#gNext').hidden = !soon;
@@ -1510,7 +1524,7 @@ function renderTasks() {
       ${list.map(t => { const d = dueInfo(t); return `
         <button type="button" class="task${t.done ? ' done' : ''}" data-id="${t.id}" aria-pressed="${!!t.done}">
           <span class="chk"></span>
-          <span class="t">${t.course ? `<span class="proj" style="color:var(--${t.color})">${esc(t.course)}</span>` : ''}${esc(t.text)}</span>
+          <span class="tx"><span class="t">${esc(t.text)}</span>${t.course ? `<span class="proj" style="color:var(--${t.color})">${esc(t.course)}</span>` : ''}</span>
           ${d ? `<span class="due ${d.cls}">${esc(d.txt)}</span>` : '<span></span>'}
         </button>`; }).join('')}</div>`;
   }).join('') || '<p class="empty">Nothing on the dashboard.</p>';
@@ -1863,43 +1877,118 @@ $('#nudgeTestBtn').addEventListener('click', () => {
   openNudge({ kind: 'event', id: 'preview', text: 'This is how a deadline looks', course: 'Preview', at, timed: true, ms: at - Date.now(), day: 0, level: 'now' }, new Date(), 'preview');
 });
 
-/* ================= dojo ================= */
-let dojoKey = '';
-function renderDojo() {
-  const src = source('dojo');
-  $('#dojoSrc').textContent = src ? `dojo · ${src.host}${src.live ? '' : ' · last seen'}` : 'dojo';
-  const key = JSON.stringify(src?.data || null) + iso(new Date()) + (activeAgent() ? nameOf(activeAgent()) : '');
-  if (key === dojoKey) return;
-  dojoKey = key;
-  const dj = src?.data;
-  if (!dj) { $('#reviews').innerHTML = '<p class="empty">Waiting for a computer with dojo.</p>'; return fitPages(); }
-  const { cur, next } = beltFor(dj.xp);
-  const name = $('#beltName'); name.textContent = cur[0] + ' belt'; name.style.color = `var(--${cur[1]})`;
-  $('#xpTxt').textContent = `${dj.xp} xp`;
-  $('#xpNext').textContent = next ? `${next[2] - dj.xp} to ${next[0].toLowerCase()}` : 'top rank';
-  const xl = $('#xpLine'); xl.style.background = `var(--${cur[1]})`;
-  xl.style.width = next ? ((dj.xp - cur[2]) / (next[2] - cur[2]) * 100) + '%' : '100%';
-  let streak = 0;
-  for (let d = today0(), first = true; streak < 999; d = addDays(d, -1), first = false) {
-    const v = dj.days[iso(d)];
-    if (v && v[0] > 0) streak++; else if (!first) break;
-  }
-  $('#dojoKv').innerHTML = `
-    <div><span>Solved</span><b>${dj.solved}</b></div>
-    <div><span>Streak</span><b>${streak}<small> d</small></b></div>
-    <div><span>Due</span><b>${dj.dueCount}</b></div>
-    <div><span>Last solve</span><b>${dj.lastSolve ? new Date(dj.lastSolve + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}</b></div>`;
-  renderHeat('#dojoHeat', d => { const v = dj.days[d]; return v ? (v[0] ? 4 + v[0] : Math.min(3, Math.ceil(v[1] / 10))) : 0; }, [1, 2, 3, 5]);
-  $('#dueCount').textContent = `SM-2 · ${dj.dueCount} card${dj.dueCount === 1 ? '' : 's'}`;
-  $('#reviews').innerHTML = dj.due.length ? dj.due.slice(0, 6).map(([t, n, d]) => `
-    <div class="review"><span class="n">${n}</span><span class="t">${esc(t)}</span><span class="diff ${esc(d)}">${esc(d)}</span></div>`).join('')
-    + (dj.dueCount > 6 ? `<div class="review" style="color:var(--muted);font-size:12px"><span class="n"></span><span>and ${dj.dueCount - 6} more</span><span></span></div>` : '')
-    : '<p class="empty">Nothing due. Nice.</p>';
-  const a = activeAgent();
-  $('#startReview').textContent = a ? `Open dojo on ${nameOf(a)}` : 'Open dojo';
-  fitPages();
+/* ================= calendar: taskvim's, from the computers' /plan/data ================= */
+// The same document the iPhone's Plan draws: the Yedion classes, taskvim's events (repeats come as
+// rules and are worked out here, as taskvim's calendar::occurs_on does) and every task with a date.
+// Fetched again whenever taskvim's file changes, and at least every ten minutes; the last copy is
+// remembered for when no computer answers.
+let plan = loadJSON('ss-cache-plan', null), planKey = '', planBusy = false;
+let calDay = iso(new Date()), calMonth = calDay.slice(0, 7), calKey = '';
+async function loadPlan() {
+  const src = source('taskvim');
+  if (!src?.live || planBusy) return;
+  const key = `${src.addr}|${src.data.mtime}|${Math.floor(Date.now() / 600e3)}`;
+  if (key === planKey) return;
+  planBusy = true; planKey = key;   // a failure (an agent too old for /plan/data) waits for the next change
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 5000);
+  try {
+    const r = await fetch(`http://${src.addr}/plan/data`, { cache: 'no-store', signal: ctl.signal });
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || r.status);
+    plan = d; saveJSON('ss-cache-plan', d); renderCal();
+  } catch {} finally { clearTimeout(timer); planBusy = false; }
 }
-$('#startReview').addEventListener('click', e => { pop(e.currentTarget, css('--sand')); act('dojo', 'opened dojo'); });
+const parseDay = s => new Date(s + 'T00:00');
+const daysBetween = (a, b) => Math.round((parseDay(b) - parseDay(a)) / DAY);
+const weekOf = s => iso(addDays(parseDay(s), -parseDay(s).getDay()));   // weeks start on Sunday, as in taskvim
+function occurs(ev, day) {
+  if (!ev.repeat) return day === ev.date;
+  if (day < ev.date || ev.skip?.includes(day)) return false;
+  const r = ev.repeat, every = Math.max(1, r.every || 1);
+  if (r.until && day > r.until) return false;
+  if (r.unit === 'day') return daysBetween(ev.date, day) % every === 0;
+  if (r.unit === 'week') {
+    const wd = parseDay(day).getDay(), weeks = daysBetween(weekOf(ev.date), weekOf(day)) / 7;
+    return (r.days?.length ? r.days.includes(wd) : wd === parseDay(ev.date).getDay()) && weeks % every === 0;
+  }
+  const a = parseDay(ev.date), b = parseDay(day);
+  return b.getDate() === a.getDate() && ((b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth()) % every === 0;
+}
+// Yedion titles carry the lecturer ("… גב' כהן"); the calendar shows only the course
+const LECTURER = /\s+(גב'|מר|ד"ר|דר'|פרופ'|Dr\.?|Prof\.?)\s.*$/;
+const dirOf = s => /^[^A-Za-z֐-׿؀-ۿ]*[֐-׿؀-ۿ]/.test(s) ? 'rtl' : 'ltr';
+function agenda(day) {
+  const timed = [], untimed = [], late = [];
+  if (!plan) return { timed, untimed, late };
+  const course = id => plan.projects.find(p => p.id === id)?.name || '', pinned = new Set(plan.dashboard || []);
+  for (const c of plan.classes) if (c.date === day) timed.push({ kind: 'class', title: c.title.replace(LECTURER, ''), note: c.note, start: c.start, end: c.end });
+  for (const e of plan.events) if (occurs(e, day)) timed.push({ kind: 'event', title: e.title, note: e.note, start: e.start, end: e.end });
+  for (const t of plan.tasks) {
+    if (t.habit || t.done) continue;
+    const it = { kind: 'task', id: t.id, title: t.text, note: course(t.project), start: t.start, end: t.end, due: t.due };
+    if (t.due === day) (t.start ? timed : untimed).push(it);
+    else if (day === iso(new Date()) && t.due && t.due < day && pinned.has(t.id)) late.push(it);
+  }
+  timed.sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+  untimed.sort((a, b) => a.title.localeCompare(b.title));
+  late.sort((a, b) => a.due.localeCompare(b.due));
+  return { timed, untimed, late };
+}
+function calRow(it, timed, past) {
+  const task = it.kind === 'task', d = !timed && it.due !== calDay ? dueInfo(it) : null;
+  return `<${task ? `button type="button" data-id="${it.id}"` : 'div'} class="ev${task ? ' is-task' : ''}${timed ? '' : ' untimed'}${past ? ' past' : ''}">`
+    + (timed ? `<span class="at"><b>${esc(it.start)}</b><span>${esc(it.end || '')}</span></span>` : '')
+    + `<span class="body" dir="${dirOf(it.title)}"><span class="t">${esc(it.title)}</span>${it.note ? `<span class="n">${esc(it.note)}</span>` : ''}</span>`
+    + (task ? '<span class="chk"></span>' : d ? `<span class="due ${d.cls}">${esc(d.txt)}</span>` : '<span></span>')
+    + (task ? '</button>' : '</div>');
+}
+function renderCal() {
+  const now = new Date(), t = iso(now), hm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const src = source('taskvim');
+  $('#calSrc').textContent = plan ? `taskvim · ${plan.host}${src?.live ? '' : ' · last seen'}` : 'taskvim';
+  const key = JSON.stringify([plan?.version, plan?.host, calDay, calMonth, t, hm]);
+  if (key === calKey) return;
+  calKey = key;
+  const n = daysBetween(t, calDay), long = parseDay(calDay).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('#dayTitle').textContent = n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : n === -1 ? 'Yesterday' : long;
+  const a = agenda(calDay);
+  let html = '';
+  if (!plan) html = '<p class="empty">Waiting for a computer with taskvim.</p>';
+  else if (!a.timed.length && !a.untimed.length && !a.late.length) html = '<p class="empty">Nothing on.</p>';
+  let nowShown = calDay !== t || !a.timed.length;
+  for (const it of a.timed) {
+    if (!nowShown && it.start > hm) { html += '<div class="nowline"></div>'; nowShown = true; }
+    html += calRow(it, true, calDay < t || (calDay === t && (it.end || it.start) <= hm));
+  }
+  if (!nowShown) html += '<div class="nowline"></div>';
+  if (a.untimed.length) html += '<div class="cal-sub">Due</div>' + a.untimed.map(it => calRow(it, false)).join('');
+  if (a.late.length) html += '<div class="cal-sub">Overdue</div>' + a.late.map(it => calRow(it, false)).join('');
+  $('#agenda').innerHTML = html;
+  // the month: Sunday first, a dot for each thing on a day (up to three)
+  const first = parseDay(calMonth + '-01'), start = addDays(first, -first.getDay());
+  const weeks = Math.ceil((first.getDay() + new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()) / 7);
+  $('#mTitle').textContent = first.toLocaleDateString('en-GB', { month: 'long', year: first.getFullYear() === now.getFullYear() ? undefined : 'numeric' });
+  $('#mgrid').innerHTML = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(w => `<span class="wd">${w}</span>`).join('')
+    + Array.from({ length: weeks * 7 }, (_, i) => {
+      const d = iso(addDays(start, i)), g = agenda(d), c = g.timed.length + g.untimed.length;
+      const cls = (d.slice(0, 7) !== calMonth ? ' out' : '') + (d === t ? ' today' : '') + (d === calDay ? ' on' : '');
+      return `<button type="button" class="md${cls}" data-day="${d}"><span>${+d.slice(8)}</span><span class="dots">${'<i></i>'.repeat(Math.min(3, c))}</span></button>`;
+    }).join('');
+}
+function calShift(months) {
+  const d = parseDay(calMonth + '-01'); d.setMonth(d.getMonth() + months);
+  calMonth = iso(d).slice(0, 7); renderCal();
+}
+$('#mPrev').addEventListener('click', () => calShift(-1));
+$('#mNext').addEventListener('click', () => calShift(1));
+$('#mTitle').addEventListener('click', () => { calDay = iso(new Date()); calMonth = calDay.slice(0, 7); renderCal(); });
+$('#mgrid').addEventListener('click', e => {
+  const b = e.target.closest('.md'); if (!b) return;
+  calDay = b.dataset.day; calMonth = calDay.slice(0, 7); renderCal();
+});
+$('#agenda').addEventListener('click', e => {
+  const b = e.target.closest('.is-task'); if (b) toggleTask(+b.dataset.id, b);
+});
 
 /* ================= machines ================= */
 const small = v => `<small> ${v}</small>`;
@@ -2342,10 +2431,11 @@ if (!native) {
 
 /* ================= render + loops ================= */
 function renderAll() {
-  renderHosts(); renderGlance(); renderTasks(); renderDojo(); renderMachines(); renderKeys(); renderSessions();
+  renderHosts(); renderGlance(); renderTasks(); renderCal(); renderMachines(); renderKeys(); renderSessions();
 }
 async function pollAll() {
   await Promise.all(agents.map(poll));
+  loadPlan();
   if (agents.some(a => a.ok && a.state?.prayer) && (Date.now() - prayerFetched > 6 * 3600e3 || !PR)) fetchPrayer();
   renderAll();
 }
@@ -2430,11 +2520,12 @@ function drawCrab(t) {
   x.fillStyle = '#1c1c1c'; x.fillRect(0, H - Math.max(1, ps / 3), W, Math.max(1, ps / 3));
 }
 
-/* ================= fit: no page ever scrolls ================= */
+/* ================= fit: a page shrinks to fit the screen, unless it is a long list that scrolls ================= */
 function fitPages() {
   $$('.page').forEach(p => {
     const f = p.querySelector('.fit'); if (!f) return;
     f.style.transform = ''; f.style.width = ''; f.style.height = '';
+    if (p.classList.contains('scroll')) return;   // long lists scroll at full size instead of shrinking
     const cs = getComputedStyle(p);
     const avail = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     const need = f.scrollHeight;
