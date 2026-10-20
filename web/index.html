@@ -364,28 +364,31 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .pill i{flex:none;width:5px;height:5px;border-radius:50%;background:#fff;animation:soft 1.8s infinite}
 .pill b{font-weight:500}
 
-/* a reminder is part of the clock: a line under it, in the clock's own thin uppercase type, no box.
-   It arrives as a raindrop that falls from the top edge onto the line and splashes, and the line spreads
-   out sideways from where it landed (dropIn); leaving plays that backwards (dropNote) */
-.notes{display:flex;justify-content:center;min-width:0}
-.notes:empty{display:none}
-.note{display:flex;justify-content:center;max-width:100%;margin-top:18px}
-.app.idle .note{margin-top:22px}
-.nb{display:flex;flex-direction:column;align-items:center;min-width:0;max-width:100%}
-.nl{display:flex;align-items:baseline;gap:.6em;max-width:100%;font:300 clamp(16px,2.1vw,24px)/1.15 var(--f-flip);letter-spacing:.08em;text-transform:uppercase;color:#fff;white-space:nowrap;text-shadow:0 1px 8px rgba(0,0,0,.6)}
-.nl .nd{flex:none;align-self:center;width:6px;height:6px;border-radius:50%;background:#fff;animation:soft 1.8s infinite}
-.nl .nc{flex:none;color:rgba(255,255,255,.62)}
-.nl .nt{min-width:0;overflow:hidden;text-overflow:ellipsis}
-.nl .nk{flex:none;font-variant-numeric:tabular-nums}
-.nl .nc::after,.nl .nt::after{content:"·";margin-left:.6em;opacity:.6}
-.na{display:flex;justify-content:center;gap:4px;margin-top:4px}
-.na button,.nudge-a button{font:400 clamp(13px,1.5vw,16px)/1 var(--f-flip);letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55);padding:14px 14px;border-radius:999px;text-shadow:0 1px 8px rgba(0,0,0,.6);transition:color .2s,background .2s}
-.na button:active,.nudge-a button:active{background:rgba(255,255,255,.08);color:#fff}
+/* a reminder floats over the scene in the clock's own thin uppercase type, no box: a soft shadow behind it
+   keeps it readable, the clock steps back while it is up, and it drifts gently up and down. It arrives as
+   a raindrop that falls from the top edge onto its middle and splashes, and the words spread out sideways
+   from where it landed (dropIn); leaving plays that backwards (dropNote) */
+.notes{position:fixed;inset:0;z-index:35;display:grid;place-items:center;pointer-events:none;padding:0 24px}
+.note{grid-area:1 / 1;pointer-events:auto;max-width:min(900px,100%);padding:36px 64px;box-sizing:border-box;
+  background:radial-gradient(closest-side,rgba(0,0,0,.62),rgba(0,0,0,.42) 55%,rgba(0,0,0,.14) 82%,transparent);animation:bob 7s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.nb{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+.nm{display:flex;flex-direction:column;align-items:center;min-width:0;max-width:100%}
+.nk{display:flex;align-items:center;gap:.6em;font:400 clamp(14px,1.8vw,19px)/1 var(--f-flip);letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.75);font-variant-numeric:tabular-nums;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.nk::before{content:"";width:7px;height:7px;border-radius:50%;background:#fff;animation:soft 1.8s infinite}
+.nt{max-width:100%;margin-top:12px;font:300 clamp(30px,5.2vw,58px)/1.06 var(--f-flip);letter-spacing:.04em;text-transform:uppercase;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.6);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nc{margin-top:10px;font:300 clamp(14px,1.7vw,18px)/1 var(--f-flip);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.na{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin-top:14px}
+.na button,.nudge-a button{font:400 clamp(14px,1.7vw,18px)/1 var(--f-flip);letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.6);padding:15px 18px;border-radius:999px;text-shadow:0 1px 8px rgba(0,0,0,.6);transition:color .2s,background .2s}
+.na button:active,.nudge-a button:active{background:rgba(255,255,255,.1);color:#fff}
 .na .ok,.nudge-a .ok{color:#fff}
+.clockblock,.glance > *{transition:opacity .8s}
+body:has(.notes .note:not(.out)) .clockblock{opacity:.18}
+body:has(.notes .note:not(.out)) .glance > *{opacity:.25}
+body:has(.notes .note:not(.out)) .pill{display:none!important}
 /* the drop and its splash live on the page itself, so they can fall from the very top */
 .raindrop{position:fixed;z-index:36;width:10px;height:15px;margin:-15px 0 0 -5px;border-radius:50% 50% 50% 50% / 62% 62% 38% 38%;background:rgba(235,235,235,.9);box-shadow:0 0 12px rgba(255,255,255,.3);pointer-events:none}
 .rainsplash{position:fixed;z-index:36;width:26px;height:8px;margin:-4px 0 0 -13px;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.6);pointer-events:none;opacity:0}
-.stack:has(.note:not(.out)) .pill{display:none!important}
 
 /* the alert, in the last fifteen minutes: the clock steps back and the deadline takes the line under it,
    large, with its countdown and the answers. A tap anywhere else is "got it" */
@@ -398,7 +401,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .nudge-c{font:300 clamp(13px,1.6vw,17px)/1 var(--f-flip);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-top:8px}
 .nudge-c:empty{display:none}
 .nudge-a{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:8px}
-.app.alerting .when,.app.alerting .pill,.app.alerting .notes{display:none!important}
+.app.alerting .when,.app.alerting .pill{display:none!important}
 .app.alerting .flipclock{--ch:min(34vh,30cqw);opacity:.75}
 .app.idle.alerting #p-home{padding-block:0}
 body:has(.app.alerting) #fauna{opacity:.4}
@@ -470,7 +473,6 @@ body:has(.app.alerting) #fauna{opacity:.4}
             <div class="flipclock" id="clock" role="timer" aria-label="Time"><div class="roll" id="fH"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div><span class="sep" aria-hidden="true"></span><div class="roll" id="fM"><span class="dg"><i></i><i></i></span><span class="dg"><i></i><i></i></span></div></div>
             <div class="when"><span id="dateG"></span><span class="wp" id="whenP"><b id="wPn"></b><span id="wPt"></span><span class="cd" id="wPc"></span></span></div>
             <div class="pill" id="pill"><span><i></i><b id="pillW"></b><span id="pillT"></span></span></div>
-            <div class="notes" id="notes" aria-live="polite"></div>
             <div class="nudge" id="nudge" role="alertdialog" aria-labelledby="nudgeT" hidden>
               <div class="nudge-k"><i></i><span id="nudgeK"></span><b id="nudgeCd"></b><span id="nudgeCdL"></span></div>
               <div class="nudge-t" id="nudgeT" dir="auto"></div>
@@ -624,6 +626,8 @@ body:has(.app.alerting) #fauna{opacity:.4}
     </div>
   </div>
 </div>
+
+<div class="notes" id="notes" aria-live="polite"></div>
 
 <div class="rest" id="rest" hidden><div class="rest-clock" id="restClock"></div></div>
 
@@ -1693,13 +1697,13 @@ $('#gSoon').addEventListener('click', () => {
   if (it && it.level === 'now') openNudge(it, new Date(), 'tap'); else go(1);
 });
 
-/* ----- the line under the clock: a raindrop falls onto it and it spreads out from there ----- */
+/* ----- the floating reminder: a raindrop falls onto it and it spreads out from there ----- */
 function showNote(it, items, now, sk) {
-  if (PAGES[pageIndex] !== 'home') go(0);                          // it lives under the clock
+  if (PAGES[pageIndex] !== 'home') go(0);                          // it floats over the clock
   const n = document.createElement('div');
   n.className = 'note'; n.dataset.key = itemKey(it); n.dataset.sk = sk;
   n.innerHTML = `<div class="nb">
-    <div class="nl"><i class="nd"></i>${it.course ? `<span class="nc">${esc(it.course)}</span>` : ''}<span class="nt" dir="auto">${esc(it.text)}</span><span class="nk"></span></div>
+    <div class="nm"><div class="nk"></div><div class="nt" dir="auto">${esc(it.text)}</div>${it.course ? `<div class="nc">${esc(it.course)}</div>` : ''}</div>
     <div class="na">${it.kind === 'task' ? '<button class="ok" type="button" data-n="done">Done</button>' : ''}<button type="button" data-n="x">Later</button><button type="button" data-n="mute">Don’t remind</button></div>
   </div>`;
   $('#notes').appendChild(n);
@@ -1713,11 +1717,11 @@ function showNote(it, items, now, sk) {
 function updateNote(n, it, items, now) {
   $('.nk', n).textContent = dueLabel(it, now) + (it.timed && it.day === 0 ? ' · ' + hm(it.at) : '');
 }
-// the drop: falls from the top edge with gravity onto the middle of the line, squashes with a faint
-// splash ring, and the line opens sideways from that point like water spreading
+// the drop: falls from the top edge with gravity onto the middle of the reminder, squashes with a faint
+// splash ring, and the words open sideways from that point like water spreading
 const DROP_MS = 1300, FALL = .42;
 function rain(n) {
-  const r = $('.nl', n).getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+  const r = $('.nm', n).getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
   const d = document.createElement('i'), sp = document.createElement('i');
   d.className = 'raindrop'; sp.className = 'rainsplash';
   for (const e of [d, sp]) { e.style.left = x + 'px'; e.style.top = y + 'px'; document.body.appendChild(e); }
@@ -1742,7 +1746,7 @@ function dropIn(n) {
   const { d, sp, fall } = rain(n);
   d.animate(dropKeys(fall), { duration: DROP_MS, fill: 'forwards' }).onfinish = () => d.remove();
   sp.animate([{ opacity: .9, transform: 'scale(.4)' }, { opacity: 0, transform: 'scale(5,3)' }], { duration: 700, delay: DROP_MS * FALL, easing: 'cubic-bezier(.2,.8,.3,1)' }).onfinish = () => sp.remove();
-  $('.nl', n).animate(spread, { duration: DROP_MS, easing: 'linear' });
+  $('.nm', n).animate(spread, { duration: DROP_MS, easing: 'linear' });
   $('.na', n).animate(actsIn, { duration: DROP_MS + 300, easing: 'ease-out' });
 }
 // leaving is the arrival played backwards: the line gathers into a drop that rises off the top
@@ -1750,11 +1754,11 @@ function dropNote(n) {
   if (n.classList.contains('out')) return;
   n.classList.add('out'); clearTimeout(n._t);
   const gone = () => { n.remove(); fitPages(); };
-  if (reduce || !n.isConnected || !$('.nl', n).getBoundingClientRect().width) return n.animate([{ opacity: 1 }, { opacity: 0 }], 250).onfinish = gone;
+  if (reduce || !n.isConnected || !$('.nm', n).getBoundingClientRect().width) return n.animate([{ opacity: 1 }, { opacity: 0 }], 250).onfinish = gone;
   const { d, sp, fall } = rain(n), opt = { duration: DROP_MS, direction: 'reverse', fill: 'forwards' };
   sp.remove();
   $('.na', n).animate(actsIn, { ...opt, duration: DROP_MS + 300, easing: 'ease-out' });
-  $('.nl', n).animate(spread, opt);
+  $('.nm', n).animate(spread, opt);
   d.animate(dropKeys(fall), opt).onfinish = () => { d.remove(); gone(); };
 }
 $('#notes').addEventListener('click', e => {
@@ -1883,7 +1887,7 @@ $('#chimeBtn').addEventListener('click', () => { notifyCfg.chime = !notifyCfg.ch
 $('#noteTestBtn').addEventListener('click', () => {
   setMenu(false);
   const at = new Date(Date.now() + 42 * MIN), it = { kind: 'event', id: 'preview', text: 'This is how a reminder arrives', course: 'Preview', at, timed: true, ms: at - Date.now(), day: 0, level: 'soon', urgency: 1 };
-  $$('.note[data-key="event-preview"]').forEach(dropNote);
+  $$('.note').forEach(dropNote);
   setTimeout(() => showNote(it, [it], new Date(), 'preview'), 300);
 });
 $('#nudgeTestBtn').addEventListener('click', () => {
