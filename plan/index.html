@@ -229,10 +229,10 @@ function dueLabel(s) {
 
 /* ================= the computers ================= */
 // The page comes from one computer over `tailscale serve`; any of them can answer, since
-// Syncthing keeps taskvim's file the same on all (add 'a73-hub' here if the always-on hub is set up).
+// Syncthing keeps taskvim's file the same on all; 'macmini' is the always-on hub.
 // Edits are queued on the phone: each shows at once, and goes, in order, to whichever answers.
 const TAILNET = location.protocol === 'https:' && location.hostname.endsWith('.ts.net') ? location.hostname.split('.').slice(1).join('.') : '';
-const HOSTS = [...new Set([TAILNET ? location.hostname.split('.')[0] : '', ...load('plan-hosts', ['omarchy', 'archlinux'])])];
+const HOSTS = [...new Set([TAILNET ? location.hostname.split('.')[0] : '', ...load('plan-hosts', ['macmini', 'omarchy', 'archlinux'])])];
 const base = h => !h || !TAILNET ? location.origin : `https://${h}.${TAILNET}`;
 let S = load('plan-data', null), live = null;         // S: what a computer last sent
 let Q = load('plan-queue', []);                        // edits not yet taken by a computer

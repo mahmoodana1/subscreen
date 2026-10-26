@@ -4,6 +4,8 @@
 #
 #   ./agent/install.sh            install / update, then (re)start the service
 #   ./agent/install.sh --no-hooks skip the Claude Code hook
+#   ./agent/install.sh --headless run without a desktop session (the Mac mini hub; needs lingering,
+#                                 which agent/hub-linux.sh turns on)
 #   ./agent/install.sh --remove   stop the service and remove the hook
 #
 # Safe to run again: it only rewrites its own unit and its own hook entries.
@@ -51,7 +53,7 @@ if [ "${1:-}" = "--remove" ]; then
 fi
 
 command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 1; }
-id -nG | grep -qw input || echo "note: $USER is not in the 'input' group; idle detection will fall back to the cursor (sudo usermod -aG input $USER, then log in again)"
+[[ " $* " == *" --headless "* ]] || id -nG | grep -qw input || echo "note: $USER is not in the 'input' group; idle detection will fall back to the cursor (sudo usermod -aG input $USER, then log in again)"
 
 # The old serve.py service holds the same port 8765, so the agent could never start.
 if [ -f "$UNIT_DIR/subscreen.service" ]; then
@@ -60,12 +62,27 @@ if [ -f "$UNIT_DIR/subscreen.service" ]; then
     echo "removed the old subscreen.service (serve.py), which held port 8765"
 fi
 
+HEADLESS=""
+NO_HOOKS=""
+for arg in "$@"; do
+    case "$arg" in
+        --headless) HEADLESS=1 ;;
+        --no-hooks) NO_HOOKS=1 ;;
+    esac
+done
+# A desktop starts the agent with the graphical session; a headless hub starts it at boot.
+if [ -n "$HEADLESS" ]; then
+    after=network-online.target; partof=""; target=default.target
+else
+    after="graphical-session.target network-online.target"; partof="PartOf=graphical-session.target"; target=graphical-session.target
+fi
+
 mkdir -p "$UNIT_DIR"
 cat > "$UNIT" <<EOF
 [Unit]
 Description=Subscreen agent (serves this machine's state to the phone)
-After=graphical-session.target network-online.target
-PartOf=graphical-session.target
+After=$after
+$partof
 
 [Service]
 ExecStart=/usr/bin/env python3 $HERE/subscreen_agent.py
@@ -73,13 +90,14 @@ Restart=always
 RestartSec=3
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=$target
 EOF
 
 systemctl --user daemon-reload
-systemctl --user enable subscreen-agent.service >/dev/null
+systemctl --user disable subscreen-agent.service >/dev/null 2>&1 || true   # drop the old target's link
+systemctl --user enable subscreen-agent.service >/dev/null 2>&1
 systemctl --user restart subscreen-agent.service
-[ "${1:-}" = "--no-hooks" ] || hooks add
+[ -n "$NO_HOOKS" ] || hooks add
 
 ok=""
 for _ in $(seq 1 30); do

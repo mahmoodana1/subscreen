@@ -33,8 +33,8 @@ Android and iOS peers on the tailnet, or the addresses in the config file.
 With "ntfy" set, the agent also pushes task reminders to that ntfy topic, for
 the iPhone (which cannot keep the page running in the background).
 
-The same agent runs on the old Android phone in Termux as the always-on hub
-(agent/hub-termux.sh): with no desktop around it only serves Plan and pushes.
+The same agent runs headless on the Mac mini as the always-on hub
+(agent/hub-linux.sh, kind "Hub"): with no desktop around it only serves Plan and pushes.
 
 Standard library only. Config (optional): ~/.config/subscreen/agent.json
     {"port": 8765, "kind": "Desktop", "allow_actions_from": ["100.x.y.z"],

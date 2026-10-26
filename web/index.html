@@ -1277,7 +1277,8 @@ const KEYS = [
 /* ================= agents: the PC and the laptop ================= */
 // Each computer runs agent/subscreen_agent.py. The phone polls every one of
 // them; the one touched most recently is "active" and gets the controls.
-const DEFAULT_AGENTS = ['omarchy:8765', 'archlinux:8765'];
+// The hub (the Mac mini, kind "Hub") is nobody's desk: it is active only when nothing else answers.
+const DEFAULT_AGENTS = ['omarchy:8765', 'archlinux:8765', 'macmini:8765'];
 let agents = [];
 let pinned = null;
 function setAgents(list) {
@@ -1287,6 +1288,7 @@ function setAgents(list) {
   renderAll();
 }
 const nameOf = a => a.state?.host || a.addr.split(':')[0];
+const isHub = a => a.state?.kind === 'Hub';
 async function poll(a) {
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 2500);
   try {
@@ -1301,7 +1303,7 @@ async function poll(a) {
 function activeAgent() {
   const live = agents.filter(a => a.ok && a.state);
   if (pinned) { const p = live.find(a => a.addr === pinned); if (p) return p; }
-  return live.slice().sort((x, y) => x.state.idle - y.state.idle)[0] || null;
+  return live.slice().sort((x, y) => isHub(x) - isHub(y) || x.state.idle - y.state.idle)[0] || null;
 }
 // taskvim: the freshest copy any computer has; remembered for when none answer
 function source(key) {
@@ -2257,7 +2259,7 @@ const restCfg = loadJSON('ss-rest', { auto: true, minutes: 10 });
 const REST_STEPS = [5, 10, 20, 30, 60];
 let resting = false, sawAway = false, wokeAt = Date.now();
 function nearestIdle() {
-  const live = agents.filter(a => a.ok && a.state);
+  const live = agents.filter(a => a.ok && a.state && !isHub(a));
   return live.length ? Math.min(...live.map(a => a.state.idle)) : Infinity;
 }
 function setRest(on) {
