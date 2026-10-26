@@ -11,7 +11,7 @@
 #   ./agent/hub-linux.sh --status       what is running, temperatures, sync state
 #
 #   HUB_NAME=macmini   the hostname and Tailscale name (default macmini)
-#   NO_TASKVIM=1       skip building taskvim (it takes a while on an old CPU)
+#   NO_TASKVIM=1       skip building taskvim (on a slow CPU, copy ~/.local/bin/taskvim from a computer instead)
 #   KEEP_DESKTOP=1     keep booting into the desktop instead of a text console
 #
 # Safe to run again. Uses sudo for the system parts. MINI.md walks through all of it.
@@ -84,15 +84,23 @@ if [ -n "$APPLE_MINI" ]; then
             || echo "note: install mbpfan from the AUR by hand (no yay here)"
     fi
     command -v mbpfan >/dev/null && sudo systemctl enable --now mbpfan >/dev/null
-    # Power on by itself after a power cut (the Intel LPC bridge's AFTERG3 bit; Mac mini 2012).
+    # Power on by itself after a power cut: a register of the LPC bridge, which differs by model.
+    poweron=""
     if [ "$(cat /sys/bus/pci/devices/0000:00:1f.0/vendor 2>/dev/null)" = "0x8086" ]; then
-        sudo tee /etc/systemd/system/hub-autopoweron.service >/dev/null <<'EOF'
+        poweron="-s 00:1f.0 0xa4.b=0"       # Intel (Mac mini 2011 and later)
+    elif [ "$(cat /sys/bus/pci/devices/0000:00:03.0/vendor 2>/dev/null)" = "0x10de" ] \
+        && [ "$(cat /sys/bus/pci/devices/0000:00:03.0/class 2>/dev/null)" = "0x060100" ]; then
+        poweron="-s 00:03.0 0x7b.b=0x19"    # NVIDIA MCP79/MCP89 (Mac mini 2009 and 2010)
+    fi
+    if [ -n "$poweron" ]; then
+        command -v setpci >/dev/null || sudo pacman -S --needed --noconfirm pciutils
+        sudo tee /etc/systemd/system/hub-autopoweron.service >/dev/null <<EOF
 [Unit]
 Description=Power the Mac mini back on after a power cut
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/setpci -s 00:1f.0 0xa4.b=0
+ExecStart=/usr/bin/setpci $poweron
 
 [Install]
 WantedBy=multi-user.target
@@ -164,7 +172,7 @@ tailscale serve --bg 8765 >/dev/null
 
 # ---- taskvim (phone-sync: reloads data.json when the agent or Syncthing changes it) ----
 if [ -z "${NO_TASKVIM:-}" ]; then
-    say "taskvim (a few minutes on this CPU)"
+    say "taskvim (slow on an old CPU)"
     TV="$HOME/projects/taskvim"
     [ -d "$TV/.git" ] || git clone -b phone-sync https://github.com/mahmoodana1/taskvim "$TV"
     git -C "$TV" pull --ff-only || true

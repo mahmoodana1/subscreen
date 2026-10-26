@@ -1,11 +1,12 @@
 # The Mac mini hub
 
-The Mac mini (2012, i5/i7 Ivy Bridge, 8 GB, 512 GB, Omarchy) is the always-on hub. It runs headless,
-with no desktop, and does four things:
+The Mac mini (Mid 2010, `Macmini4,1`: Core 2 Duo P8800, about 5.5 GB usable, a 128 GB SSD with Arch on it
+and a 500 GB hard disk, plain Arch with no desktop) is the always-on hub. It runs headless and does four things:
 
 1. **taskvim**: keeps its own copy of taskvim's folder (`~/.local/share/taskvim`, Syncthing folder
    `taskvim-data`), with 30 days of old versions, so the computers catch up from it when they wake. taskvim
-   itself is installed too, for use over ssh.
+   itself is installed too, for use over ssh: copied from the PC (`~/.local/bin/taskvim`), since
+   building Rust on a Core 2 Duo takes very long. Run the script with `NO_TASKVIM=1` for that reason.
 2. **The phone server**: runs `agent/subscreen_agent.py` at boot as kind `Hub`. The phone's subscreen
    uses it only when no computer answers: prayer times, taskvim, the calendar, reminders.
 3. **Calendar and tasks**: serves the iPhone's **Plan** app (`plan/`) over HTTPS at
@@ -13,6 +14,7 @@ with no desktop, and does four things:
 4. **Reminders**: pushes task reminders through ntfy, like the computers (they never send one twice).
 
 The machine is slow and dusty, so it does not build heavy projects or run long jobs.
+Its fan sat at the minimum (1800 RPM) before mbpfan; at idle the CPU was about 55 °C and the GPU 70 °C.
 
 ## For Claude Code on the mini
 
@@ -31,7 +33,7 @@ Rules:
 
 ## 1. Before anything
 
-- Ethernet if possible; Wi-Fi works too (iwd keeps it up without anyone logged in).
+- Ethernet if possible; Wi-Fi works too (the system's network service keeps it up without anyone logged in).
 - Check the time zone: `timedatectl`. It must be the user's (prayer times and reminders depend on it).
 - Get the repo:
   ```sh
@@ -46,8 +48,8 @@ Rules:
 ```
 
 It's safe to rerun, and it does all of this:
-- installs python, git, syncthing, tailscale, lm_sensors, rust; on the Mac mini, `mbpfan` (fan control)
-  and a service that powers it back on after a power cut
+- installs python, git, syncthing, tailscale, lm_sensors, rust; on the Mac mini, `mbpfan` (fan control,
+  from the AUR through yay) and a service that powers it back on after a power cut (Intel or NVIDIA chipset)
 - names the machine `macmini` (`HUB_NAME=...` to change it), masks sleep and suspend, enables lingering
   so user services run from boot with nobody logged in, and boots to a text console from then on
   (`KEEP_DESKTOP=1` skips that; undo with `sudo systemctl set-default graphical.target`)
