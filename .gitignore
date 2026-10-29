@@ -1,8 +1,7 @@
 __pycache__/
 *.pyc
 
-# Screenshots pulled off the phone while checking the layout.
-*.xwd
+# Screenshots taken while checking the layout.
 *.png
 !plan/icon.png
 !plan/icon-512.png

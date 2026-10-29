@@ -1,1 +1,0 @@
-/home/mahmood/.config/hypr/panel/prayer.py
