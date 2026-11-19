@@ -1278,7 +1278,13 @@ const KEYS = [
 // Each computer runs agent/subscreen_agent.py. The phone polls every one of
 // them; the one touched most recently is "active" and gets the controls.
 // The hub (the Mac mini, kind "Hub") is nobody's desk: it is active only when nothing else answers.
-const DEFAULT_AGENTS = ['omarchy:8765', 'archlinux:8765', 'macmini:8765'];
+// Tailscale IPs, not MagicDNS names: Android's Tailscale often reports "DNS unavailable",
+// and then the names do not resolve although the devices are connected.
+const TS_IPS = { omarchy: '100.64.197.79', archlinux: '100.108.237.63', macmini: '100.110.151.45' };
+const DEFAULT_AGENTS = ['omarchy', 'archlinux', 'macmini'].map(n => TS_IPS[n] + ':8765');
+// a list saved before the switch still names the machines; swap those names for their IPs
+const savedAgents = () => loadJSON('ss-agents', DEFAULT_AGENTS)
+  .map(addr => { const [h, port] = addr.split(':'); return TS_IPS[h] ? `${TS_IPS[h]}:${port || 8765}` : addr; });
 let agents = [];
 let pinned = null;
 function setAgents(list) {
@@ -2238,7 +2244,7 @@ $('#athanBtn').addEventListener('click', () => { setMenu(false); openAthan(); })
 $('#athan').addEventListener('click', closeAthan);
 
 /* ================= settings (in the menu) ================= */
-$('#agentsIn').value = loadJSON('ss-agents', DEFAULT_AGENTS).join(', ');
+$('#agentsIn').value = savedAgents().join(', ');
 $('#agentsSave').addEventListener('click', () => {
   const list = $('#agentsIn').value.split(/[\s,]+/).map(s => s.trim()).filter(Boolean).map(s => s.includes(':') ? s : s + ':8765');
   if (!list.length) return toast('Add at least one computer');
@@ -3080,7 +3086,7 @@ function frame(now) {
 
 /* ================= boot ================= */
 setScene(scene, true);
-agents = loadJSON('ss-agents', DEFAULT_AGENTS).map(addr => ({ addr, state: null, ok: false, seen: 0, hist: [] }));
+agents = savedAgents().map(addr => ({ addr, state: null, ok: false, seen: 0, hist: [] }));
 renderAll();
 go(Math.max(0, PAGES.indexOf((location.hash || '').slice(1))), true);
 fitPages();
