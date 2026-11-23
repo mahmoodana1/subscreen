@@ -2555,7 +2555,7 @@ document.addEventListener('pointerdown', e => {
 /* ================= fauna: animals that live on the screen ================= */
 // The cat lies on a shelf at the top of the side panel in every theme (not on the idle full screen). Each ambient adds its own: sunrise → a camel
 // caravan on the far ridge and a bird flock, cloudsea → a hot-air balloon, moonlit → geese across
-// the moon, koi → the koi, orbit → a space station. Storm's lightning is weather,
+// the moon, koi → a whole pond (koi, minnows, a turtle, a frog, a dragonfly), orbit → a space station. Storm's lightning is weather,
 // so it stays with the animals off. Tap the cat.
 const fauna = (() => {
   const c = $('#fauna');
@@ -2882,128 +2882,513 @@ const fauna = (() => {
     }
   }
 
-  // koi: each fish follows a smooth looping path; its body is the path it just swam
-  const KOI = [   // six fish, each with its own stretch of the pond
-    { base: '#f2ece2', spots: [['#d8472b', [1, 2, 3, 4]], ['#d8472b', [7, 8]], ['#d8472b', [11]]], cx: .27, cy: .5, ax: .1, ay: .26, w: .09, ph: 0, L: 100 },
-    { base: '#e9a93a', spots: [], cx: .5, cy: .5, ax: .28, ay: .2, w: .07, ph: 2.1, L: 92 },
-    { base: '#1a1a1f', spots: [['#d4452c', [2, 3, 8, 9]], ['#ece6dc', [5, 6, 12]]], cx: .5, cy: .22, ax: .26, ay: .03, w: .06, ph: 4.4, L: 90 },
-    { base: '#ffffff', spots: [['#d8372b', [1]]], cx: .705, cy: .52, ax: .02, ay: .22, wx: .012, w: .07, ph: 1.2, L: 80 },
-    { base: '#ef7a2a', spots: [], cx: .4, cy: .78, ax: .22, ay: .08, w: .065, ph: 3.3, L: 86 },
-    { base: '#8aa0b4', spots: [['#e0763a', [7, 8, 9, 10, 11]], ['#dfe6ec', [1, 2]]], cx: .62, cy: .3, ax: .18, ay: .12, w: .075, ph: 5.6, L: 84 },
+  /* ---------- the pond ---------- */
+  // A small living pond, simulated rather than looped. Everything rides one slow current. Koi wander,
+  // glide and push, keep loose company in pairs, turn aside for each other and drift up and down
+  // through the water (deeper ones dimmer, their shadows tighter). A school of minnows turns as one
+  // and scatters when a koi comes close. Now and then a turtle paddles across, a dragonfly visits
+  // the pads and a frog hops between them. Striders skate the surface, petals and pollen drift.
+  // Tap the water to scatter food: the fish come up to it.
+  const TAU = Math.PI * 2;
+  const angTo = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+  const wav = (t, s) => Math.sin(t * .29 + s) * .5 + Math.sin(t * .157 + s * 1.7) * .3 + Math.sin(t * .071 + s * 2.9) * .2;
+  const ease = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+  const fr = v => v - Math.floor(v);
+  const ghash = (a, b) => { let p = fr(a * 123.34), q = fr(b * 456.21); const d = p * (p + 45.32) + q * (q + 45.32); p += d; q += d; return fr(p * q); };   // the shader's hash
+  const KOI = [   // L: length and v: cruising speed, both in short sides of the screen
+    { base: '#f4eee4', spots: [['#d8472b', [1, 2, 3, 4]], ['#d8472b', [7, 8]], ['#d8472b', [11]]], L: .2, v: .045, buddy: 3 },   // kohaku
+    { base: '#ebb043', spots: [], L: .215, v: .04, metal: 1 },                                                                   // ogon
+    { base: '#1a1a1f', spots: [['#d4452c', [2, 3, 8, 9]], ['#ece6dc', [5, 6, 12]]], L: .19, v: .05 },                          // showa
+    { base: '#fbfbf8', spots: [['#d8372b', [1]]], L: .17, v: .047, long: 1, fin: '#f4f0e8' },                                   // tancho, butterfly-finned
+    { base: '#ef7a2a', spots: [], L: .18, v: .043, buddy: 1 },                                                                   // orenji
+    { base: '#8aa0b4', spots: [['#e0763a', [7, 8, 9, 10, 11]], ['#dfe6ec', [1, 2]]], L: .185, v: .046 },                        // asagi
+    { base: '#86684a', spots: [], L: .235, v: .033, fin: '#76593e' },                                                            // chagoi: big, slow, brown
+    { base: '#f1e8d2', spots: [['#e2b24e', [3, 4, 5, 6, 7, 8, 9]]], L: .16, v: .05, long: 1, fin: '#efe4c8', buddy: 5 },       // butterfly, gold-backed
   ];
-  // a fish glides and pushes: its speed rises and falls slowly, and the tail beats with the distance swum
-  const koiA = (k, t) => t * k.w + k.ph + .25 * Math.sin(t * .13 + k.ph * 2);
-  const koiPos = (k, t) => { const a = koiA(k, t); return [W * (k.cx + k.ax * Math.sin(a) + (k.wx ?? .07) * Math.sin(a * 2.3 + k.ph)), H * (k.cy + k.ay * Math.sin(a * 1.6 + 1.1 + k.ph) + .06 * Math.cos(a * 3.1))]; };
-  function oneKoi(k, t) {
-    const N = 16, L = k.L * D, seg = L / N, dense = [koiPos(k, t)], swim = koiA(k, t) * 70;
-    for (let j = 1, len = 0; j < 900 && len < L * 1.1; j++) { const q = koiPos(k, t - j * .04), p = dense[j - 1]; len += Math.hypot(q[0] - p[0], q[1] - p[1]); dense.push(q); }
+  let P = null, pondT = 0, simT = 0, kc = null;
+  const U = () => Math.min(W, H);
+  const flow = (px, py, t) => {   // one slow current, drifting gently left to right with soft eddies
+    const u = U(), sx = px / u, sy = py / u;
+    return [(Math.sin(sy * 2.1 + t * .05) + .6 * Math.sin(sx * 1.3 - sy * 1.7 + t * .031) + .45) * .011 * u,
+      (Math.cos(sx * 1.8 - t * .043) + .6 * Math.cos(sx * .9 + sy * 2.3 + t * .027)) * .008 * u];
+  };
+  function pads(t) {   // the lily pads, where the shader draws them (pad 1 carries the lotus)
+    const tt = t % 3000, out = [];
+    const C = [[.06, .13], [.11, .07], [.96, .16], [.02, .86], [.89, .07], [.71, .05]];
+    for (let i = 0; i < 6; i++) {
+      const cx = C[i][0] * W + .015 * Math.sin(tt * .05 + i) * H, cy = H - (C[i][1] + .015 * Math.cos(tt * .04 + i * 2)) * H, r = (.04 + .045 * ghash(i, 3)) * H;
+      const dx = W / 2 - cx, dy = H / 2 - cy, l = Math.hypot(dx, dy) || 1;
+      let sx = cx + dx / l * r * .4, sy = cy + dy / l * r * .4;   // a seat on the pad, toward the water
+      const m = U() * .04; sx = clamp(sx, m, W - m); sy = clamp(sy, m, H - m);
+      out.push({ x: cx, y: cy, r, sx, sy });
+    }
+    return out;
+  }
+  function pondInit(t) {
+    const u = U();
+    P = {
+      W, H, food: [], rip: [],
+      fish: KOI.map((k, i) => ({ k, i, x: W * rand(.15, .85), y: H * rand(.15, .85), h: rand(0, TAU), tr: 0, beat: rand(0, TAU), amp: 1, sp: k.v * u,
+        dep: .5, seed: rand(0, 100), trail: [], kissAt: t + rand(10, 50), react: rand(.3, 2.2) })),
+      school: Array.from({ length: 15 }, () => { const a = rand(0, TAU); return { x: W * .3 + rand(-1, 1) * u * .08, y: H * .65 + rand(-1, 1) * u * .06, vx: Math.cos(a) * u * .05, vy: Math.sin(a) * u * .05, ph: rand(0, TAU), k: rand(0, 100), s: rand(.8, 1.15) }; }),
+      turtle: { on: false, next: t + rand(40, 90) },
+      frog: { pad: 2, at: 'pad', next: t + rand(50, 120), face: 0, blink: 0, hop: null, a: 1 },
+      fly: { st: 'away', next: t + rand(25, 60) },
+      striders: Array.from({ length: 3 }, () => ({ x: W * rand(.15, .85), y: H * rand(.15, .85), h: rand(0, TAU), v: 0, next: t + rand(.5, 3) })),
+      drift: Array.from({ length: 7 }, (_, i) => ({ x: rand(0, W), y: rand(0, H), a: rand(0, TAU), spin: rand(-.15, .15), kind: i < 4 ? 'petal' : 'leaf', c: ['#f3cdd6', '#f8e6ea', '#efc0cc', '#f6dde3', '#8c7b3c', '#6f7c3b', '#9a6a34'][i], s: rand(.85, 1.2) })),
+      motes: Array.from({ length: 30 }, () => ({ x: rand(0, W), y: rand(0, H), r: rand(.6, 1.5), a: rand(.08, .22), ph: rand(0, TAU) })),
+    };
+    for (const f of P.fish) for (let j = 1; j < 40; j++) f.trail.push([f.x - Math.cos(f.h) * j * f.k.L * u / 30, f.y - Math.sin(f.h) * j * f.k.L * u / 30]);
+    const fp = pads(t)[2]; P.frog.x = fp.sx; P.frog.y = fp.sy; P.frog.face = Math.atan2(H / 2 - fp.sy, W / 2 - fp.sx);
+  }
+  const ripple = (px, py, R, a = .3, life = 4, one = 0) => { if (P.rip.length < 40) P.rip.push({ x: px, y: py, t0: simT, R, a, life, one }); };
+  function wrap(o, m) { if (o.x < -m) o.x += W + 2 * m; if (o.x > W + m) o.x -= W + 2 * m; if (o.y < -m) o.y += H + 2 * m; if (o.y > H + m) o.y -= H + 2 * m; }
+
+  /* the koi */
+  function swimKoi(f, dt, t) {
+    const u = U(), k = f.k, L = k.L * u;
+    let turn = wav(t * .9, f.seed) * .55, hurry = 1;
+    const la = L * 1.7, ax = f.x + Math.cos(f.h) * la, ay = f.y + Math.sin(f.h) * la, mx = W * .06, my = H * .08;   // stay in the pond
+    const out = Math.max(0, mx - ax, ax - (W - mx)) / mx + Math.max(0, my - ay, ay - (H - my)) / my;
+    if (out > 0) turn += angTo(f.h, Math.atan2(H * (.5 + .2 * wav(t * .2, f.seed + 3)) - f.y, W * (.5 + .25 * wav(t * .2, f.seed + 5)) - f.x)) * Math.min(1.5, out * 1.4);
+    const buddy = k.buddy != null ? P.fish[k.buddy] : null;
+    for (const o of P.fish) if (o !== f) {   // give each other room
+      const dx = o.x - f.x, dy = o.y - f.y, d = Math.hypot(dx, dy), r = (L + o.k.L * u) * (o === buddy ? .45 : .8);
+      if (d < r && d > 1) { const rel = angTo(f.h, Math.atan2(dy, dx)); if (Math.abs(rel) < 2) turn -= Math.sign(rel) * (1 - d / r) * 1.8; }
+    }
+    if (k.buddy != null) {   // keep loose company: swim a little behind and beside a friend
+      const b = P.fish[k.buddy], bl = b.k.L * u;
+      const tx = b.x - Math.cos(b.h) * bl * .9 + Math.cos(b.h + 1.57) * bl * .5, ty = b.y - Math.sin(b.h) * bl * .9 + Math.sin(b.h + 1.57) * bl * .5;
+      const d = Math.hypot(tx - f.x, ty - f.y);
+      if (d > L * .5) { turn += angTo(f.h, Math.atan2(ty - f.y, tx - f.x)) * Math.min(.7, d / (L * 3.5)); hurry += Math.min(.35, d / (L * 8)); }
+    }
+    let feed = null, fd = Infinity;
+    for (const p of P.food) { if (t - p.born < f.react) continue; const d = Math.hypot(p.x - f.x, p.y - f.y); if (d < fd && d < Math.max(W, H) * .8) { fd = d; feed = p; } }
+    if (feed) {
+      turn = turn * .25 + angTo(f.h, Math.atan2(feed.y - f.y, feed.x - f.x)) * 2; hurry = fd > L * 2 ? 2.6 : 1.6;
+      if (fd < L * .14) { P.food.splice(P.food.indexOf(feed), 1); ripple(feed.x, feed.y, .05 * u, .35, 2.6); f.react = rand(.2, 1.4); }
+    }
+    const lim = feed ? 1.7 : 1;
+    f.tr += (clamp(turn, -lim, lim) - f.tr) * Math.min(1, dt * (feed ? 3 : 1.6));
+    f.h += f.tr * dt;
+    const pulse = .5 + .5 * Math.sin(t * (.33 + .07 * (f.i % 3)) + f.seed);   // push, then glide
+    f.sp += (k.v * u * (.62 + .5 * pulse) * hurry - f.sp) * Math.min(1, dt * .9);
+    f.amp += ((feed ? 1.25 : .3 + .75 * pulse) + Math.min(.4, Math.abs(f.tr) * .5) - f.amp) * Math.min(1, dt * 1.5);
+    f.beat += dt * (1.6 + f.sp / L * 13);
+    const fl = flow(f.x, f.y, t);
+    const nx = f.x + (Math.cos(f.h) * f.sp + fl[0] * .3) * dt, ny = f.y + (Math.sin(f.h) * f.sp + fl[1] * .3) * dt;
+    const last = f.trail[0] || [f.x, f.y];
+    f.x = nx; f.y = ny;
+    if (Math.hypot(f.x - last[0], f.y - last[1]) > D * 1.2) f.trail.unshift([f.x, f.y]);
+    for (let j = 1, len = 0; j < f.trail.length; j++) { len += Math.hypot(f.trail[j][0] - f.trail[j - 1][0], f.trail[j][1] - f.trail[j - 1][1]); if (len > L * 1.3) { f.trail.length = j + 1; break; } }
+    f.dep += ((feed && fd < L * 4 ? 0 : .5 + .5 * wav(t * .22, f.seed + 11)) - f.dep) * Math.min(1, dt * .5);   // drift up and down through the water
+    if (f.dep < .25 && t > f.kissAt) { ripple(f.x + Math.cos(f.h) * L * .05, f.y + Math.sin(f.h) * L * .05, .07 * u, .28, 4.5); f.kissAt = t + rand(25, 70); }   // a kiss at the surface
+  }
+  function drawKoi(f, t) {
+    const k = f.k, N = 16, L = k.L * U() * (1 - .1 * f.dep), seg = L / N, dense = [[f.x, f.y], ...f.trail], swim = f.beat;
     const pts = [dense[0]];
     for (let j = 1, acc = 0; j < dense.length && pts.length <= N; j++) {
       const a = dense[j - 1], b = dense[j], dl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-6; let pos = 0;
       while (acc + dl - pos >= seg && pts.length <= N) { pos += seg - acc; acc = 0; pts.push([a[0] + (b[0] - a[0]) * pos / dl, a[1] + (b[1] - a[1]) * pos / dl]); }
       acc += dl - pos;
     }
-    while (pts.length <= N) {   // a slow fish has not swum a body's length yet: carry its body on straight behind it
-      const b = pts[pts.length - 1], a2 = pts.length > 1 ? pts[pts.length - 2] : dense[Math.min(1, dense.length - 1)];
+    while (pts.length <= N) {   // carry the body on straight behind until the trail is long enough
+      const b = pts[pts.length - 1], a2 = pts.length > 1 ? pts[pts.length - 2] : [b[0] + Math.cos(f.h), b[1] + Math.sin(f.h)];
       let dx = b[0] - a2[0], dy = b[1] - a2[1], l = Math.hypot(dx, dy);
-      if (l < 1e-6) { dx = 1; dy = 0; l = 1; }
+      if (l < 1e-6) { dx = -Math.cos(f.h); dy = -Math.sin(f.h); l = 1; }
       pts.push([b[0] + dx / l * seg, b[1] + dy / l * seg]);
     }
     const nrm = [], wid = [];
     for (let i = 0; i <= N; i++) {
       const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
-      const u = i / N, sway = Math.sin(swim - u * 6) * L * .07 * Math.pow(u, 1.3);
+      const u = i / N, sway = Math.sin(swim - u * 5.5) * L * .065 * f.amp * Math.pow(u, 1.4);
       nrm.push([-dy / l, dx / l]);
       pts[i] = [pts[i][0] + nrm[i][0] * sway, pts[i][1] + nrm[i][1] * sway];
       wid.push(L * .135 * (u < .28 ? .7 + .3 * Math.sin(u / .28 * Math.PI / 2) : 1 - .84 * Math.pow((u - .28) / .72, 1.3)));
     }
-    const fwd = [-nrm[0][1], nrm[0][0]];   // points from head toward tail
+    const fwd = [-nrm[0][1], nrm[0][0]];
     const body = () => {
       x.beginPath(); x.moveTo(pts[0][0] - fwd[0] * wid[0] * .9, pts[0][1] - fwd[1] * wid[0] * .9);
       for (let i = 0; i <= N; i++) x.lineTo(pts[i][0] + nrm[i][0] * wid[i], pts[i][1] + nrm[i][1] * wid[i]);
       for (let i = N; i >= 0; i--) x.lineTo(pts[i][0] - nrm[i][0] * wid[i], pts[i][1] - nrm[i][1] * wid[i]);
       x.closePath();
     };
-    const head = () => {   // a rounded head, its own path so it never cuts a wedge out of the body
-      x.beginPath(); x.ellipse(pts[1][0], pts[1][1], wid[1] * 1.75, wid[1] * 1.02, Math.atan2(fwd[1], fwd[0]), 0, Math.PI * 2);
-    };
-    const fins = (alpha) => {
-      x.fillStyle = k.fin || k.base; x.globalAlpha = alphaNow * alpha;
+    const head = () => { x.beginPath(); x.ellipse(pts[1][0], pts[1][1], wid[1] * 1.75, wid[1] * 1.02, Math.atan2(fwd[1], fwd[0]), 0, TAU); };
+    const A = 1 - .4 * f.dep, long = k.long ? 1 : 0;
+    const fins = alpha => {
+      x.fillStyle = k.fin || k.base; x.globalAlpha = A * alpha * (long ? .62 : 1);
       const tp = pts[N], tb = pts[N - 2], tn = nrm[N], back = [tp[0] - tb[0], tp[1] - tb[1]], bl = Math.hypot(...back) || 1;
-      const bx = back[0] / bl, by = back[1] / bl, flap = Math.sin(swim - 6);
-      for (const sd of [1, -1]) {   // the tail: two soft lobes fanning out behind
-        const sp = L * (.15 + .03 * flap * sd);
+      const bx = back[0] / bl, by = back[1] / bl, flap = Math.sin(swim - 6), lag = Math.sin(swim - 7.2);
+      const tl = long ? 2 : 1;
+      for (const sd of [1, -1]) {   // the tail: two soft lobes; a butterfly koi's trail long and lags behind the beat
+        const sp = L * (.15 + .03 * flap * sd) * (long ? 1.15 : 1), wv = long ? lag * L * .05 : 0;
         x.beginPath(); x.moveTo(tb[0], tb[1]);
         x.bezierCurveTo(tp[0] + tn[0] * sd * sp * .5, tp[1] + tn[1] * sd * sp * .5,
-          tp[0] + bx * L * .18 + tn[0] * sd * sp, tp[1] + by * L * .18 + tn[1] * sd * sp,
-          tp[0] + bx * L * .2 + tn[0] * sd * sp * .7, tp[1] + by * L * .2 + tn[1] * sd * sp * .7);
-        x.quadraticCurveTo(tp[0] + bx * L * .08, tp[1] + by * L * .08, tp[0], tp[1]); x.closePath(); x.fill();
-        x.save(); x.globalAlpha = alphaNow * alpha * .5; x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = .6 * D;
-        for (const f of [.35, .7, 1]) { x.beginPath(); x.moveTo(tb[0], tb[1]);
-          x.lineTo(tp[0] + bx * L * .19 * f + tn[0] * sd * sp * f * .9, tp[1] + by * L * .19 * f + tn[1] * sd * sp * f * .9); x.stroke(); }
+          tp[0] + bx * L * .18 * tl + tn[0] * (sd * sp + wv), tp[1] + by * L * .18 * tl + tn[1] * (sd * sp + wv),
+          tp[0] + bx * L * .2 * tl + tn[0] * (sd * sp * .7 + wv * 1.4), tp[1] + by * L * .2 * tl + tn[1] * (sd * sp * .7 + wv * 1.4));
+        x.quadraticCurveTo(tp[0] + bx * L * .08 * tl, tp[1] + by * L * .08 * tl, tp[0], tp[1]); x.closePath(); x.fill();
+        x.save(); x.globalAlpha = A * alpha * .45; x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = .6 * D;
+        for (const q of [.35, .7, 1]) { x.beginPath(); x.moveTo(tb[0], tb[1]);
+          x.lineTo(tp[0] + bx * L * .19 * tl * q + tn[0] * (sd * sp * q * .9 + wv * q), tp[1] + by * L * .19 * tl * q + tn[1] * (sd * sp * q * .9 + wv * q)); x.stroke(); }
         x.restore();
       }
-      for (const sd of [1, -1]) {   // pectoral fins: rounded paddles near the head
-        const f = pts[3], n = nrm[3], fl = .25 * Math.sin(t * 3 + sd * 1.3), r = L * .1;
-        const ang = Math.atan2(n[1] * sd, n[0] * sd) + Math.atan2(-fwd[1], -fwd[0]) * 0 + (fl + .7) * sd * -1;
-        x.save(); x.translate(f[0] + n[0] * sd * wid[3] * .8, f[1] + n[1] * sd * wid[3] * .8);
-        x.rotate(Math.atan2(n[1] * sd, n[0] * sd) + sd * (.55 + fl));
+      for (const sd of [1, -1]) {   // pectoral fins: rounded paddles near the head, long veils on a butterfly
+        const p3 = pts[3], n = nrm[3], fl = .25 * Math.sin(t * 2.2 + sd * 1.3 + f.seed), r = L * (long ? .17 : .1);
+        x.save(); x.translate(p3[0] + n[0] * sd * wid[3] * .8, p3[1] + n[1] * sd * wid[3] * .8);
+        x.rotate(Math.atan2(n[1] * sd, n[0] * sd) + sd * (.55 + fl + long * .35));
         x.beginPath(); x.moveTo(0, -r * .25); x.quadraticCurveTo(r * 1.1, -r * .6, r * 1.05, r * .1); x.quadraticCurveTo(r * .6, r * .5, 0, r * .25); x.closePath(); x.fill();
         x.restore();
       }
-      x.globalAlpha = alphaNow;
+      if (long) {   // and a dorsal veil along the back
+        x.globalAlpha = A * alpha * .35; x.strokeStyle = k.fin; x.lineCap = 'round'; x.lineWidth = wid[6] * .5;
+        x.beginPath(); x.moveTo(pts[4][0], pts[4][1]); for (let i = 5; i < 13; i++) x.lineTo(pts[i][0] + nrm[i][0] * lag * L * .015, pts[i][1] + nrm[i][1] * lag * L * .015); x.stroke();
+      }
+      x.globalAlpha = A;
     };
-    x.save();
-    x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 15 * D; x.shadowOffsetX = 11 * D; x.shadowOffsetY = 14 * D;
+    x.save(); x.globalAlpha = A;
+    const lift = 1 - f.dep;   // near the surface the shadow falls further away and softer
+    x.shadowColor = `rgba(0,0,0,${.42 + .1 * lift})`; x.shadowBlur = (9 + 10 * lift) * D; x.shadowOffsetX = (4 + 10 * lift) * D; x.shadowOffsetY = (5 + 12 * lift) * D;
     fins(.55); x.fillStyle = k.base; body(); x.fill(); head(); x.fill();
     x.restore();
+    x.save(); x.globalAlpha = A;
     for (const part of [body, head]) {
       x.save(); part(); x.clip();
-      for (const [c, idx] of k.spots) { x.fillStyle = c; for (const i of idx) { x.beginPath(); x.arc(pts[i][0], pts[i][1], wid[i] * 1.2 + D, 0, Math.PI * 2); x.fill(); } }
+      for (const [c, idx] of k.spots) { x.fillStyle = c; for (const i of idx) { x.beginPath(); x.arc(pts[i][0], pts[i][1], wid[i] * 1.2 + D, 0, TAU); x.fill(); } }
       x.restore();
     }
     x.save(); body(); x.clip();
-    x.strokeStyle = 'rgba(0,0,0,.12)'; x.lineWidth = wid[4] * .6; x.stroke();   // darker flanks, rounder body
-    x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = 1.2 * D; x.stroke();       // a crisp edge against the stones
+    x.strokeStyle = 'rgba(0,0,0,.12)'; x.lineWidth = wid[4] * .6; x.stroke();
+    x.strokeStyle = 'rgba(0,0,0,.26)'; x.lineWidth = 1.2 * D; x.stroke();
     const sg = x.createLinearGradient(pts[0][0], pts[0][1], pts[N][0], pts[N][1]);
-    sg.addColorStop(0, 'rgba(255,255,255,.28)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    sg.addColorStop(0, `rgba(255,255,255,${k.metal ? .45 : .28})`); sg.addColorStop(1, 'rgba(255,255,255,0)');
     x.strokeStyle = sg; x.lineWidth = wid[4] * .35; x.beginPath(); x.moveTo(pts[1][0], pts[1][1]);
     for (let i = 2; i < N - 2; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke();
-    const sh = (t * .35 + k.ph) % 1.6 - .3, si = Math.max(1, Math.min(N - 3, Math.round(sh * N)));   // light sliding along the scales
+    const sh = (t * .3 + f.seed) % 1.6 - .3, si = Math.max(1, Math.min(N - 3, Math.round(sh * N)));   // light sliding along the scales
     const g2 = x.createRadialGradient(pts[si][0], pts[si][1], 0, pts[si][0], pts[si][1], wid[si] * 2.2);
-    g2.addColorStop(0, 'rgba(255,255,255,.32)'); g2.addColorStop(1, 'rgba(255,255,255,0)');
+    g2.addColorStop(0, `rgba(255,255,255,${k.metal ? .45 : .3})`); g2.addColorStop(1, 'rgba(255,255,255,0)');
     x.fillStyle = g2; x.fillRect(pts[si][0] - wid[si] * 2.2, pts[si][1] - wid[si] * 2.2, wid[si] * 4.4, wid[si] * 4.4);
     x.restore();
     x.fillStyle = '#111';
-    for (const sd of [1, -1]) { x.beginPath(); x.arc(pts[1][0] + nrm[1][0] * sd * wid[1] * .62, pts[1][1] + nrm[1][1] * sd * wid[1] * .62, 1.4 * D, 0, Math.PI * 2); x.fill(); }
+    for (const sd of [1, -1]) { x.beginPath(); x.arc(pts[1][0] + nrm[1][0] * sd * wid[1] * .62, pts[1][1] + nrm[1][1] * sd * wid[1] * .62, 1.5 * D, 0, TAU); x.fill(); }
+    x.restore();
   }
-  let kc = null;
+
+  /* the minnows: a little school that moves as one */
+  function swimSchool(dt, t) {
+    const u = U(), S = P.school, n = S.length;
+    let cx = 0, cy = 0, vx = 0, vy = 0;
+    for (const m of S) { cx += m.x; cy += m.y; vx += m.vx; vy += m.vy; }
+    cx /= n; cy /= n; vx /= n; vy /= n;
+    let tx = W * (.5 + .36 * Math.sin(t * .021 + 1) * Math.cos(t * .013)), ty = H * (.5 + .32 * Math.sin(t * .017 + 2));   // where the school is heading
+    if (P.food.length) { const p = P.food[0]; tx = p.x; ty = p.y; }
+    for (const m of S) {
+      let ax = (cx - m.x) * .25 + (vx - m.vx) * .5 + (tx - m.x) * .04 + Math.sin(t * 1.3 + m.k) * u * .05, ay = (cy - m.y) * .25 + (vy - m.vy) * .5 + (ty - m.y) * .04 + Math.cos(t * 1.1 + m.k * 1.7) * u * .05;
+      for (const o of S) if (o !== m) { const dx = m.x - o.x, dy = m.y - o.y, d2 = dx * dx + dy * dy, r = u * .035; if (d2 < r * r && d2 > .01) { const d = Math.sqrt(d2); ax += dx / d * (r - d) * 6; ay += dy / d * (r - d) * 6; } }
+      let flee = 0;
+      for (const f of P.fish) { const dx = m.x - f.x, dy = m.y - f.y, d = Math.hypot(dx, dy), r = f.k.L * u * .9; if (d < r) { ax += dx / (d || 1) * (r - d) * 14; ay += dy / (d || 1) * (r - d) * 14; flee = 1; } }
+      const mg = u * .06;
+      if (m.x < mg) ax += (mg - m.x) * 4; if (m.x > W - mg) ax -= (m.x - W + mg) * 4; if (m.y < mg) ay += (mg - m.y) * 4; if (m.y > H - mg) ay -= (m.y - H + mg) * 4;
+      m.vx += ax * dt; m.vy += ay * dt;
+      const sp = Math.hypot(m.vx, m.vy) || 1, hi = u * (flee ? .32 : .12), lo = u * .035;
+      const s2 = clamp(sp, lo, hi); m.vx *= s2 / sp; m.vy *= s2 / sp;
+      const fl = flow(m.x, m.y, t);
+      m.x += (m.vx + fl[0] * .5) * dt; m.y += (m.vy + fl[1] * .5) * dt;
+      m.ph += dt * (4 + s2 / u * 90);
+    }
+  }
+  function drawSchool() {
+    const u = U(), l = u * .032;
+    x.save(); x.globalAlpha = .26; x.fillStyle = '#000';   // their shadows on the bed
+    for (const m of P.school) { const a = Math.atan2(m.vy, m.vx); x.beginPath(); x.ellipse(m.x + 3 * D, m.y + 4 * D, l * .5 * m.s, l * .1 * m.s, a, 0, TAU); x.fill(); }
+    x.globalAlpha = .72;
+    for (const m of P.school) {
+      const a = Math.atan2(m.vy, m.vx), s = l * m.s, w = Math.sin(m.ph) * .35;
+      x.save(); x.translate(m.x, m.y); x.rotate(a);
+      x.fillStyle = '#8f9a84'; x.beginPath(); x.moveTo(s * .5, 0); x.quadraticCurveTo(s * .2, -s * .12, -s * .3, -s * .05); x.lineTo(-s * .3, s * .05); x.quadraticCurveTo(s * .2, s * .12, s * .5, 0); x.fill();
+      x.beginPath(); x.moveTo(-s * .28, 0); x.lineTo(-s * .52, -s * .1 + w * s * .12); x.lineTo(-s * .52, s * .1 + w * s * .12); x.closePath(); x.fill();
+      x.fillStyle = 'rgba(225,235,230,.55)'; x.fillRect(-s * .15, -s * .012, s * .5, s * .024);   // the silver line along the side
+      x.restore();
+    }
+    x.restore();
+  }
+
+  /* the turtle: every few minutes one paddles slowly across */
+  function swimTurtle(dt, t) {
+    const T = P.turtle, u = U();
+    if (!T.on) {
+      if (t < T.next) return;
+      const side = Math.floor(rand(0, 4)), m = u * .12;
+      const pt = s => s === 0 ? [-m, rand(.2, .8) * H] : s === 1 ? [W + m, rand(.2, .8) * H] : s === 2 ? [rand(.2, .8) * W, -m] : [rand(.2, .8) * W, H + m];
+      [T.x, T.y] = pt(side); [T.tx, T.ty] = pt(side ^ 1);
+      Object.assign(T, { on: true, h: Math.atan2(T.ty - T.y, T.tx - T.x), ph: 0, seed: rand(0, 50), breathe: t + rand(8, 16) });
+    }
+    const want = angTo(T.h, Math.atan2(T.ty - T.y, T.tx - T.x)) * .4 + wav(t * .6, T.seed) * .25;
+    T.h += want * dt;
+    const stroke = Math.max(0, Math.sin(T.ph));   // paddle, then drift
+    const v = u * (.012 + .022 * stroke);
+    T.x += Math.cos(T.h) * v * dt; T.y += Math.sin(T.h) * v * dt; T.ph += dt * 1.3;
+    if (t > T.breathe) { const hl = u * .09; ripple(T.x + Math.cos(T.h) * hl, T.y + Math.sin(T.h) * hl, .06 * u, .3, 4); T.breathe = t + rand(10, 20); }
+    if (Math.hypot(T.tx - T.x, T.ty - T.y) < u * .05 || T.x < -u * .3 || T.x > W + u * .3 || T.y < -u * .3 || T.y > H + u * .3) { T.on = false; T.next = t + rand(150, 300); }
+  }
+  function drawTurtle() {
+    const T = P.turtle; if (!T.on) return;
+    const s = U() * .1, ph = T.ph;
+    const legs = g => {
+      for (const [fx, sd, o] of [[.32, 1, 0], [.32, -1, Math.PI], [-.36, 1, Math.PI], [-.36, -1, 0]]) {
+        const sw = Math.sin(ph + o) * .5;
+        x.save(); x.translate(fx * s, sd * s * .36); x.rotate(sd * (fx > 0 ? .9 + sw : 2.3 + sw * .6));
+        x.beginPath(); x.ellipse(s * (fx > 0 ? .2 : .13), 0, s * (fx > 0 ? .22 : .14), s * .075, 0, 0, TAU); x.fill(); x.restore();
+      }
+      const nk = .05 * Math.sin(ph * .5);
+      x.beginPath(); x.ellipse(s * (.6 + nk), 0, s * .15, s * .11, 0, 0, TAU); x.fill();
+      x.beginPath(); x.moveTo(-s * .5, -s * .05); x.lineTo(-s * .68, 0); x.lineTo(-s * .5, s * .05); x.fill();
+      if (g) { x.beginPath(); x.ellipse(0, 0, s * .52, s * .42, 0, 0, TAU); x.fill(); }
+    };
+    x.save(); x.translate(T.x, T.y); x.rotate(T.h); x.globalAlpha = .9;
+    x.save(); x.translate(10 * D, 13 * D); x.filter = `blur(${5 * D}px)`; x.fillStyle = 'rgba(0,0,0,.45)'; legs(true); x.restore();   // its shadow
+    x.fillStyle = '#5d6a3e'; legs(false);
+    x.strokeStyle = 'rgba(235,215,120,.45)'; x.lineWidth = 1 * D;   // the yellow stripes on its head
+    for (const sd of [-1, 0, 1]) { x.beginPath(); x.moveTo(s * .5, sd * s * .05); x.lineTo(s * .7, sd * s * .03); x.stroke(); }
+    const g = x.createRadialGradient(-s * .1, -s * .1, s * .05, 0, 0, s * .55);
+    g.addColorStop(0, '#6a6e40'); g.addColorStop(1, '#2f3a22');
+    x.fillStyle = g; x.beginPath(); x.ellipse(0, 0, s * .52, s * .42, 0, 0, TAU); x.fill();
+    x.strokeStyle = 'rgba(15,20,8,.5)'; x.lineWidth = 1.1 * D;   // the scutes
+    x.beginPath(); x.ellipse(0, 0, s * .43, s * .33, 0, 0, TAU); x.stroke();
+    for (const sx of [-.26, -.09, .09, .26]) { x.beginPath(); x.moveTo(s * sx, -s * .33 * Math.sqrt(1 - Math.pow(sx / .43, 2))); x.lineTo(s * sx, s * .33 * Math.sqrt(1 - Math.pow(sx / .43, 2))); x.stroke(); }
+    x.beginPath(); x.moveTo(-s * .43, 0); x.lineTo(s * .43, 0); x.stroke();
+    x.strokeStyle = 'rgba(220,200,120,.18)'; x.beginPath(); x.ellipse(0, 0, s * .5, s * .4, 0, 0, TAU); x.stroke();
+    x.fillStyle = '#111'; for (const sd of [-1, 1]) { x.beginPath(); x.arc(s * (.66 + .05 * Math.sin(ph * .5)), sd * s * .065, 1.3 * D, 0, TAU); x.fill(); }
+    x.restore();
+  }
+
+  /* the frog: sits on a pad, blinks, now and then hops to another or slips into the water */
+  function stepFrog(dt, t, pd) {
+    const F = P.frog;
+    if (F.at === 'pad' && !F.hop) {
+      const p = pd[F.pad]; F.x = p.sx; F.y = p.sy;
+      if (t > (F.nb || 0)) { F.blink = t; F.nb = t + rand(3, 7); }
+      if (t > F.next) {
+        const free = [0, 2, 3, 4, 5].filter(i => i !== F.pad && i !== P.fly.pad), to = free[Math.floor(rand(0, free.length))];
+        const water = Math.random() < .3;
+        const q = water ? { sx: clamp(F.x + rand(-1, 1) * U() * .15 + (W / 2 - F.x) * .25, 0, W), sy: clamp(F.y + (H / 2 - F.y) * .25, 0, H) } : pd[to];
+        F.hop = { t0: t, x0: F.x, y0: F.y, x1: q.sx, y1: q.sy, to: water ? -1 : to, d: water ? .7 : 1.1 };
+        F.face = Math.atan2(q.sy - F.y, q.sx - F.x);
+      }
+    }
+    if (F.hop) {
+      const h = F.hop, k = Math.min(1, (t - h.t0) / h.d);
+      F.x = h.x0 + (h.x1 - h.x0) * ease(k); F.y = h.y0 + (h.y1 - h.y0) * ease(k); F.lift = Math.sin(k * Math.PI);
+      if (k >= 1) {
+        F.hop = null; F.lift = 0;
+        if (h.to < 0) { F.at = 'water'; ripple(F.x, F.y, .11 * U(), .4, 5); F.next = t + rand(40, 90); }
+        else { F.pad = h.to; ripple(F.x, F.y, .05 * U(), .18, 3); F.next = t + rand(70, 180); F.face = Math.atan2(H / 2 - F.y, W / 2 - F.x) + rand(-.6, .6); }
+      }
+    } else if (F.at === 'water' && t > F.next) {   // climbs back onto a pad
+      const free = [0, 2, 3, 4, 5].filter(i => i !== P.fly.pad); F.pad = free[Math.floor(rand(0, free.length))];
+      F.at = 'pad'; F.a = 0; const p = pd[F.pad]; ripple(p.sx, p.sy, .06 * U(), .25, 3.5);
+      F.face = Math.atan2(H / 2 - p.sy, W / 2 - p.sx) + rand(-.6, .6); F.next = t + rand(70, 180);
+    }
+    F.a = Math.min(1, F.a + dt * .6);
+  }
+  function drawFrog(t) {
+    const F = P.frog; if (F.at === 'water' && !F.hop) return;
+    const s = U() * .06 * (1 + .35 * (F.lift || 0)), blink = t - F.blink < .18;
+    x.save(); x.globalAlpha = F.a;
+    x.save(); x.translate(F.x + (3 + 14 * (F.lift || 0)) * D, F.y + (4 + 18 * (F.lift || 0)) * D); x.rotate(F.face); x.fillStyle = 'rgba(0,0,0,.35)';
+    x.beginPath(); x.ellipse(0, 0, s * .5, s * .5, 0, 0, TAU); x.fill(); x.restore();
+    x.translate(F.x, F.y); x.rotate(F.face);
+    const stretch = F.hop ? .5 * (F.lift || 0) : 0;
+    x.fillStyle = '#34482a';
+    for (const sd of [1, -1]) {   // folded hind legs, then the little front legs
+      x.beginPath(); x.ellipse(-s * (.25 + stretch), sd * s * .33, s * (.32 + stretch * .6), s * .11, sd * -.5, 0, TAU); x.fill();
+      x.beginPath(); x.ellipse(-s * (.05 + stretch * .4), sd * s * .38, s * .2, s * .08, sd * .7, 0, TAU); x.fill();
+      x.beginPath(); x.ellipse(s * .28, sd * s * .25, s * .13, s * .05, sd * .9, 0, TAU); x.fill();
+    }
+    const g = x.createRadialGradient(s * .05, 0, s * .05, 0, 0, s * .5);
+    g.addColorStop(0, '#5a7240'); g.addColorStop(1, '#2e4223');
+    x.fillStyle = g; x.beginPath(); x.moveTo(s * .52, 0);
+    x.bezierCurveTo(s * .5, -s * .3, -s * .1, -s * .34, -s * .38, -s * .16); x.quadraticCurveTo(-s * .48, 0, -s * .38, s * .16);
+    x.bezierCurveTo(-s * .1, s * .34, s * .5, s * .3, s * .52, 0); x.fill();
+    x.fillStyle = 'rgba(25,35,15,.45)'; for (const [a, b] of [[-.1, -.12], [-.22, .08], [.05, .1]]) { x.beginPath(); x.arc(s * a, s * b, s * .045, 0, TAU); x.fill(); }
+    for (const sd of [1, -1]) {   // eyes on top of the head
+      x.fillStyle = '#41592f'; x.beginPath(); x.arc(s * .3, sd * s * .15, s * .085, 0, TAU); x.fill();
+      x.fillStyle = blink ? '#41592f' : '#a8904a'; x.beginPath(); x.arc(s * .31, sd * s * .16, s * .055, 0, TAU); x.fill();
+      if (!blink) { x.fillStyle = '#111'; x.beginPath(); x.ellipse(s * .31, sd * s * .16, s * .018, s * .04, 0, 0, TAU); x.fill(); }
+    }
+    x.restore();
+  }
+
+  /* the dragonfly: visits, hovers over the water, dips its tail, rests on a pad, leaves */
+  function stepFly(dt, t, pd) {
+    const Y = P.fly, u = U();
+    const go = (tx, ty, d, then) => Object.assign(Y, { st: 'fly', x0: Y.x, y0: Y.y, tx, ty, t0: t, d, then, cx: (Y.x + tx) / 2 + rand(-1, 1) * u * .15, cy: (Y.y + ty) / 2 + rand(-1, 1) * u * .15 });
+    if (Y.st === 'away') {
+      if (t < Y.next) return;
+      const free = [0, 2, 3, 4, 5].filter(i => i !== P.frog.pad); Y.pad = free[Math.floor(rand(0, free.length))]; Y.visits = Math.floor(rand(2, 5));
+      Y.x = rand(0, 1) < .5 ? -u * .1 : W + u * .1; Y.y = rand(.1, .6) * H; Y.h = 0;
+      go(rand(.25, .75) * W, rand(.25, .75) * H, 4, 'hover');
+    }
+    if (Y.st === 'fly') {
+      const k = Math.min(1, (t - Y.t0) / Y.d), e = ease(k), i = 1 - e;
+      const nx = i * i * Y.x0 + 2 * i * e * Y.cx + e * e * Y.tx, ny = i * i * Y.y0 + 2 * i * e * Y.cy + e * e * Y.ty;
+      if (Math.hypot(nx - Y.x, ny - Y.y) > .2 * D) Y.h += angTo(Y.h, Math.atan2(ny - Y.y, nx - Y.x)) * Math.min(1, dt * 8);
+      Y.x = nx; Y.y = ny;
+      if (k >= 1) {
+        if (Y.then === 'hover') { Y.st = 'hover'; Y.until = t + rand(1.5, 3.5); if (Math.random() < .45) ripple(Y.x - Math.cos(Y.h) * u * .04, Y.y - Math.sin(Y.h) * u * .04, .035 * u, .3, 2.5); }
+        else if (Y.then === 'perch') { Y.st = 'perch'; Y.until = t + rand(18, 45); }
+        else { Y.st = 'away'; Y.next = t + rand(100, 220); Y.pad = -1; }
+      }
+    } else if (Y.st === 'hover') {
+      Y.x += Math.sin(t * 2.3) * .03 * D; Y.y += Math.cos(t * 1.7) * .03 * D;
+      if (t > Y.until) {
+        if (--Y.visits > 0) go(clamp(Y.x + rand(-1, 1) * u * .3, u * .1, W - u * .1), clamp(Y.y + rand(-1, 1) * u * .3, u * .1, H - u * .1), rand(1, 2), 'hover');
+        else if (Y.pad >= 0 && !Y.rested) { Y.rested = 1; const p = pd[Y.pad]; go(p.sx, p.sy, 2.5, 'perch'); }
+        else { Y.rested = 0; go(Math.random() < .5 ? -u * .2 : W + u * .2, rand(.1, .9) * H, 4, 'out'); }
+      }
+    } else if (Y.st === 'perch') {
+      if (Y.pad >= 0) { const p = pd[Y.pad]; Y.x = p.sx; Y.y = p.sy; }
+      if (t > Y.until) { Y.visits = Math.floor(rand(1, 4)); Y.st = 'hover'; Y.until = t; }
+    }
+  }
+  function drawFly(t) {
+    const Y = P.fly; if (Y.st === 'away') return;
+    const s = U() * .075, flying = Y.st !== 'perch';
+    const shape = sh => {
+      x.save(); x.translate(Y.x, Y.y); x.rotate(Y.h);
+      for (const [wx, ln, sw] of [[.12, .5, .1], [.02, .46, -.12]]) for (const sd of [1, -1]) {   // four wings
+        const flick = flying ? Math.sin(t * 60 + wx * 30) * .25 : 0;
+        x.save(); x.translate(s * wx, 0); x.rotate(sd * (Math.PI / 2 + sw + flick));
+        x.fillStyle = sh ? 'rgba(0,0,0,.18)' : `rgba(215,232,238,${flying ? .14 : .26})`;
+        x.beginPath(); x.ellipse(s * ln * .5, 0, s * ln * .5, s * .075, 0, 0, TAU); x.fill();
+        if (!sh) { x.strokeStyle = 'rgba(235,245,250,.28)'; x.lineWidth = .6 * D; x.stroke(); }
+        x.restore();
+      }
+      x.fillStyle = sh ? 'rgba(0,0,0,.3)' : '#3b8796';
+      x.beginPath(); x.ellipse(-s * .32, 0, s * .36, s * .028, 0, 0, TAU); x.fill();   // the abdomen
+      x.beginPath(); x.ellipse(s * .08, 0, s * .1, s * .055, 0, 0, TAU); x.fill();     // the thorax
+      if (!sh) {
+        x.strokeStyle = 'rgba(10,25,30,.6)'; x.lineWidth = .8 * D;
+        for (let i = 1; i < 8; i++) { const sx = -s * (.04 + i * .085); x.beginPath(); x.moveTo(sx, -s * .028); x.lineTo(sx, s * .028); x.stroke(); }
+        x.fillStyle = '#6fc0b4'; for (const sd of [1, -1]) { x.beginPath(); x.arc(s * .2, sd * s * .04, s * .045, 0, TAU); x.fill(); }
+      }
+      x.restore();
+    };
+    x.save(); x.translate((flying ? 22 : 4) * D, (flying ? 28 : 5) * D); x.filter = `blur(${(flying ? 3 : 1) * D}px)`; shape(true); x.restore();
+    shape(false);
+  }
+
+  /* the surface: striders, drifting petals and leaves, pollen, food */
+  function stepSurface(dt, t) {
+    const u = U();
+    for (const s of P.striders) {
+      s.v *= Math.exp(-dt * 2.4);
+      if (t > s.next) {
+        const mg = u * .1, toC = Math.atan2(H / 2 - s.y, W / 2 - s.x), near = s.x < mg || s.x > W - mg || s.y < mg || s.y > H - mg;
+        s.h = near ? toC + rand(-.6, .6) : s.h + rand(-1.6, 1.6); s.v = u * rand(.12, .22); s.next = t + rand(.8, 4.5);
+        ripple(s.x, s.y, .03 * u, .1, 1.8, 1);
+      }
+      const fl = flow(s.x, s.y, t);
+      s.x += (Math.cos(s.h) * s.v + fl[0]) * dt; s.y += (Math.sin(s.h) * s.v + fl[1]) * dt;
+      s.x = clamp(s.x, 0, W); s.y = clamp(s.y, 0, H);
+    }
+    for (const d of P.drift) { const fl = flow(d.x, d.y, t); d.x += fl[0] * dt; d.y += fl[1] * dt; d.a += d.spin * dt; wrap(d, u * .05); }
+    for (const m of P.motes) { const fl = flow(m.x, m.y, t); m.x += fl[0] * 1.1 * dt; m.y += (fl[1] * 1.1 + Math.sin(t * .5 + m.ph) * u * .002) * dt; wrap(m, 4 * D); }
+    for (const p of P.food) { const fl = flow(p.x, p.y, t); p.x += fl[0] * .6 * dt; p.y += fl[1] * .6 * dt; }
+    P.food = P.food.filter(p => t - p.born < 50);
+    P.rip = P.rip.filter(r => t - r.t0 < r.life);
+  }
+  function drawRipples(t) {
+    x.save(); x.lineWidth = 1 * D;
+    for (const r of P.rip) {
+      for (const lag of r.one ? [0] : [0, .3]) {
+        const a = t - r.t0 - lag; if (a <= 0) continue;
+        const k = a / r.life; x.strokeStyle = `rgba(200,235,228,${r.a * Math.pow(1 - k, 1.6) * (lag ? .6 : 1)})`;
+        x.beginPath(); x.arc(r.x, r.y, r.R * (1 - Math.pow(1 - k, 2)) + 2 * D, 0, TAU); x.stroke();
+      }
+    }
+    x.restore();
+  }
+  function drawSurface(t) {
+    const u = U();
+    for (const p of P.food) {
+      const k = Math.min(1, (t - p.born) / .3); if (k <= 0) continue;
+      x.globalAlpha = k * Math.min(1, (50 - (t - p.born)) / 4);
+      x.fillStyle = 'rgba(0,0,0,.3)'; x.beginPath(); x.arc(p.x + 2 * D, p.y + 3 * D, 2.2 * D, 0, TAU); x.fill();
+      x.fillStyle = '#b48a52'; x.beginPath(); x.arc(p.x, p.y, 2.2 * D, 0, TAU); x.fill();
+      x.fillStyle = 'rgba(255,235,200,.5)'; x.beginPath(); x.arc(p.x - .6 * D, p.y - .6 * D, .8 * D, 0, TAU); x.fill();
+    }
+    x.globalAlpha = 1;
+    for (const d of P.drift) {
+      const s = u * (d.kind === 'petal' ? .016 : .03) * d.s;
+      x.save(); x.translate(d.x, d.y); x.rotate(d.a);
+      for (const sh of [1, 0]) {
+        if (sh) { x.save(); x.translate(3 * D, 5 * D); x.fillStyle = 'rgba(0,0,0,.28)'; } else x.fillStyle = d.c;
+        x.globalAlpha = d.kind === 'petal' ? .85 : .7;
+        x.beginPath();
+        if (d.kind === 'petal') { x.moveTo(-s, 0); x.bezierCurveTo(-s * .4, -s * .8, s * .7, -s * .7, s, -s * .12); x.lineTo(s * .75, 0); x.lineTo(s, s * .12); x.bezierCurveTo(s * .7, s * .7, -s * .4, s * .8, -s, 0); }
+        else { x.moveTo(-s, 0); x.quadraticCurveTo(0, -s * .45, s, 0); x.quadraticCurveTo(0, s * .45, -s, 0); }
+        x.fill();
+        if (sh) x.restore();
+      }
+      if (d.kind === 'leaf') { x.strokeStyle = 'rgba(30,25,10,.35)'; x.lineWidth = .8 * D; x.beginPath(); x.moveTo(-s * 1.15, 0); x.lineTo(s * .9, 0); x.stroke(); }
+      else { x.fillStyle = 'rgba(255,255,255,.25)'; x.beginPath(); x.ellipse(-s * .2, -s * .15, s * .35, s * .12, -.2, 0, TAU); x.fill(); }
+      x.restore();
+    }
+    x.globalAlpha = 1;
+    for (const m of P.motes) { x.fillStyle = `rgba(235,240,215,${m.a})`; x.beginPath(); x.arc(m.x, m.y, m.r * D, 0, TAU); x.fill(); }
+    for (const s of P.striders) {   // from above you mostly see the dimples their feet press into the water
+      const l = u * .02;
+      x.save(); x.translate(s.x, s.y); x.rotate(s.h);
+      x.strokeStyle = 'rgba(15,15,12,.55)'; x.lineWidth = .7 * D;
+      const feet = [[.25, .35, .55, .45], [-.05, .5, .1, 1.05], [-.15, .45, -.85, .95]];
+      for (const [bx, by, fx, fy] of feet) for (const sd of [1, -1]) { x.beginPath(); x.moveTo(bx * l * .4, 0); x.quadraticCurveTo(bx * l, sd * by * l, fx * l, sd * fy * l); x.stroke(); }
+      x.fillStyle = '#1a1a16'; x.beginPath(); x.ellipse(0, 0, l * .45, l * .08, 0, 0, TAU); x.fill();
+      for (const [, , fx, fy] of feet.slice(1)) for (const sd of [1, -1]) {
+        x.fillStyle = 'rgba(0,0,0,.22)'; x.beginPath(); x.arc(fx * l, sd * fy * l, 2.4 * D, 0, TAU); x.fill();
+        x.strokeStyle = 'rgba(215,240,232,.35)'; x.beginPath(); x.arc(fx * l, sd * fy * l, 2.6 * D, Math.PI * 1.1, Math.PI * 1.9); x.stroke();
+      }
+      x.restore();
+    }
+  }
+  function feed(px, py) {
+    if (!P) return;
+    const u = U(), n = Math.floor(rand(5, 9));
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, TAU), r = Math.sqrt(Math.random()) * u * .045, p = { x: px * D + Math.cos(a) * r, y: py * D + Math.sin(a) * r, born: pondT + i * .07 };
+      P.food.push(p); if (P.rip.length < 40) P.rip.push({ x: p.x, y: p.y, t0: p.born, R: .03 * u, a: .3, life: 2.2 });
+    }
+    if (P.food.length > 30) P.food.splice(0, P.food.length - 30);
+  }
+
   function koi(t) {
+    const dt = clamp(t - pondT, 0, .1); pondT = t;
+    if (!P) pondInit(t);
+    else if (P.W !== W || P.H !== H) {   // the screen turned or resized: keep everyone where they were, proportionally
+      const sx = W / P.W, sy = H / P.H, mv = o => { o.x *= sx; o.y *= sy; };
+      for (const f of P.fish) { mv(f); f.trail = f.trail.map(([a, b]) => [a * sx, b * sy]); }
+      [...P.school, ...P.striders, ...P.drift, ...P.motes, ...P.food, ...P.rip].forEach(mv);
+      if (P.turtle.on) { mv(P.turtle); P.turtle.tx *= sx; P.turtle.ty *= sy; }
+      P.W = W; P.H = H;
+    }
+    const pd = pads(t), n = Math.ceil(dt / .04);   // small steps keep the steering smooth on a slow frame
+    for (let i = n; i > 0; i--) {
+      const h = dt / n, ts = simT = t - (i - 1) * h;
+      for (const f of P.fish) swimKoi(f, h, ts);
+      swimSchool(h, ts); swimTurtle(h, ts); stepFrog(h, ts, pd); stepFly(h, ts, pd); stepSurface(h, ts);
+    }
+
     const cr = $('#drift .stack')?.getBoundingClientRect();   // the digits and the date/prayer row
-    // a wake: each fish leaves soft rings as it swims; they spread and fade behind it
-    x.lineWidth = 1 * D;
-    KOI.forEach((k, i) => {
-      const step = .7, ph = (t + i * .29) % step;
-      for (let j = 0; j < 5; j++) {
-        const age = ph + j * step, life = 5 * step, [rx, ry] = koiPos(k, t - age);
-        x.strokeStyle = `rgba(200,235,228,${.14 * (1 - age / life) * Math.min(1, age / .4)})`;
-        x.beginPath(); x.arc(rx, ry, (k.L * .12 + age * 13) * D, 0, Math.PI * 2); x.stroke();
-      }
-    });
-    KOI.forEach((k, i) => {
-      const te = Math.floor((t + i * 4.7) / 13) * 13 - i * 4.7, age = t - te;
-      if (age < 4) {
-        const [rx, ry] = koiPos(k, te);
-        x.lineWidth = 1 * D;
-        for (const d of [0, .6]) { const a = age - d; if (a <= 0) continue;
-          x.strokeStyle = `rgba(190,235,225,${(1 - a / 4) * .3})`; x.beginPath(); x.arc(rx, ry, a * 16 * D, 0, Math.PI * 2); x.stroke(); }
-      }
-    });
     if (!kc) kc = document.createElement('canvas');
     if (kc.width !== W || kc.height !== H) { kc.width = W; kc.height = H; }
     const main = x, a0 = alphaNow; x = kc.getContext('2d'); x.clearRect(0, 0, W, H); alphaNow = 1; x.globalAlpha = 1;
-    KOI.forEach(k => oneKoi(k, t));
-    if (cr) {   // the fish swim under the clock: fade them there, feathered, so the digits stay clean
+    drawSchool();
+    [...P.fish].sort((a, b) => b.dep - a.dep).forEach(f => drawKoi(f, t));   // the deepest first
+    drawTurtle();
+    drawRipples(t);
+    drawSurface(t);
+    drawFrog(t);
+    drawFly(t);
+    if (cr) {   // everything passes under the clock: fade it there, feathered, so the digits stay clean
       x.save(); x.globalCompositeOperation = 'destination-out'; x.filter = `blur(${24 * D}px)`; x.fillStyle = 'rgba(0,0,0,.45)';
       x.fillRect((cr.left - 16) * D, (cr.top - 16) * D, (cr.width + 32) * D, (cr.height + 32) * D);
       const dk = !idleUI && $('#dock')?.getBoundingClientRect(); if (dk) x.fillRect((dk.left - 10) * D, (dk.top - 6) * D, (dk.width + 20) * D, (dk.height + 12) * D);
@@ -3063,12 +3448,20 @@ const fauna = (() => {
     },
     setEnabled(v) { enabled = v; store.set('ss-animals', v ? '1' : '0'); },
     get enabled() { return enabled; },
+    feed(px, py) { const b = cat.box; if (enabled && !(b && px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h)) feed(px, py); },
     resetFont() {},
   };
 })();
 $('#animalsBtn').setAttribute('aria-pressed', String(fauna.enabled));
 $('#animalsBtn').addEventListener('click', e => { fauna.setEnabled(!fauna.enabled); e.currentTarget.setAttribute('aria-pressed', String(fauna.enabled)); });
 document.addEventListener('pointerup', e => { if (PAGES[pageIndex] === 'home' && menu.hidden) fauna.tap(e.clientX, e.clientY); });
+let feedTap = null;   // a light tap on the pond scatters food for the fish
+$('#p-home').addEventListener('pointerdown', e => { feedTap = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+$('#p-home').addEventListener('pointerup', e => {
+  const d = feedTap; feedTap = null;
+  if (!d || scene !== 'koi' || !menu.hidden || e.target.closest('button, a, input, .g, .glance')) return;
+  if (Date.now() - d.t < 450 && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 12) fauna.feed(e.clientX, e.clientY);
+});
 
 let t = 0, last = performance.now(), dim = 0;
 function frame(now) {
