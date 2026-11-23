@@ -2907,8 +2907,8 @@ const fauna = (() => {
     { base: '#f1e8d2', spots: [['#e2b24e', [3, 4, 5, 6, 7, 8, 9]]], L: .16, v: .05, long: 1, fin: '#efe4c8' },       // butterfly, gold-backed
     { base: '#f6f0e8', spots: [['#f2dcc0', [5, 6, 7]]], L: .12, v: .026, w: 1.9, fan: 'oranda', rgb: '250,245,238', rim: '255,252,248', wen: '#f5dbc0' },   // oranda: round and pearly, a cap on its head, a sheer double tail
     { base: '#ad241c', spots: [['#d0433a', [3, 4, 5, 6, 7, 8]]], L: .1, v: .024, w: .95, fan: 'betta', rgb: '214,48,36', rim: '255,120,96' },            // halfmoon betta: its fins a red ruffled disc
-    { base: '#17171c', spots: [['#f6f2ea', [1]]], L: .17, v: .048, long: 1, fin: '#3a3a44', metal: 1, wavy: 1.5, yy: 0, rim: 1 },   // yin: black, a white dot
-    { base: '#f8f6f1', spots: [['#16161b', [1]]], L: .17, v: .048, long: 1, fin: '#f2eee6', wavy: 1.5, yy: 1 },             // yang: white, a black dot
+    { base: '#17171c', spots: [], dot: '#f6f2ea', L: .2, v: .048, comma: 1, fin: '#4a4a55', metal: 1, wavy: 1.6, yy: 0, rim: 1, eye: '#cfd0d8' },   // yin: a black comma, a white dot
+    { base: '#f8f6f1', spots: [], dot: '#16161b', L: .2, v: .048, comma: 1, fin: '#e8e4dc', wavy: 1.6, yy: 1 },                     // yang: a white comma, a black dot
   ];
   let P = null, pondT = 0, simT = 0, kc = null;
   const U = () => Math.min(W, H);
@@ -2968,7 +2968,7 @@ const fauna = (() => {
     Y.mode = mode; Y.w = w;
   }
   function yyPoint(i, t) {   // where each of the pair should be, at time t
-    const Y = P.yy, R = U() * .17 * .62, fx = Math.cos(Y.h), fy = Math.sin(Y.h), sx = -fy, sy = fx;
+    const Y = P.yy, R = U() * .2 * .58, fx = Math.cos(Y.h), fy = Math.sin(Y.h), sx = -fy, sy = fx;
     const at = mode => {
       if (mode === 0) { const a = t * .5 + i * Math.PI; return [Math.cos(a) * R * .62, Math.sin(a) * R * .62]; }   // the ring, nose to tail
       if (mode === 1) { const a = t * .9 + i * Math.PI / 2, s1 = Math.sin(a) * R * 1.25, f1 = Math.sin(2 * a) * R * .55; return [sx * s1 + fx * f1, sy * s1 + fy * f1]; }   // the figure eight
@@ -3054,7 +3054,8 @@ const fauna = (() => {
       const u = i / N, sway = Math.sin(swim - u * 5.5) * L * .065 * (k.wavy || 1) * f.amp * Math.pow(u, 1.4);
       nrm.push([-dy / l, dx / l]);
       pts[i] = [pts[i][0] + nrm[i][0] * sway, pts[i][1] + nrm[i][1] * sway];
-      wid.push(L * .135 * (k.w || 1) * (u < .28 ? .7 + .3 * Math.sin(u / .28 * Math.PI / 2) : 1 - .84 * Math.pow((u - .28) / .72, 1.3)));
+      wid.push(k.comma ? L * (u < .16 ? .16 * Math.sqrt(Math.max(0, 1 - Math.pow((.16 - u) / .16, 2))) : .156 * Math.pow(1 - (u - .16) / .84, 1.7) + .005)   // a yin-yang comma: a round head sweeping into a thin tail
+        : L * .135 * (k.w || 1) * (u < .28 ? .7 + .3 * Math.sin(u / .28 * Math.PI / 2) : 1 - .84 * Math.pow((u - .28) / .72, 1.3)));
     }
     const fwd = [-nrm[0][1], nrm[0][0]];
     const body = () => {
@@ -3063,7 +3064,8 @@ const fauna = (() => {
       for (let i = N; i >= 0; i--) x.lineTo(pts[i][0] - nrm[i][0] * wid[i], pts[i][1] - nrm[i][1] * wid[i]);
       x.closePath();
     };
-    const head = () => { x.beginPath(); x.ellipse(pts[1][0], pts[1][1], wid[1] * 1.75, wid[1] * 1.02, Math.atan2(fwd[1], fwd[0]), 0, TAU); };
+    const hc = [pts[2][0] + (pts[3][0] - pts[2][0]) * .56, pts[2][1] + (pts[3][1] - pts[2][1]) * .56];   // the middle of a comma's round head
+    const head = () => { x.beginPath(); if (k.comma) x.arc(hc[0], hc[1], L * .158, 0, TAU); else x.ellipse(pts[1][0], pts[1][1], wid[1] * 1.75, wid[1] * 1.02, Math.atan2(fwd[1], fwd[0]), 0, TAU); };
     const A = 1 - .4 * f.dep, long = k.long ? 1 : 0;
     const fan = (bx, by, dir, span, R, a0, step, sw, round = .3) => {   // a fin of soft rays fanning out from one point, its edge ruffled and lagging behind the beat
       const M = 24, edge = [], col = a => `rgba(${k.rgb},${a})`;
@@ -3127,9 +3129,9 @@ const fauna = (() => {
       x.fillStyle = k.fin || k.base; x.globalAlpha = A * alpha * (k.veil ? .4 : long ? .62 : 1);
       const tp = pts[N], tb = pts[N - 2], tn = nrm[N], back = [tp[0] - tb[0], tp[1] - tb[1]], bl = Math.hypot(...back) || 1;
       const bx = back[0] / bl, by = back[1] / bl, flap = Math.sin(swim - 6), lag = Math.sin(swim - 7.2);
-      const tl = k.veil || (long ? 2 : 1);
+      const tl = k.comma ? .75 : k.veil || (long ? 2 : 1);
       for (const sd of [1, -1]) {   // the tail: two soft lobes; a butterfly koi's trail long and lags behind the beat
-        const sp = L * (.15 + .03 * flap * sd) * (long ? 1.15 : k.veil ? 1.25 : 1), wv = long ? lag * L * .05 * (k.wavy || 1) : k.veil ? lag * L * .09 : 0;
+        const sp = L * (.15 + .03 * flap * sd) * (long ? 1.15 : k.veil ? 1.25 : k.comma ? .5 : 1), wv = long ? lag * L * .05 * (k.wavy || 1) : k.veil ? lag * L * .09 : k.comma ? lag * L * .06 : 0;
         x.beginPath(); x.moveTo(tb[0], tb[1]);
         x.bezierCurveTo(tp[0] + tn[0] * sd * sp * .5, tp[1] + tn[1] * sd * sp * .5,
           tp[0] + bx * L * .18 * tl + tn[0] * (sd * sp + wv), tp[1] + by * L * .18 * tl + tn[1] * (sd * sp + wv),
@@ -3141,8 +3143,8 @@ const fauna = (() => {
         x.restore();
       }
       for (const sd of [1, -1]) {   // pectoral fins: rounded paddles near the head, long veils on a butterfly
-        const p3 = pts[3], n = nrm[3], fl = .25 * Math.sin(t * 2.2 + sd * 1.3 + f.seed), r = L * (long ? .17 : .1);
-        x.save(); x.translate(p3[0] + n[0] * sd * wid[3] * .8, p3[1] + n[1] * sd * wid[3] * .8);
+        const pi = k.comma ? 5 : 3, p3 = pts[pi], n = nrm[pi], fl = k.comma ? .4 * Math.sin(t * 4.5 + sd * 1.3 + f.seed) : .25 * Math.sin(t * 2.2 + sd * 1.3 + f.seed), r = L * (long ? .17 : k.comma ? .065 : .1);   // a comma's are little and quick
+        x.save(); x.translate(p3[0] + n[0] * sd * wid[pi] * .8, p3[1] + n[1] * sd * wid[pi] * .8);
         x.rotate(Math.atan2(n[1] * sd, n[0] * sd) + sd * (.55 + fl + long * .35));
         x.beginPath(); x.moveTo(0, -r * .25); x.quadraticCurveTo(r * 1.1, -r * .6, r * 1.05, r * .1); x.quadraticCurveTo(r * .6, r * .5, 0, r * .25); x.closePath(); x.fill();
         x.restore();
@@ -3184,7 +3186,8 @@ const fauna = (() => {
       x.strokeStyle = 'rgba(170,120,80,.18)'; x.lineWidth = .7 * D;
       for (let j = 0; j < 12; j += 2) { const a = j * 2.4 + f.seed, r = wid[1] * .62 * Math.sqrt((j + .5) / 12); x.beginPath(); x.arc(c0[0] + Math.cos(a) * r, c0[1] + Math.sin(a) * r, wid[1] * .26, a, a + 2); x.stroke(); }
     }
-    x.fillStyle = '#111';
+    if (k.dot) { x.fillStyle = k.dot; x.beginPath(); x.arc(hc[0], hc[1], L * .058, 0, TAU); x.fill(); }   // the dot of the other colour
+    x.fillStyle = k.eye || '#111';
     for (const sd of [1, -1]) { x.beginPath(); x.arc(pts[1][0] + nrm[1][0] * sd * wid[1] * .62, pts[1][1] + nrm[1][1] * sd * wid[1] * .62, 1.5 * D, 0, TAU); x.fill(); }
     x.restore();
   }
