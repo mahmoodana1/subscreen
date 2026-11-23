@@ -2905,10 +2905,10 @@ const fauna = (() => {
     { base: '#fbfbf8', spots: [['#d8372b', [1]]], L: .17, v: .047, long: 1, fin: '#f4f0e8' },                                   // tancho, butterfly-finned
     { base: '#8aa0b4', spots: [['#e0763a', [7, 8, 9, 10, 11]], ['#dfe6ec', [1, 2]]], L: .185, v: .046 },                        // asagi
     { base: '#f1e8d2', spots: [['#e2b24e', [3, 4, 5, 6, 7, 8, 9]]], L: .16, v: .05, long: 1, fin: '#efe4c8' },       // butterfly, gold-backed
-    { base: '#f6f0e8', spots: [['#f2dcc0', [5, 6, 7]]], L: .12, v: .026, w: 1.9, fan: 'oranda', rgb: '250,245,238', rim: '255,252,248', wen: '#f5dbc0' },   // oranda: round and pearly, a cap on its head, a sheer double tail
-    { base: '#ad241c', spots: [['#d0433a', [3, 4, 5, 6, 7, 8]]], L: .1, v: .024, w: .95, fan: 'betta', rgb: '214,48,36', rim: '255,120,96' },            // halfmoon betta: its fins a red ruffled disc
-    { base: '#17171c', spots: [], dot: '#f6f2ea', L: .2, v: .048, comma: 1, fin: '#4a4a55', metal: 1, wavy: 1.6, yy: 0, rim: 1, eye: '#cfd0d8' },   // yin: a black comma, a white dot
-    { base: '#f8f6f1', spots: [], dot: '#16161b', L: .2, v: .048, comma: 1, fin: '#e8e4dc', wavy: 1.6, yy: 1 },                     // yang: a white comma, a black dot
+    { base: '#f6f0e8', spots: [['#f2dcc0', [5, 6, 7]]], L: .12, v: .026, w: 1.9, fan: 'oranda', rgb: '250,245,238', edge: '255,252,248', wen: '#f5dbc0' },   // oranda: round and pearly, a cap on its head, a sheer double tail
+    { base: '#ad241c', spots: [['#d0433a', [3, 4, 5, 6, 7, 8]]], L: .1, v: .024, w: .95, fan: 'betta', rgb: '214,48,36', edge: '255,120,96' },            // halfmoon betta: its fins a red ruffled disc
+    { base: '#17171c', spots: [], dot: '#f4f1ea', L: .19, v: .048, long: 1, ink: 1, w: 1.08, fin: '#3c3c46', ray: 'rgba(255,255,255,.32)', rgb: '58,58,68', edge: '150,150,165', metal: 1, wavy: 1.4, yy: 0, rim: 1, eye: '#f4f1ea', scale: 'rgba(255,255,255,.16)', whisker: '#5a5a66', tint: 1 },   // yin: a black koi, a white dot on its head
+    { base: '#f8f6f1', spots: [], dot: '#16161b', L: .19, v: .048, long: 1, ink: 1, w: 1.08, fin: '#e4e1da', ray: 'rgba(70,70,82,.3)', rgb: '236,233,226', edge: '255,255,255', wavy: 1.4, yy: 1, eye: '#16161b', scale: 'rgba(60,60,72,.22)', whisker: 'rgba(236,233,226,.85)' },   // yang: a white koi, a black dot
   ];
   let P = null, pondT = 0, simT = 0, kc = null;
   const U = () => Math.min(W, H);
@@ -3054,18 +3054,20 @@ const fauna = (() => {
       const u = i / N, sway = Math.sin(swim - u * 5.5) * L * .065 * (k.wavy || 1) * f.amp * Math.pow(u, 1.4);
       nrm.push([-dy / l, dx / l]);
       pts[i] = [pts[i][0] + nrm[i][0] * sway, pts[i][1] + nrm[i][1] * sway];
-      wid.push(k.comma ? L * (u < .16 ? .16 * Math.sqrt(Math.max(0, 1 - Math.pow((.16 - u) / .16, 2))) : .156 * Math.pow(1 - (u - .16) / .84, 1.7) + .005)   // a yin-yang comma: a round head sweeping into a thin tail
-        : L * .135 * (k.w || 1) * (u < .28 ? .7 + .3 * Math.sin(u / .28 * Math.PI / 2) : 1 - .84 * Math.pow((u - .28) / .72, 1.3)));
+      wid.push(L * .135 * (k.w || 1) * (u < .28 ? .7 + .3 * Math.sin(u / .28 * Math.PI / 2) : 1 - .84 * Math.pow((u - .28) / .72, 1.3)));
     }
     const fwd = [-nrm[0][1], nrm[0][0]];
     const body = () => {
       x.beginPath(); x.moveTo(pts[0][0] - fwd[0] * wid[0] * .9, pts[0][1] - fwd[1] * wid[0] * .9);
-      for (let i = 0; i <= N; i++) x.lineTo(pts[i][0] + nrm[i][0] * wid[i], pts[i][1] + nrm[i][1] * wid[i]);
-      for (let i = N; i >= 0; i--) x.lineTo(pts[i][0] - nrm[i][0] * wid[i], pts[i][1] - nrm[i][1] * wid[i]);
+      const side = [];   // a smooth outline: curves through the midpoints rather than straight segments
+      for (let i = 0; i <= N; i++) side.push([pts[i][0] + nrm[i][0] * wid[i], pts[i][1] + nrm[i][1] * wid[i]]);
+      for (let i = N; i >= 0; i--) side.push([pts[i][0] - nrm[i][0] * wid[i], pts[i][1] - nrm[i][1] * wid[i]]);
+      x.lineTo(side[0][0], side[0][1]);
+      for (let j = 1; j < side.length - 1; j++) x.quadraticCurveTo(side[j][0], side[j][1], (side[j][0] + side[j + 1][0]) / 2, (side[j][1] + side[j + 1][1]) / 2);
+      x.lineTo(side[side.length - 1][0], side[side.length - 1][1]);
       x.closePath();
     };
-    const hc = [pts[2][0] + (pts[3][0] - pts[2][0]) * .56, pts[2][1] + (pts[3][1] - pts[2][1]) * .56];   // the middle of a comma's round head
-    const head = () => { x.beginPath(); if (k.comma) x.arc(hc[0], hc[1], L * .158, 0, TAU); else x.ellipse(pts[1][0], pts[1][1], wid[1] * 1.75, wid[1] * 1.02, Math.atan2(fwd[1], fwd[0]), 0, TAU); };
+    const head = () => { x.beginPath(); x.ellipse(pts[1][0], pts[1][1], wid[1] * 1.75, wid[1] * 1.02, Math.atan2(fwd[1], fwd[0]), 0, TAU); };
     const A = 1 - .4 * f.dep, long = k.long ? 1 : 0;
     const fan = (bx, by, dir, span, R, a0, step, sw, round = .3) => {   // a fin of soft rays fanning out from one point, its edge ruffled and lagging behind the beat
       const M = 24, edge = [], col = a => `rgba(${k.rgb},${a})`;
@@ -3080,10 +3082,10 @@ const fauna = (() => {
       x.fillStyle = g; x.beginPath(); x.moveTo(bx, by); const r0 = ray(edge[0]); x.quadraticCurveTo(r0[0], r0[1], edge[0][0], edge[0][1]);
       for (let j = 1; j < M; j++) x.quadraticCurveTo(edge[j][0], edge[j][1], (edge[j][0] + edge[j + 1][0]) / 2, (edge[j][1] + edge[j + 1][1]) / 2);
       x.lineTo(edge[M][0], edge[M][1]); const r1 = ray(edge[M]); x.quadraticCurveTo(r1[0], r1[1], bx, by); x.fill();
-      x.strokeStyle = `rgba(${k.rim},${a0 * .4})`; x.lineWidth = 1.1 * D; x.beginPath(); x.moveTo(edge[0][0], edge[0][1]);   // a brighter, ruffled rim
+      x.strokeStyle = `rgba(${k.edge},${a0 * .4})`; x.lineWidth = 1.1 * D; x.beginPath(); x.moveTo(edge[0][0], edge[0][1]);   // a brighter, ruffled rim
       for (let j = 1; j < M; j++) x.quadraticCurveTo(edge[j][0], edge[j][1], (edge[j][0] + edge[j + 1][0]) / 2, (edge[j][1] + edge[j + 1][1]) / 2);
       x.stroke();
-      x.strokeStyle = k.fan === 'betta' ? `rgba(120,10,8,${a0 * .35})` : col(a0 * .55); x.lineWidth = .6 * D;
+      x.strokeStyle = k.ink ? k.ray : k.fan === 'betta' ? `rgba(120,10,8,${a0 * .35})` : col(a0 * .55); x.lineWidth = .6 * D;
       for (let j = 0; j <= M; j += step) { const e = edge[j], c = ray(e); x.beginPath(); x.moveTo(bx, by); x.quadraticCurveTo(c[0], c[1], e[0], e[1]); x.stroke(); }
     };
     const fancy = () => {   // sheer fins cast only a faint shadow
@@ -3113,7 +3115,7 @@ const fauna = (() => {
           x.closePath(); x.fill();
           x.strokeStyle = 'rgba(120,10,8,.35)'; x.lineWidth = .6 * D;
           for (let j = 0; j < outer.length; j++) { x.beginPath(); x.moveTo(inner[j][0], inner[j][1]); x.lineTo(outer[j][0], outer[j][1]); x.stroke(); }
-          x.strokeStyle = `rgba(${k.rim},.35)`; x.lineWidth = 1.1 * D; x.beginPath(); x.moveTo(outer[0][0], outer[0][1]);
+          x.strokeStyle = `rgba(${k.edge},.35)`; x.lineWidth = 1.1 * D; x.beginPath(); x.moveTo(outer[0][0], outer[0][1]);
           for (let j = 1; j < outer.length - 1; j++) x.quadraticCurveTo(outer[j][0], outer[j][1], (outer[j][0] + outer[j + 1][0]) / 2, (outer[j][1] + outer[j + 1][1]) / 2);
           x.stroke();
         }
@@ -3129,24 +3131,31 @@ const fauna = (() => {
       x.fillStyle = k.fin || k.base; x.globalAlpha = A * alpha * (k.veil ? .4 : long ? .62 : 1);
       const tp = pts[N], tb = pts[N - 2], tn = nrm[N], back = [tp[0] - tb[0], tp[1] - tb[1]], bl = Math.hypot(...back) || 1;
       const bx = back[0] / bl, by = back[1] / bl, flap = Math.sin(swim - 6), lag = Math.sin(swim - 7.2);
-      const tl = k.comma ? .75 : k.veil || (long ? 2 : 1);
-      for (const sd of [1, -1]) {   // the tail: two soft lobes; a butterfly koi's trail long and lags behind the beat
-        const sp = L * (.15 + .03 * flap * sd) * (long ? 1.15 : k.veil ? 1.25 : k.comma ? .5 : 1), wv = long ? lag * L * .05 * (k.wavy || 1) : k.veil ? lag * L * .09 : k.comma ? lag * L * .06 : 0;
+      const tl = k.veil || (long ? (k.ink ? 2.4 : 2) : 1);
+      if (k.ink) { const dir = Math.atan2(by, bx); x.globalAlpha = A; fan(tp[0] - bx * L * .02, tp[1] - by * L * .02, dir, 1.25, L * .5, .75, 1, lag * .35 * (k.wavy || 1), .4); x.globalAlpha = A * alpha * .62; x.fillStyle = k.fin; }   // an ink koi's tail: a big feathered fan
+      else for (const sd of [1, -1]) {   // the tail: two soft lobes; a butterfly koi's trail long and lags behind the beat
+        const sp = L * (.15 + .03 * flap * sd) * (long ? (k.ink ? 1.35 : 1.15) : k.veil ? 1.25 : 1), wv = long ? lag * L * .05 * (k.wavy || 1) : k.veil ? lag * L * .09 : 0;
         x.beginPath(); x.moveTo(tb[0], tb[1]);
         x.bezierCurveTo(tp[0] + tn[0] * sd * sp * .5, tp[1] + tn[1] * sd * sp * .5,
           tp[0] + bx * L * .18 * tl + tn[0] * (sd * sp + wv), tp[1] + by * L * .18 * tl + tn[1] * (sd * sp + wv),
           tp[0] + bx * L * .2 * tl + tn[0] * (sd * sp * .7 + wv * 1.4), tp[1] + by * L * .2 * tl + tn[1] * (sd * sp * .7 + wv * 1.4));
         x.quadraticCurveTo(tp[0] + bx * L * .08 * tl, tp[1] + by * L * .08 * tl, tp[0], tp[1]); x.closePath(); x.fill();
-        x.save(); x.globalAlpha = A * alpha * .45; x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = .6 * D;
-        for (const q of [.35, .7, 1]) { x.beginPath(); x.moveTo(tb[0], tb[1]);
+        x.save(); x.globalAlpha = A * alpha * (k.ink ? .9 : .45); x.strokeStyle = k.ray || 'rgba(255,255,255,.35)'; x.lineWidth = .6 * D;
+        for (const q of k.ink ? [.2, .32, .44, .56, .68, .8, .9, 1] : [.35, .7, 1]) {   // an ink koi's tail is all feathery strokes x.beginPath(); x.moveTo(tb[0], tb[1]);
           x.lineTo(tp[0] + bx * L * .19 * tl * q + tn[0] * (sd * sp * q * .9 + wv * q), tp[1] + by * L * .19 * tl * q + tn[1] * (sd * sp * q * .9 + wv * q)); x.stroke(); }
         x.restore();
       }
       for (const sd of [1, -1]) {   // pectoral fins: rounded paddles near the head, long veils on a butterfly
-        const pi = k.comma ? 5 : 3, p3 = pts[pi], n = nrm[pi], fl = k.comma ? .4 * Math.sin(t * 4.5 + sd * 1.3 + f.seed) : .25 * Math.sin(t * 2.2 + sd * 1.3 + f.seed), r = L * (long ? .17 : k.comma ? .065 : .1);   // a comma's are little and quick
-        x.save(); x.translate(p3[0] + n[0] * sd * wid[pi] * .8, p3[1] + n[1] * sd * wid[pi] * .8);
+        const p3 = pts[3], n = nrm[3], fl = (k.ink ? .35 : .25) * Math.sin(t * (k.ink ? 1.6 : 2.2) + sd * 1.3 + f.seed), r = L * (k.ink ? .24 : long ? .17 : .1);
+        x.save(); x.translate(p3[0] + n[0] * sd * wid[3] * .8, p3[1] + n[1] * sd * wid[3] * .8);
         x.rotate(Math.atan2(n[1] * sd, n[0] * sd) + sd * (.55 + fl + long * .35));
         x.beginPath(); x.moveTo(0, -r * .25); x.quadraticCurveTo(r * 1.1, -r * .6, r * 1.05, r * .1); x.quadraticCurveTo(r * .6, r * .5, 0, r * .25); x.closePath(); x.fill();
+        if (k.ink) {   // big wispy fins: brushed with fine rays, a blush of red at the root on the black one
+          if (k.tint) { const g = x.createRadialGradient(0, 0, 0, 0, 0, r * .6); g.addColorStop(0, 'rgba(205,48,38,.5)'); g.addColorStop(1, 'rgba(205,48,38,0)'); x.fillStyle = g; x.fill(); x.fillStyle = k.fin; }
+          x.save(); x.globalAlpha = A * .5; x.strokeStyle = k.ray; x.lineWidth = .6 * D; x.beginPath();
+          for (let j = 0; j < 7; j++) { const q = j / 6, ex = r * (1.05 - .25 * Math.abs(q - .4)), ey = r * (-.45 + .6 * q); x.moveTo(0, r * (-.2 + .4 * q)); x.quadraticCurveTo(ex * .55, ey * .7 - r * .1, ex, ey); }
+          x.stroke(); x.restore();
+        }
         x.restore();
       }
       if (long) {   // and a dorsal veil along the back
@@ -3169,6 +3178,18 @@ const fauna = (() => {
     x.strokeStyle = 'rgba(0,0,0,.12)'; x.lineWidth = wid[4] * .6; x.stroke();
     x.strokeStyle = 'rgba(0,0,0,.26)'; x.lineWidth = 1.2 * D; x.stroke();
     if (k.rim) { x.strokeStyle = 'rgba(215,222,235,.3)'; x.lineWidth = 2.2 * D; x.stroke(); }   // a pale rim, so a black koi still shows on dark water
+    if (k.scale) {   // painted scales: rows of little scallops, offset row to row
+      x.strokeStyle = k.scale; x.lineWidth = .8 * D; x.beginPath();
+      for (let i = 3; i < N - 3; i++) {
+        const bk = Math.atan2(pts[i][1] - pts[i - 1][1], pts[i][0] - pts[i - 1][0]), r = wid[i] * .2 + D;
+        for (let j = -2; j <= 2; j++) {
+          const o = (j + (i % 2 ? .5 : 0)) * wid[i] * .36; if (Math.abs(o) > wid[i] * .8) continue;
+          const cx = pts[i][0] + nrm[i][0] * o, cy = pts[i][1] + nrm[i][1] * o;
+          x.moveTo(cx + Math.cos(bk - Math.PI / 2) * r, cy + Math.sin(bk - Math.PI / 2) * r); x.arc(cx, cy, r, bk - Math.PI / 2, bk + Math.PI / 2);
+        }
+      }
+      x.stroke();
+    }
     const sg = x.createLinearGradient(pts[0][0], pts[0][1], pts[N][0], pts[N][1]);
     sg.addColorStop(0, `rgba(255,255,255,${k.metal ? .45 : .28})`); sg.addColorStop(1, 'rgba(255,255,255,0)');
     x.strokeStyle = sg; x.lineWidth = wid[4] * .35; x.beginPath(); x.moveTo(pts[1][0], pts[1][1]);
@@ -3185,9 +3206,23 @@ const fauna = (() => {
       x.strokeStyle = 'rgba(170,120,80,.18)'; x.lineWidth = .7 * D;
       for (let j = 0; j < 12; j += 2) { const a = j * 2.4 + f.seed, r = wid[1] * .62 * Math.sqrt((j + .5) / 12); x.beginPath(); x.arc(c0[0] + Math.cos(a) * r, c0[1] + Math.sin(a) * r, wid[1] * .26, a, a + 2); x.stroke(); }
     }
-    if (k.dot) { x.fillStyle = k.dot; x.beginPath(); x.arc(hc[0], hc[1], L * .058, 0, TAU); x.fill(); }   // the dot of the other colour
+    if (k.dot) {   // the big dot of the other colour on its head
+      const dx = pts[1][0] + (pts[2][0] - pts[1][0]) * .35, dy = pts[1][1] + (pts[2][1] - pts[1][1]) * .35;
+      x.fillStyle = k.dot; x.beginPath(); x.arc(dx, dy, wid[1] * .6, 0, TAU); x.fill();
+    }
+    if (k.whisker) {   // long whiskers trailing from the snout, drifting as it swims
+      x.strokeStyle = k.whisker; x.lineWidth = .9 * D; x.lineCap = 'round';
+      const sn = [pts[0][0] + fwd[0] * wid[1] * 1.3, pts[0][1] + fwd[1] * wid[1] * 1.3];
+      for (const sd of [1, -1]) {
+        const n = nrm[0], b = [sn[0] + n[0] * sd * wid[1] * .45, sn[1] + n[1] * sd * wid[1] * .45], w1 = Math.sin(t * 1.7 + sd + f.seed), w2 = Math.sin(t * 1.7 + sd + f.seed - 1.2);
+        const at = (fw, sw) => [b[0] + fwd[0] * L * fw + n[0] * sd * L * sw, b[1] + fwd[1] * L * fw + n[1] * sd * L * sw];
+        const c1 = at(.04, .035), c2 = at(-.08, .1 + .02 * w1), e = at(-.26, .1 + .05 * w2);
+        x.beginPath(); x.moveTo(b[0], b[1]); x.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], e[0], e[1]); x.stroke();
+      }
+    }
     x.fillStyle = k.eye || '#111';
-    for (const sd of [1, -1]) { x.beginPath(); x.arc(pts[1][0] + nrm[1][0] * sd * wid[1] * .62, pts[1][1] + nrm[1][1] * sd * wid[1] * .62, 1.5 * D, 0, TAU); x.fill(); }
+    if (k.ink) for (const sd of [1, -1]) { const ex = pts[0][0] + (pts[1][0] - pts[0][0]) * .4, ey = pts[0][1] + (pts[1][1] - pts[0][1]) * .4; x.beginPath(); x.arc(ex + nrm[0][0] * sd * wid[1] * .62, ey + nrm[0][1] * sd * wid[1] * .62, 1.5 * D, 0, TAU); x.fill(); }
+    else for (const sd of [1, -1]) { x.beginPath(); x.arc(pts[1][0] + nrm[1][0] * sd * wid[1] * .62, pts[1][1] + nrm[1][1] * sd * wid[1] * .62, 1.5 * D, 0, TAU); x.fill(); }
     x.restore();
   }
 
