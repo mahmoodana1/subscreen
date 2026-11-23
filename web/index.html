@@ -2911,6 +2911,8 @@ const fauna = (() => {
     { base: '#f1e8d2', spots: [['#e2b24e', [3, 4, 5, 6, 7, 8, 9]]], L: .16, v: .05, long: 1, fin: '#efe4c8' },       // butterfly, gold-backed
     { base: '#f6f0e8', spots: [['#f2dcc0', [5, 6, 7]]], L: .12, v: .026, w: 1.9, fan: 'oranda', rgb: '250,245,238', rim: '255,252,248', wen: '#f5dbc0' },   // oranda: round and pearly, a cap on its head, a sheer double tail
     { base: '#ad241c', spots: [['#d0433a', [3, 4, 5, 6, 7, 8]]], L: .1, v: .024, w: .95, fan: 'betta', rgb: '214,48,36', rim: '255,120,96' },            // halfmoon betta: its fins a red ruffled disc
+    { base: '#17171c', spots: [['#f6f2ea', [1]]], L: .17, v: .048, long: 1, fin: '#3a3a44', metal: 1, wavy: 1.5, yy: 0, rim: 1 },   // yin: black, a white dot
+    { base: '#f8f6f1', spots: [['#16161b', [1]]], L: .17, v: .048, long: 1, fin: '#f2eee6', wavy: 1.5, yy: 1 },             // yang: white, a black dot
   ];
   let P = null, pondT = 0, simT = 0, kc = null;
   const U = () => Math.min(W, H);
@@ -2937,6 +2939,7 @@ const fauna = (() => {
       W, H, food: [], rip: [],
       fish: KOI.map((k, i) => ({ k, i, x: W * rand(.15, .85), y: H * rand(.15, .85), h: rand(0, TAU), tr: 0, beat: rand(0, TAU), amp: 1, sp: k.v * u,
         dep: .5, seed: rand(0, 100), trail: [], kissAt: t + rand(10, 50), react: rand(.3, 2.2) })),
+      yy: { cx: W * .5, cy: H * .5, h: rand(0, TAU) },
       school: Array.from({ length: 15 }, () => { const a = rand(0, TAU); return { x: W * .3 + rand(-1, 1) * u * .08, y: H * .65 + rand(-1, 1) * u * .06, vx: Math.cos(a) * u * .05, vy: Math.sin(a) * u * .05, ph: rand(0, TAU), k: rand(0, 100), s: rand(.8, 1.15) }; }),
       turtle: { on: false, next: t + rand(40, 90) },
       axo: axoInit(t),
@@ -2953,7 +2956,48 @@ const fauna = (() => {
   function wrap(o, m) { if (o.x < -m) o.x += W + 2 * m; if (o.x > W + m) o.x -= W + 2 * m; if (o.y < -m) o.y += H + 2 * m; if (o.y > H + m) o.y -= H + 2 * m; }
 
   /* the koi */
+  /* yin and yang: a black koi and a white one that dance together. They chase each other's tails
+     in a ring, weave a figure eight as they travel, and swim side by side as mirror images, each
+     dance melting into the next. Food still comes first. */
+  const YY_DANCE = 24;
+  function stepYY(dt, t) {
+    const Y = P.yy, u = U(), m = t / YY_DANCE, w = sstep(.78, 1, m - Math.floor(m)), mode = Math.floor(m) % 3;
+    const ring = (mode === 0 ? 1 - w : 0) + (mode === 2 ? w : 0);   // how much of the ring is on: they hardly travel while circling
+    let turn = wav(t * .3, 7) * .35;
+    const out = Math.max(0, W * .22 - Y.cx, Y.cx - W * .78) / W + Math.max(0, H * .28 - Y.cy, Y.cy - H * .72) / H;
+    if (out > 0) turn += angTo(Y.h, Math.atan2(H / 2 - Y.cy, W / 2 - Y.cx)) * Math.min(2, out * 12);
+    Y.h += turn * dt;
+    const v = u * .028 * (1 - .8 * ring);
+    Y.cx += Math.cos(Y.h) * v * dt; Y.cy += Math.sin(Y.h) * v * dt;
+    Y.mode = mode; Y.w = w;
+  }
+  function yyPoint(i, t) {   // where each of the pair should be, at time t
+    const Y = P.yy, R = U() * .17 * .62, fx = Math.cos(Y.h), fy = Math.sin(Y.h), sx = -fy, sy = fx;
+    const at = mode => {
+      if (mode === 0) { const a = t * .5 + i * Math.PI; return [Math.cos(a) * R * .62, Math.sin(a) * R * .62]; }   // the ring, nose to tail
+      if (mode === 1) { const a = t * .9 + i * Math.PI / 2, s1 = Math.sin(a) * R * 1.25, f1 = Math.sin(2 * a) * R * .55; return [sx * s1 + fx * f1, sy * s1 + fy * f1]; }   // the figure eight
+      const sd = i ? 1 : -1, s1 = sd * R * (.62 + .22 * Math.sin(t * .8)), f1 = R * .35 * Math.sin(t * .55);   // mirror images
+      return [sx * s1 + fx * f1, sy * s1 + fy * f1];
+    };
+    const a = at(Y.mode || 0), b = at(((Y.mode || 0) + 1) % 3), w = Y.w || 0;
+    return [Y.cx + a[0] + (b[0] - a[0]) * w, Y.cy + a[1] + (b[1] - a[1]) * w];
+  }
+  function danceKoi(f, dt, t) {
+    const u = U(), k = f.k, L = k.L * u, lead = .45;
+    const p = yyPoint(k.yy, t + lead), d = Math.hypot(p[0] - f.x, p[1] - f.y);
+    f.tr += (clamp(angTo(f.h, Math.atan2(p[1] - f.y, p[0] - f.x)) * 2.4, -2.4, 2.4) - f.tr) * Math.min(1, dt * 3);
+    f.h += f.tr * dt;
+    f.sp += (clamp(d / lead, k.v * u * .35, k.v * u * 2.6) - f.sp) * Math.min(1, dt * 2);
+    f.amp += (.7 + Math.min(.7, Math.abs(f.tr) * .35) + .25 * Math.sin(t * 1.3 + k.yy * Math.PI) - f.amp) * Math.min(1, dt * 1.5);
+    f.beat += dt * (1.4 + f.sp / L * 12);
+    const last = f.trail[0] || [f.x, f.y];
+    f.x += Math.cos(f.h) * f.sp * dt; f.y += Math.sin(f.h) * f.sp * dt;
+    if (Math.hypot(f.x - last[0], f.y - last[1]) > D * 1.2) f.trail.unshift([f.x, f.y]);
+    for (let j = 1, len = 0; j < f.trail.length; j++) { len += Math.hypot(f.trail[j][0] - f.trail[j - 1][0], f.trail[j][1] - f.trail[j - 1][1]); if (len > L * 1.3) { f.trail.length = j + 1; break; } }
+    f.dep += (.35 + .2 * Math.sin(t * .17) - f.dep) * Math.min(1, dt * .5);   // the two at one depth
+  }
   function swimKoi(f, dt, t) {
+    if (f.k.yy != null && !P.food.length) return danceKoi(f, dt, t);
     const u = U(), k = f.k, L = k.L * u;
     let turn = wav(t * .9, f.seed) * .55, hurry = 1;
     const la = L * 1.7, ax = f.x + Math.cos(f.h) * la, ay = f.y + Math.sin(f.h) * la, mx = W * .06, my = H * .08;   // stay in the pond
@@ -3011,7 +3055,7 @@ const fauna = (() => {
     const nrm = [], wid = [];
     for (let i = 0; i <= N; i++) {
       const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
-      const u = i / N, sway = Math.sin(swim - u * 5.5) * L * .065 * f.amp * Math.pow(u, 1.4);
+      const u = i / N, sway = Math.sin(swim - u * 5.5) * L * .065 * (k.wavy || 1) * f.amp * Math.pow(u, 1.4);
       nrm.push([-dy / l, dx / l]);
       pts[i] = [pts[i][0] + nrm[i][0] * sway, pts[i][1] + nrm[i][1] * sway];
       wid.push(L * .135 * (k.w || 1) * (u < .28 ? .7 + .3 * Math.sin(u / .28 * Math.PI / 2) : 1 - .84 * Math.pow((u - .28) / .72, 1.3)));
@@ -3089,7 +3133,7 @@ const fauna = (() => {
       const bx = back[0] / bl, by = back[1] / bl, flap = Math.sin(swim - 6), lag = Math.sin(swim - 7.2);
       const tl = k.veil || (long ? 2 : 1);
       for (const sd of [1, -1]) {   // the tail: two soft lobes; a butterfly koi's trail long and lags behind the beat
-        const sp = L * (.15 + .03 * flap * sd) * (long ? 1.15 : k.veil ? 1.25 : 1), wv = long ? lag * L * .05 : k.veil ? lag * L * .09 : 0;
+        const sp = L * (.15 + .03 * flap * sd) * (long ? 1.15 : k.veil ? 1.25 : 1), wv = long ? lag * L * .05 * (k.wavy || 1) : k.veil ? lag * L * .09 : 0;
         x.beginPath(); x.moveTo(tb[0], tb[1]);
         x.bezierCurveTo(tp[0] + tn[0] * sd * sp * .5, tp[1] + tn[1] * sd * sp * .5,
           tp[0] + bx * L * .18 * tl + tn[0] * (sd * sp + wv), tp[1] + by * L * .18 * tl + tn[1] * (sd * sp + wv),
@@ -3127,6 +3171,7 @@ const fauna = (() => {
     x.save(); body(); x.clip();
     x.strokeStyle = 'rgba(0,0,0,.12)'; x.lineWidth = wid[4] * .6; x.stroke();
     x.strokeStyle = 'rgba(0,0,0,.26)'; x.lineWidth = 1.2 * D; x.stroke();
+    if (k.rim) { x.strokeStyle = 'rgba(215,222,235,.3)'; x.lineWidth = 2.2 * D; x.stroke(); }   // a pale rim, so a black koi still shows on dark water
     const sg = x.createLinearGradient(pts[0][0], pts[0][1], pts[N][0], pts[N][1]);
     sg.addColorStop(0, `rgba(255,255,255,${k.metal ? .45 : .28})`); sg.addColorStop(1, 'rgba(255,255,255,0)');
     x.strokeStyle = sg; x.lineWidth = wid[4] * .35; x.beginPath(); x.moveTo(pts[1][0], pts[1][1]);
@@ -3634,6 +3679,7 @@ const fauna = (() => {
     if (!P) pondInit(t);
     else if (P.W !== W || P.H !== H) {   // the screen turned or resized: keep everyone where they were, proportionally
       const sx = W / P.W, sy = H / P.H, mv = o => { o.x *= sx; o.y *= sy; };
+      P.yy.cx *= sx; P.yy.cy *= sy;
       for (const f of P.fish) { mv(f); f.trail = f.trail.map(([a, b]) => [a * sx, b * sy]); }
       [...P.school, ...P.striders, ...P.drift, ...P.motes, ...P.food, ...P.rip].forEach(mv);
       if (P.turtle.on) { mv(P.turtle); P.turtle.tx *= sx; P.turtle.ty *= sy; }
@@ -3643,6 +3689,7 @@ const fauna = (() => {
     const pd = pads(t), n = Math.ceil(dt / .04);   // small steps keep the steering smooth on a slow frame
     for (let i = n; i > 0; i--) {
       const h = dt / n, ts = simT = t - (i - 1) * h;
+      stepYY(h, ts);
       for (const f of P.fish) swimKoi(f, h, ts);
       swimSchool(h, ts); swimTurtle(h, ts); stepAxo(h, ts); stepFrog(h, ts, pd); stepFly(h, ts, pd); stepSurface(h, ts);
     }
