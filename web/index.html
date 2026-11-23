@@ -3034,7 +3034,7 @@ const fauna = (() => {
     f.dep += ((feed && fd < L * 4 ? 0 : .5 + .5 * wav(t * .22, f.seed + 11)) - f.dep) * Math.min(1, dt * .5);   // drift up and down through the water
     if (f.dep < .25 && t > f.kissAt) { ripple(f.x + Math.cos(f.h) * L * .05, f.y + Math.sin(f.h) * L * .05, .07 * u, .28, 4.5); f.kissAt = t + rand(25, 70); }   // a kiss at the surface
   }
-  function drawKoi(f, t) {
+  function drawKoi(f, t, sh) {
     const k = f.k, N = 16, L = k.L * U() * (1 - .1 * f.dep), seg = L / N, dense = [[f.x, f.y], ...f.trail], swim = f.beat;
     const pts = [dense[0]];
     for (let j = 1, acc = 0; j < dense.length && pts.length <= N; j++) {
@@ -3087,7 +3087,7 @@ const fauna = (() => {
       for (let j = 0; j <= M; j += step) { const e = edge[j], c = ray(e); x.beginPath(); x.moveTo(bx, by); x.quadraticCurveTo(c[0], c[1], e[0], e[1]); x.stroke(); }
     };
     const fancy = () => {   // sheer fins cast only a faint shadow
-      const sc = x.shadowColor; x.globalAlpha = A; x.shadowColor = 'rgba(0,0,0,.2)';
+      x.globalAlpha = A;
       const tp = pts[N - 1], tb = pts[N - 3], dir = Math.atan2(tp[1] - tb[1], tp[0] - tb[0]), sw = .32 * Math.sin(swim - 7.2) * f.amp;
       const side = (i, sd, back) => Math.atan2(nrm[i][1] * sd, nrm[i][0] * sd) - sd * back;   // sideways from the body, swept back
       const at = (i, sd, o) => [pts[i][0] + nrm[i][0] * sd * wid[i] * o, pts[i][1] + nrm[i][1] * sd * wid[i] * o];
@@ -3122,7 +3122,7 @@ const fauna = (() => {
         for (const sd of [1, -1]) { const p = at(3, sd, .5), a = side(3, sd, 1.9 + .15 * Math.sin(t * 1.3 + sd)); x.beginPath(); x.moveTo(p[0], p[1]); x.quadraticCurveTo(p[0] + Math.cos(a) * L * .2, p[1] + Math.sin(a) * L * .2, p[0] + Math.cos(a + sd * sw) * L * .38, p[1] + Math.sin(a + sd * sw) * L * .38); x.stroke(); }
         for (const sd of [1, -1]) { const p = at(2, sd, .8); fan(p[0], p[1], side(2, sd, .5 + .3 * Math.sin(t * 3 + sd)), .7, L * .16, .35, 4, 0, .6); }   // small clear pectorals, always beating
       }
-      x.globalAlpha = A; x.shadowColor = sc;
+      x.globalAlpha = A;
     };
     const fins = alpha => {
       if (k.fan) return fancy();
@@ -3155,11 +3155,10 @@ const fauna = (() => {
       }
       x.globalAlpha = A;
     };
-    x.save(); x.globalAlpha = A;
-    const lift = 1 - f.dep;   // near the surface the shadow falls further away and softer
-    x.shadowColor = `rgba(0,0,0,${.42 + .1 * lift})`; x.shadowBlur = (9 + 10 * lift) * D; x.shadowOffsetX = (4 + 10 * lift) * D; x.shadowOffsetY = (5 + 12 * lift) * D;
-    fins(.55); x.fillStyle = k.base; body(); x.fill(); head(); x.fill();
-    x.restore();
+    const sil = () => { x.globalAlpha = A; fins(.55); x.fillStyle = k.base; body(); x.fill(); head(); x.fill(); };
+    const lift = 1 - f.dep;   // near the surface the shadow falls further away
+    if (sh) return castShadow((4 + 10 * lift) * D, (5 + 12 * lift) * D, sil);
+    x.save(); sil(); x.restore();
     x.save(); x.globalAlpha = A;
     for (const part of [body, head]) {
       x.save(); part(); x.clip();
@@ -3174,7 +3173,7 @@ const fauna = (() => {
     sg.addColorStop(0, `rgba(255,255,255,${k.metal ? .45 : .28})`); sg.addColorStop(1, 'rgba(255,255,255,0)');
     x.strokeStyle = sg; x.lineWidth = wid[4] * .35; x.beginPath(); x.moveTo(pts[1][0], pts[1][1]);
     for (let i = 2; i < N - 2; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke();
-    const sh = (t * .3 + f.seed) % 1.6 - .3, si = Math.max(1, Math.min(N - 3, Math.round(sh * N)));   // light sliding along the scales
+    const gl = (t * .3 + f.seed) % 1.6 - .3, si = Math.max(1, Math.min(N - 3, Math.round(gl * N)));   // light sliding along the scales
     const g2 = x.createRadialGradient(pts[si][0], pts[si][1], 0, pts[si][0], pts[si][1], wid[si] * 2.2);
     g2.addColorStop(0, `rgba(255,255,255,${k.metal ? .45 : .3})`); g2.addColorStop(1, 'rgba(255,255,255,0)');
     x.fillStyle = g2; x.fillRect(pts[si][0] - wid[si] * 2.2, pts[si][1] - wid[si] * 2.2, wid[si] * 4.4, wid[si] * 4.4);
@@ -3249,7 +3248,7 @@ const fauna = (() => {
     if (t > T.breathe) { const hl = u * .09; ripple(T.x + Math.cos(T.h) * hl, T.y + Math.sin(T.h) * hl, .06 * u, .3, 4); T.breathe = t + rand(10, 20); }
     if (Math.hypot(T.tx - T.x, T.ty - T.y) < u * .05 || T.x < -u * .3 || T.x > W + u * .3 || T.y < -u * .3 || T.y > H + u * .3) { T.on = false; T.next = t + rand(150, 300); }
   }
-  function drawTurtle() {
+  function drawTurtle(sh) {
     const T = P.turtle; if (!T.on) return;
     const s = U() * .1, ph = T.ph;
     const legs = g => {
@@ -3263,8 +3262,8 @@ const fauna = (() => {
       x.beginPath(); x.moveTo(-s * .5, -s * .05); x.lineTo(-s * .68, 0); x.lineTo(-s * .5, s * .05); x.fill();
       if (g) { x.beginPath(); x.ellipse(0, 0, s * .52, s * .42, 0, 0, TAU); x.fill(); }
     };
+    if (sh) return castShadow(10 * D, 13 * D, () => { x.translate(T.x, T.y); x.rotate(T.h); x.globalAlpha = .9; legs(true); });
     x.save(); x.translate(T.x, T.y); x.rotate(T.h); x.globalAlpha = .9;
-    x.save(); x.translate(10 * D, 13 * D); x.filter = `blur(${5 * D}px)`; x.fillStyle = 'rgba(0,0,0,.45)'; legs(true); x.restore();   // its shadow
     x.fillStyle = '#5d6a3e'; legs(false);
     x.strokeStyle = 'rgba(235,215,120,.45)'; x.lineWidth = 1 * D;   // the yellow stripes on its head
     for (const sd of [-1, 0, 1]) { x.beginPath(); x.moveTo(s * .5, sd * s * .05); x.lineTo(s * .7, sd * s * .03); x.stroke(); }
@@ -3377,7 +3376,7 @@ const fauna = (() => {
       } else g.lift = 0;
     }
   }
-  function drawAxo(t) {
+  function drawAxo(t, sh) {
     const A = P.axo, u = U(), L = axoL() * (1 - .06 * A.dep), N = AXN, al = 1 - .15 * A.dep;
     const moving = Math.min(1, A.sp / (u * .006));
     const B = L * .04 * Math.min(1, A.sp / (u * .008)) * (1 - A.fold);   // the side-to-side bend of a walk
@@ -3430,20 +3429,22 @@ const fauna = (() => {
       x.lineWidth = L * .012;
       for (let j = -1.5; j <= 1.5; j++) { const a2 = hd + j * .4; x.beginPath(); x.moveTo(F[0], F[1]); x.lineTo(F[0] + Math.cos(a2) * fl, F[1] + Math.sin(a2) * fl); x.stroke(); }
     };
-    x.save(); x.globalAlpha = al; x.lineCap = 'round'; x.lineJoin = 'round';
-    const lift = 1 - A.dep;
-    x.shadowColor = `rgba(0,0,0,${.4 + .1 * lift})`; x.shadowBlur = (5 + 12 * lift) * D; x.shadowOffsetX = (3 + 10 * lift) * D; x.shadowOffsetY = (4 + 11 * lift) * D;
-    x.strokeStyle = '#f0d0cb';
-    for (const g of A.legs) leg(g);
     const tf = Math.round(.42 * N);
-    x.globalAlpha = al * .35; x.fillStyle = '#f3d8d4';   // the clear fin along the tail
-    outline(tf, i => L * .032 * Math.sin(Math.PI * Math.min(1, (i - tf) / (N - tf + 1.5))) + L * .004); x.fill();
-    x.globalAlpha = al;
-    const g = x.createLinearGradient(pts[0][0], pts[0][1], pts[N][0], pts[N][1]);
-    g.addColorStop(0, '#fae2de'); g.addColorStop(.6, '#f5d6d1'); g.addColorStop(1, '#eecbc6');
-    x.fillStyle = g; outline(2, () => 0); x.fill();
-    x.beginPath(); x.ellipse(hc[0], hc[1], rx, ry, Math.atan2(f0[1], f0[0]), 0, TAU); x.fill();
-    x.shadowColor = 'transparent'; x.shadowBlur = x.shadowOffsetX = x.shadowOffsetY = 0;
+    const sil = () => {
+      x.globalAlpha = al; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.strokeStyle = '#f0d0cb';
+      for (const g of A.legs) leg(g);
+      x.globalAlpha = al * .35; x.fillStyle = '#f3d8d4';   // the clear fin along the tail
+      outline(tf, i => L * .032 * Math.sin(Math.PI * Math.min(1, (i - tf) / (N - tf + 1.5))) + L * .004); x.fill();
+      x.globalAlpha = al;
+      const g = x.createLinearGradient(pts[0][0], pts[0][1], pts[N][0], pts[N][1]);
+      g.addColorStop(0, '#fae2de'); g.addColorStop(.6, '#f5d6d1'); g.addColorStop(1, '#eecbc6');
+      x.fillStyle = g; outline(2, () => 0); x.fill();
+      x.beginPath(); x.ellipse(hc[0], hc[1], rx, ry, Math.atan2(f0[1], f0[0]), 0, TAU); x.fill();
+    };
+    const lift = 1 - A.dep;
+    if (sh) return castShadow((3 + 10 * lift) * D, (4 + 11 * lift) * D, sil);
+    x.save(); sil();
     x.strokeStyle = 'rgba(255,248,245,.18)'; x.lineWidth = L * .025;   // the light along its back
     x.beginPath(); x.moveTo(pts[2][0], pts[2][1]); for (let i = 3; i < N - 4; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke();
     const gr = 1.4 + 2.4 * A.puff, ga = .06 + .07 * A.puff;   // the gills flutter faster after it has been swimming
@@ -3673,6 +3674,47 @@ const fauna = (() => {
     if (P.food.length > 30) P.food.splice(0, P.food.length - 30);
   }
 
+  /* drawing cheaply enough for a 120 Hz screen: no per-shape blur. Shadows are drawn at a quarter size
+     into one layer, blurred once while small, and stretched back over the bed; the fade under the clock
+     and the side panel is drawn once and reused until the layout moves. */
+  const SHS = 4;
+  let shc = null, shx = null, shb = null, shbx = null;
+  function shadowsBegin() {
+    const w = Math.ceil(W / SHS), h = Math.ceil(H / SHS);
+    if (!shc) { shc = document.createElement('canvas'); shb = document.createElement('canvas'); shx = shc.getContext('2d'); shbx = shb.getContext('2d'); }
+    if (shc.width !== w || shc.height !== h) { shc.width = shb.width = w; shc.height = shb.height = h; }
+    shx.setTransform(1, 0, 0, 1, 0, 0); shx.globalAlpha = 1; shx.clearRect(0, 0, w, h);
+  }
+  function castShadow(ox, oy, fn) {
+    const m = x; x = shx; x.save(); x.setTransform(1 / SHS, 0, 0, 1 / SHS, ox / SHS, oy / SHS); fn(); x.restore(); x = m;
+  }
+  function shadowsEnd() {
+    const w = shc.width, h = shc.height;
+    shx.save(); shx.globalAlpha = 1; shx.globalCompositeOperation = 'source-in'; shx.fillStyle = '#000'; shx.fillRect(0, 0, w, h); shx.restore();
+    shbx.clearRect(0, 0, w, h); shbx.filter = `blur(${1.4 * D}px)`; shbx.drawImage(shc, 0, 0); shbx.filter = 'none';
+    x.save(); x.globalAlpha = .6; x.drawImage(shb, 0, 0, W, H); x.restore();
+  }
+  let fmc = null, fmKey = '', fmAt = -1, fmRects = [];
+  function fadeMask(t) {
+    if (t - fmAt > .5 || t < fmAt) {   // where the clock, the dock and the panel are, looked up twice a second rather than every frame
+      fmAt = t; fmRects = [];
+      const cr = $('#drift .stack')?.getBoundingClientRect();
+      if (cr) fmRects.push([cr.left - 16, cr.top - 16, cr.width + 32, cr.height + 32]);
+      const dk = !idleUI && $('#dock')?.getBoundingClientRect(); if (dk) fmRects.push([dk.left - 10, dk.top - 6, dk.width + 20, dk.height + 12]);
+      const gl = !idleUI && $('.glance .g:not([hidden])') && $('#gPrayer').parentElement.getBoundingClientRect();   // and under the side panel's text
+      if (gl && gl.width) fmRects.push([gl.left + 30, gl.top + 100, gl.width - 60, gl.height - 120]);
+    }
+    if (!fmRects.length) return null;
+    const key = W + 'x' + H + ':' + fmRects.map(r => r.map(Math.round).join(',')).join(';');
+    if (key !== fmKey) {
+      fmKey = key;
+      if (!fmc) fmc = document.createElement('canvas');
+      const S = 4; fmc.width = Math.ceil(W / S); fmc.height = Math.ceil(H / S);
+      const g = fmc.getContext('2d'); g.filter = `blur(${24 * D / S}px)`; g.fillStyle = 'rgba(0,0,0,.45)';
+      for (const r of fmRects) g.fillRect(r[0] * D / S, r[1] * D / S, r[2] * D / S, r[3] * D / S);
+    }
+    return fmc;
+  }
   function koi(t) {
     const dt = clamp(t - pondT, 0, .1); pondT = t;
     if (!P) pondInit(t);
@@ -3693,10 +3735,12 @@ const fauna = (() => {
       swimSchool(h, ts); swimTurtle(h, ts); stepAxo(h, ts); stepFrog(h, ts, pd); stepFly(h, ts, pd); stepSurface(h, ts);
     }
 
-    const cr = $('#drift .stack')?.getBoundingClientRect();   // the digits and the date/prayer row
     if (!kc) kc = document.createElement('canvas');
     if (kc.width !== W || kc.height !== H) { kc.width = W; kc.height = H; }
     const main = x, a0 = alphaNow; x = kc.getContext('2d'); x.clearRect(0, 0, W, H); alphaNow = 1; x.globalAlpha = 1;
+    shadowsBegin();   // every shadow goes into one small layer, softened once and laid on the bed under everyone
+    drawAxo(t, true); for (const f of P.fish) drawKoi(f, t, true); drawTurtle(true);
+    shadowsEnd();
     if (P.axo.dep > .5) drawAxo(t);   // on the bed, under everyone
     drawSchool();
     [...P.fish].sort((a, b) => b.dep - a.dep).forEach(f => drawKoi(f, t));   // the deepest first
@@ -3706,14 +3750,8 @@ const fauna = (() => {
     drawSurface(t);
     drawFrog(t);
     drawFly(t);
-    if (cr) {   // everything passes under the clock: fade it there, feathered, so the digits stay clean
-      x.save(); x.globalCompositeOperation = 'destination-out'; x.filter = `blur(${24 * D}px)`; x.fillStyle = 'rgba(0,0,0,.45)';
-      x.fillRect((cr.left - 16) * D, (cr.top - 16) * D, (cr.width + 32) * D, (cr.height + 32) * D);
-      const dk = !idleUI && $('#dock')?.getBoundingClientRect(); if (dk) x.fillRect((dk.left - 10) * D, (dk.top - 6) * D, (dk.width + 20) * D, (dk.height + 12) * D);
-      const gl = !idleUI && $('.glance .g:not([hidden])') && $('#gPrayer').parentElement.getBoundingClientRect();   // and under the side panel's text
-      if (gl && gl.width) x.fillRect((gl.left + 30) * D, (gl.top + 100) * D, (gl.width - 60) * D, (gl.height - 120) * D);
-      x.restore();
-    }
+    const fm = fadeMask(t);   // everything passes under the clock: fade it there, feathered, so the digits stay clean
+    if (fm) { x.save(); x.globalCompositeOperation = 'destination-out'; x.drawImage(fm, 0, 0, W, H); x.restore(); }
     x = main; alphaNow = a0; x.globalAlpha = a0;
     x.drawImage(kc, 0, 0);
   }
