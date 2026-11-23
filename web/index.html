@@ -97,8 +97,8 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 /* ---------- home ---------- */
 #p-home .fit{display:flex;align-items:center}
 .home{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,.27fr);gap:clamp(18px,3vw,48px);align-items:center;width:100%}
-.clockblock{min-width:0;transition:transform 6s ease-in-out;container-type:inline-size;display:grid;justify-content:center}
-.stack{display:flex;flex-direction:column;min-width:0}
+.clockblock{min-width:0;container-type:inline-size;display:grid;justify-content:center}
+.stack{display:flex;flex-direction:column;min-width:0;position:relative}
 /* the clock: light, slightly see-through digits floating on the scene with no card behind them, so the
    ambient shows everywhere but the strokes; a wide faint shadow keeps them readable over bright skies.
    A changed digit rolls: the old one rises and fades while the new one comes up from below, right-hand
@@ -358,7 +358,7 @@ body{font-variant-numeric:tabular-nums;letter-spacing:.005em}
 .g.soon .bar i{background:var(--sub);transition:width 1s linear}
 .g.soon.hot .k::before{content:"";display:inline-block;width:5px;height:5px;margin:0 6px 1px 0;border-radius:50%;background:var(--text);vertical-align:middle;animation:soft 1.6s infinite}
 .g.soon .more{color:var(--muted);letter-spacing:0;text-transform:none;font-weight:400;margin-left:6px}
-.pill{display:none;justify-content:center;margin-top:14px}
+.pill{display:none;justify-content:center;position:absolute;left:0;right:0;top:100%;margin-top:14px}   /* hangs below the clock without moving it */
 .app.idle .pill.on{display:flex}
 .pill > span{display:inline-flex;align-items:center;gap:.55em;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);font:400 clamp(12px,1.5vw,16px)/1 var(--f-flip);letter-spacing:.08em;text-transform:uppercase;color:#fff;max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:fade .8s}
 .pill i{flex:none;width:5px;height:5px;border-radius:50%;background:#fff;animation:soft 1.8s infinite}
@@ -1476,10 +1476,6 @@ function renderGlance() {
     $('#gAr').textContent = w[0].host;
   }
 }
-// Burn-in drift: the AMOLED never holds the same pixels for long
-const DRIFT = [[0, 0], [5, -3], [-4, 3], [3, 4], [-5, -2]];
-let driftI = 0;
-setInterval(() => { driftI = (driftI + 1) % DRIFT.length; const [x, y] = DRIFT[driftI]; $('#drift').style.transform = `translate(${x}px,${y}px)`; }, 30000);
 
 /* ================= tasks ================= */
 function dueInfo(t) {
