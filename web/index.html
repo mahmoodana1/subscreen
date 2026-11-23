@@ -2904,14 +2904,11 @@ const fauna = (() => {
   const fr = v => v - Math.floor(v);
   const ghash = (a, b) => { let p = fr(a * 123.34), q = fr(b * 456.21); const d = p * (p + 45.32) + q * (q + 45.32); p += d; q += d; return fr(p * q); };   // the shader's hash
   const KOI = [   // L: length and v: cruising speed, both in short sides of the screen
-    { base: '#f4eee4', spots: [['#d8472b', [1, 2, 3, 4]], ['#d8472b', [7, 8]], ['#d8472b', [11]]], L: .2, v: .045, buddy: 3 },   // kohaku
-    { base: '#ebb043', spots: [], L: .215, v: .04, metal: 1 },                                                                   // ogon
+    { base: '#f4eee4', spots: [['#d8472b', [1, 2, 3, 4]], ['#d8472b', [7, 8]], ['#d8472b', [11]]], L: .2, v: .045, buddy: 2 },   // kohaku, keeping company with the tancho
     { base: '#1a1a1f', spots: [['#d4452c', [2, 3, 8, 9]], ['#ece6dc', [5, 6, 12]]], L: .19, v: .05 },                          // showa
     { base: '#fbfbf8', spots: [['#d8372b', [1]]], L: .17, v: .047, long: 1, fin: '#f4f0e8' },                                   // tancho, butterfly-finned
-    { base: '#ef7a2a', spots: [], L: .18, v: .043, buddy: 1 },                                                                   // orenji
     { base: '#8aa0b4', spots: [['#e0763a', [7, 8, 9, 10, 11]], ['#dfe6ec', [1, 2]]], L: .185, v: .046 },                        // asagi
-    { base: '#86684a', spots: [], L: .235, v: .033, fin: '#76593e' },                                                            // chagoi: big, slow, brown
-    { base: '#f1e8d2', spots: [['#e2b24e', [3, 4, 5, 6, 7, 8, 9]]], L: .16, v: .05, long: 1, fin: '#efe4c8', buddy: 5 },       // butterfly, gold-backed
+    { base: '#f1e8d2', spots: [['#e2b24e', [3, 4, 5, 6, 7, 8, 9]]], L: .16, v: .05, long: 1, fin: '#efe4c8' },       // butterfly, gold-backed
     { base: '#f6f0e8', spots: [['#f2dcc0', [5, 6, 7]]], L: .12, v: .026, w: 1.9, fan: 'oranda', rgb: '250,245,238', rim: '255,252,248', wen: '#f5dbc0' },   // oranda: round and pearly, a cap on its head, a sheer double tail
     { base: '#ad241c', spots: [['#d0433a', [3, 4, 5, 6, 7, 8]]], L: .1, v: .024, w: .95, fan: 'betta', rgb: '214,48,36', rim: '255,120,96' },            // halfmoon betta: its fins a red ruffled disc
   ];
@@ -2961,11 +2958,13 @@ const fauna = (() => {
     let turn = wav(t * .9, f.seed) * .55, hurry = 1;
     const la = L * 1.7, ax = f.x + Math.cos(f.h) * la, ay = f.y + Math.sin(f.h) * la, mx = W * .06, my = H * .08;   // stay in the pond
     const out = Math.max(0, mx - ax, ax - (W - mx)) / mx + Math.max(0, my - ay, ay - (H - my)) / my;
-    if (out > 0) turn += angTo(f.h, Math.atan2(H * (.5 + .2 * wav(t * .2, f.seed + 3)) - f.y, W * (.5 + .25 * wav(t * .2, f.seed + 5)) - f.x)) * Math.min(1.5, out * 1.4);
+    if (out > 0) turn += angTo(f.h, Math.atan2(H * (.5 + .3 * wav(t * .2, f.seed + 3)) - f.y, W * (.5 + .36 * wav(t * .2, f.seed + 5)) - f.x)) * Math.min(1.5, out * 1.4);
     const buddy = k.buddy != null ? P.fish[k.buddy] : null;
     for (const o of P.fish) if (o !== f) {   // give each other room
       const dx = o.x - f.x, dy = o.y - f.y, d = Math.hypot(dx, dy), r = (L + o.k.L * u) * (o === buddy ? .45 : .8);
       if (d < r && d > 1) { const rel = angTo(f.h, Math.atan2(dy, dx)); if (Math.abs(rel) < 2) turn -= Math.sign(rel) * (1 - d / r) * 1.8; }
+      const far = u * .42;   // and, gently, from further off, so they spread over the whole pond
+      if (o !== buddy && d < far && d > 1) { const rel = angTo(f.h, Math.atan2(dy, dx)); if (Math.abs(rel) < 1.8) turn -= Math.sign(rel || 1) * (1 - d / far) * .45; }
     }
     if (k.buddy != null) {   // keep loose company: swim a little behind and beside a friend
       const b = P.fish[k.buddy], bl = b.k.L * u;
