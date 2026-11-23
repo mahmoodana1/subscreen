@@ -2562,7 +2562,7 @@ document.addEventListener('pointerdown', e => {
 /* ================= fauna: animals that live on the screen ================= */
 // The cat lies on a shelf at the top of the side panel in every theme (not on the idle full screen). Each ambient adds its own: sunrise → a camel
 // caravan on the far ridge and a bird flock, cloudsea → a hot-air balloon, moonlit → geese across
-// the moon, koi → a whole pond (koi, goldfish, minnows, an axolotl, a turtle, a frog, a dragonfly), orbit → a space station. Storm's lightning is weather,
+// the moon, koi → a whole pond (koi, an oranda, a betta, minnows, an axolotl, a turtle, a frog, a dragonfly), orbit → a space station. Storm's lightning is weather,
 // so it stays with the animals off. Tap the cat.
 const fauna = (() => {
   const c = $('#fauna');
@@ -2893,7 +2893,7 @@ const fauna = (() => {
   // A small living pond, simulated rather than looped. Everything rides one slow current. Koi wander,
   // glide and push, keep loose company in pairs, turn aside for each other and drift up and down
   // through the water (deeper ones dimmer, their shadows tighter). A school of minnows turns as one
-  // and scatters when a koi comes close. Two goldfish trail long glassy tails. An axolotl rests on the
+  // and scatters when a koi comes close. An oranda and a betta trail sheer, ruffled fins. An axolotl rests on the
   // bed with its gills fluttering and rises now and then for air. A turtle paddles across, a dragonfly visits
   // the pads and a frog hops between them. Striders skate the surface, petals and pollen drift.
   // Tap the water to scatter food: the fish come up to it.
@@ -2912,8 +2912,8 @@ const fauna = (() => {
     { base: '#8aa0b4', spots: [['#e0763a', [7, 8, 9, 10, 11]], ['#dfe6ec', [1, 2]]], L: .185, v: .046 },                        // asagi
     { base: '#86684a', spots: [], L: .235, v: .033, fin: '#76593e' },                                                            // chagoi: big, slow, brown
     { base: '#f1e8d2', spots: [['#e2b24e', [3, 4, 5, 6, 7, 8, 9]]], L: .16, v: .05, long: 1, fin: '#efe4c8', buddy: 5 },       // butterfly, gold-backed
-    { base: '#e8542a', spots: [], L: .12, v: .058, veil: 2.5, w: .88, fin: '#f07a4c', buddy: 9 },                              // comet goldfish: slim, a long glassy tail
-    { base: '#9aa9bd', spots: [['#e2763c', [2, 3, 9]], ['#23252e', [5, 11]], ['#eef0f2', [7]]], L: .115, v: .055, veil: 2.2, w: .95, fin: '#c9d3df', buddy: 8 },   // shubunkin: calico
+    { base: '#f6f0e8', spots: [['#f2dcc0', [5, 6, 7]]], L: .12, v: .026, w: 1.9, fan: 'oranda', rgb: '250,245,238', rim: '255,252,248', wen: '#f5dbc0' },   // oranda: round and pearly, a cap on its head, a sheer double tail
+    { base: '#ad241c', spots: [['#d0433a', [3, 4, 5, 6, 7, 8]]], L: .1, v: .024, w: .95, fan: 'betta', rgb: '214,48,36', rim: '255,120,96' },            // halfmoon betta: its fins a red ruffled disc
   ];
   let P = null, pondT = 0, simT = 0, kc = null;
   const U = () => Math.min(W, H);
@@ -3026,7 +3026,65 @@ const fauna = (() => {
     };
     const head = () => { x.beginPath(); x.ellipse(pts[1][0], pts[1][1], wid[1] * 1.75, wid[1] * 1.02, Math.atan2(fwd[1], fwd[0]), 0, TAU); };
     const A = 1 - .4 * f.dep, long = k.long ? 1 : 0;
+    const fan = (bx, by, dir, span, R, a0, step, sw, round = .3) => {   // a fin of soft rays fanning out from one point, its edge ruffled and lagging behind the beat
+      const M = 24, edge = [], col = a => `rgba(${k.rgb},${a})`;
+      for (let j = 0; j <= M; j++) {
+        const q = j / M, th = dir - span / 2 + span * q, lag = sw * (.6 + .4 * Math.sin(q * Math.PI));
+        const r = R * (1 + .06 * Math.sin(th * 9 + t * 1.4 + f.seed) + .035 * Math.sin(th * 21 - t * 1.1 + f.seed)) * (1 - round + round * Math.sin(q * Math.PI));
+        edge.push([bx + Math.cos(th + lag) * r, by + Math.sin(th + lag) * r, th, lag]);
+      }
+      const g = x.createRadialGradient(bx, by, 0, bx, by, R * 1.05);
+      const fade = k.fan === 'betta' ? .65 : .3; g.addColorStop(0, col(a0)); g.addColorStop(.55, col(a0 * (.5 + fade / 2))); g.addColorStop(1, col(a0 * fade));
+      const ray = e => [bx + Math.cos(e[2] + e[3] * .3) * R * .5, by + Math.sin(e[2] + e[3] * .3) * R * .5];   // rays bend as the fin trails
+      x.fillStyle = g; x.beginPath(); x.moveTo(bx, by); const r0 = ray(edge[0]); x.quadraticCurveTo(r0[0], r0[1], edge[0][0], edge[0][1]);
+      for (let j = 1; j < M; j++) x.quadraticCurveTo(edge[j][0], edge[j][1], (edge[j][0] + edge[j + 1][0]) / 2, (edge[j][1] + edge[j + 1][1]) / 2);
+      x.lineTo(edge[M][0], edge[M][1]); const r1 = ray(edge[M]); x.quadraticCurveTo(r1[0], r1[1], bx, by); x.fill();
+      x.strokeStyle = `rgba(${k.rim},${a0 * .4})`; x.lineWidth = 1.1 * D; x.beginPath(); x.moveTo(edge[0][0], edge[0][1]);   // a brighter, ruffled rim
+      for (let j = 1; j < M; j++) x.quadraticCurveTo(edge[j][0], edge[j][1], (edge[j][0] + edge[j + 1][0]) / 2, (edge[j][1] + edge[j + 1][1]) / 2);
+      x.stroke();
+      x.strokeStyle = k.fan === 'betta' ? `rgba(120,10,8,${a0 * .35})` : col(a0 * .55); x.lineWidth = .6 * D;
+      for (let j = 0; j <= M; j += step) { const e = edge[j], c = ray(e); x.beginPath(); x.moveTo(bx, by); x.quadraticCurveTo(c[0], c[1], e[0], e[1]); x.stroke(); }
+    };
+    const fancy = () => {   // sheer fins cast only a faint shadow
+      const sc = x.shadowColor; x.globalAlpha = A; x.shadowColor = 'rgba(0,0,0,.2)';
+      const tp = pts[N - 1], tb = pts[N - 3], dir = Math.atan2(tp[1] - tb[1], tp[0] - tb[0]), sw = .32 * Math.sin(swim - 7.2) * f.amp;
+      const side = (i, sd, back) => Math.atan2(nrm[i][1] * sd, nrm[i][0] * sd) - sd * back;   // sideways from the body, swept back
+      const at = (i, sd, o) => [pts[i][0] + nrm[i][0] * sd * wid[i] * o, pts[i][1] + nrm[i][1] * sd * wid[i] * o];
+      if (k.fan === 'oranda') {
+        for (const sd of [1, -1]) fan(tp[0], tp[1], dir + sd * .4, 1.3, L * 1.05, .55, 2, sw * (1 + .25 * sd), .55);   // the double tail
+        for (const sd of [1, -1]) { const p = at(7, sd, .6); fan(p[0], p[1], side(7, sd, .9), .7, L * .3, .5, 3, sw * .5, .6); }   // pelvic fins
+        for (const sd of [1, -1]) { const p = at(3, sd, .8), fl = .25 * Math.sin(t * 2 + sd + f.seed); fan(p[0], p[1], side(3, sd, .5 + fl), .6, L * .28, .5, 3, 0, .6); }   // pectorals
+      } else {
+        for (const sd of [1, -1]) {   // the dorsal and anal fins, flared out to either side as wide veils
+          const inner = [], outer = [];
+          for (let i = 4; i <= N; i++) {
+            const q = (i - 4) / (N - 4), v = L * .36 * Math.pow(Math.sin(Math.PI * Math.min(1, .08 + q * .82)), .7) * (1 + .09 * Math.sin(i * 2.3 + t * 1.2 + f.seed) + .05 * Math.sin(i * 5.1 - t * .9));
+            const lag = sw * L * .4 * q * sd;
+            inner.push(at(i, sd, .5));
+            outer.push([pts[i][0] + nrm[i][0] * sd * (wid[i] + v) + nrm[i][0] * lag, pts[i][1] + nrm[i][1] * sd * (wid[i] + v) + nrm[i][1] * lag]);
+          }
+          const g = x.createLinearGradient(pts[6][0], pts[6][1], outer[4][0], outer[4][1]);
+          g.addColorStop(0, `rgba(${k.rgb},.9)`); g.addColorStop(1, `rgba(${k.rgb},.6)`);
+          x.fillStyle = g; x.beginPath(); x.moveTo(inner[0][0], inner[0][1]);
+          for (let j = 0; j < outer.length - 1; j++) x.quadraticCurveTo(outer[j][0], outer[j][1], (outer[j][0] + outer[j + 1][0]) / 2, (outer[j][1] + outer[j + 1][1]) / 2);
+          x.lineTo(outer[outer.length - 1][0], outer[outer.length - 1][1]);
+          for (let j = inner.length - 1; j >= 0; j--) x.lineTo(inner[j][0], inner[j][1]);
+          x.closePath(); x.fill();
+          x.strokeStyle = 'rgba(120,10,8,.35)'; x.lineWidth = .6 * D;
+          for (let j = 0; j < outer.length; j++) { x.beginPath(); x.moveTo(inner[j][0], inner[j][1]); x.lineTo(outer[j][0], outer[j][1]); x.stroke(); }
+          x.strokeStyle = `rgba(${k.rim},.35)`; x.lineWidth = 1.1 * D; x.beginPath(); x.moveTo(outer[0][0], outer[0][1]);
+          for (let j = 1; j < outer.length - 1; j++) x.quadraticCurveTo(outer[j][0], outer[j][1], (outer[j][0] + outer[j + 1][0]) / 2, (outer[j][1] + outer[j + 1][1]) / 2);
+          x.stroke();
+        }
+        fan(tp[0], tp[1], dir, 3, L * .8, .9, 1, sw, .45);   // the halfmoon tail
+        x.strokeStyle = `rgba(${k.rgb},.8)`; x.lineCap = 'round'; x.lineWidth = L * .025;   // the long pelvic streamers
+        for (const sd of [1, -1]) { const p = at(3, sd, .5), a = side(3, sd, 1.9 + .15 * Math.sin(t * 1.3 + sd)); x.beginPath(); x.moveTo(p[0], p[1]); x.quadraticCurveTo(p[0] + Math.cos(a) * L * .2, p[1] + Math.sin(a) * L * .2, p[0] + Math.cos(a + sd * sw) * L * .38, p[1] + Math.sin(a + sd * sw) * L * .38); x.stroke(); }
+        for (const sd of [1, -1]) { const p = at(2, sd, .8); fan(p[0], p[1], side(2, sd, .5 + .3 * Math.sin(t * 3 + sd)), .7, L * .16, .35, 4, 0, .6); }   // small clear pectorals, always beating
+      }
+      x.globalAlpha = A; x.shadowColor = sc;
+    };
     const fins = alpha => {
+      if (k.fan) return fancy();
       x.fillStyle = k.fin || k.base; x.globalAlpha = A * alpha * (k.veil ? .4 : long ? .62 : 1);
       const tp = pts[N], tb = pts[N - 2], tn = nrm[N], back = [tp[0] - tb[0], tp[1] - tb[1]], bl = Math.hypot(...back) || 1;
       const bx = back[0] / bl, by = back[1] / bl, flap = Math.sin(swim - 6), lag = Math.sin(swim - 7.2);
@@ -3079,6 +3137,13 @@ const fauna = (() => {
     g2.addColorStop(0, `rgba(255,255,255,${k.metal ? .45 : .3})`); g2.addColorStop(1, 'rgba(255,255,255,0)');
     x.fillStyle = g2; x.fillRect(pts[si][0] - wid[si] * 2.2, pts[si][1] - wid[si] * 2.2, wid[si] * 4.4, wid[si] * 4.4);
     x.restore();
+    if (k.wen) {   // the oranda's cap: soft bumps over the top of its head
+      const c0 = [(pts[0][0] + pts[1][0] * 2) / 3, (pts[0][1] + pts[1][1] * 2) / 3];
+      x.fillStyle = k.wen;
+      for (let j = 0; j < 12; j++) { const a = j * 2.4 + f.seed, r = wid[1] * .62 * Math.sqrt((j + .5) / 12); x.beginPath(); x.arc(c0[0] + Math.cos(a) * r, c0[1] + Math.sin(a) * r, wid[1] * (.3 - .008 * j), 0, TAU); x.fill(); }
+      x.strokeStyle = 'rgba(170,120,80,.18)'; x.lineWidth = .7 * D;
+      for (let j = 0; j < 12; j += 2) { const a = j * 2.4 + f.seed, r = wid[1] * .62 * Math.sqrt((j + .5) / 12); x.beginPath(); x.arc(c0[0] + Math.cos(a) * r, c0[1] + Math.sin(a) * r, wid[1] * .26, a, a + 2); x.stroke(); }
+    }
     x.fillStyle = '#111';
     for (const sd of [1, -1]) { x.beginPath(); x.arc(pts[1][0] + nrm[1][0] * sd * wid[1] * .62, pts[1][1] + nrm[1][1] * sd * wid[1] * .62, 1.5 * D, 0, TAU); x.fill(); }
     x.restore();
@@ -3172,60 +3237,130 @@ const fauna = (() => {
     x.restore();
   }
 
-  /* the axolotl: lives on the bed, rests with its feathery gills fluttering, walks or swims off,
-     comes slowly for food, and now and then rises for a gulp of air */
-  const AXN = 14, AXW = [.07, .1, .095, .062, .07, .076, .075, .07, .06, .05, .04, .03, .02, .012, .004];
+  /* the axolotl: nothing like the fish. It lives on the bed and walks it like a salamander, diagonal
+     feet planted and lifted in turn while the body sways side to side between them. Resting, it
+     breathes, turns its head to look about, flutters its gills and now and then flicks its tail. It
+     swims in a few lazy beats and long glides with its legs tucked, sucks food in with a quick lunge,
+     and every few minutes rises for a gulp of air and drifts back down, legs spread. */
+  const AXN = 20, AXLEGS = [[.23, 1, 0, 1], [.23, -1, 1, 1], [.55, 1, 1, 0], [.55, -1, 0, 0]];   // along the body, side, gait pair, front
   const axoL = () => U() * .16;
+  const sstep = (a, b, v) => { const k = clamp((v - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+  const axoW = q => q < .12 ? .095 : q < .2 ? .095 - .035 * sstep(.12, .2, q) : q < .62 ? .06 + .017 * Math.sin(Math.PI * (q - .2) / .42) : .06 * Math.pow(1 - (q - .62) / .38, 1.15) + .003;
+  function axoAt(A, q) {   // a point on the spine, with its forward and left directions
+    const i = Math.min(AXN - 1, Math.floor(q * AXN)), k = q * AXN - i, a = A.pts[i], b = A.pts[i + 1];
+    const dx = a[0] - b[0], dy = a[1] - b[1], l = Math.hypot(dx, dy) || 1;
+    return { x: a[0] + (b[0] - a[0]) * k, y: a[1] + (b[1] - a[1]) * k, fx: dx / l, fy: dy / l, nx: -dy / l, ny: dx / l };
+  }
+  function axoFoot(A, g, L, ahead = 0) {   // where a foot rests: out to the side, a little ahead of the shoulder or behind the hip
+    const s = axoAt(A, g[0]), w = axoW(g[0]) * L + L * .09, f = (g[3] ? .04 : -.03) * L + ahead;
+    return [s.x + s.nx * g[1] * w + s.fx * f, s.y + s.ny * g[1] * w + s.fy * f];
+  }
   function axoInit(t) {
-    const L = axoL(), A = { x: W * .72, y: H * .3, h: rand(0, TAU), st: 'rest', until: t + rand(6, 20), sp: 0, ph: 0, fold: 0, dep: 1, seed: rand(0, 50), air: t + rand(90, 200), flare: 0, tx: 0, ty: 0, pts: [] };
-    for (let i = 0; i <= AXN; i++) A.pts.push([A.x - Math.cos(A.h) * i * L / AXN, A.y - Math.sin(A.h) * i * L / AXN]);
+    const L = axoL(), h = rand(0, TAU);
+    const A = { x: W * .72, y: H * .3, h, tr: 0, sp: 0, st: 'rest', until: t + rand(4, 12), ph: 0, sph: 0, amp: 0, burst: 0, fold: 0, dep: 1, seed: rand(0, 50),
+      air: t + rand(90, 200), flare: 0, puff: 0, look: 0, lookT: 0, lookAt: t + 2, swish: -99, snap: -99, bp: null, tx: 0, ty: 0, pts: [], legs: [] };
+    for (let i = 0; i <= AXN; i++) A.pts.push([A.x - Math.cos(h) * i * L / AXN, A.y - Math.sin(h) * i * L / AXN]);
+    for (const g of AXLEGS) { const p = axoFoot(A, g, L); A.legs.push({ g, x: p[0], y: p[1], x0: p[0], y0: p[1], half: -1, lift: 0 }); }
     return A;
   }
   function stepAxo(dt, t) {
-    const A = P.axo, u = U(), L = axoL(), m = u * .1;
-    const pick = () => { A.tx = rand(m, W - m); A.ty = rand(m, H - m); };
-    let bite = null, bd = Infinity;
-    if (A.st !== 'air') for (const p of P.food) { if (t - p.born < 1.5) continue; const d = Math.hypot(p.x - A.x, p.y - A.y); if (d < bd && d < u * .7) { bd = d; bite = p; } }
-    if (bite) { A.tx = bite.x; A.ty = bite.y; if (A.st === 'rest') A.st = bd > L * 2.5 ? 'swim' : 'walk'; }
-    if (A.st === 'rest' && t > A.until) { A.st = t > A.air ? 'air' : Math.random() < .75 ? 'walk' : 'swim'; pick(); }
-    const swim = A.st === 'swim' || A.st === 'air';
-    const want = A.st === 'rest' ? 0 : swim ? u * .05 : u * (bite ? .02 : .013);
-    A.sp += (want - A.sp) * Math.min(1, dt * (A.st === 'rest' ? 1.5 : .8));
-    A.fold += ((swim ? 1 : 0) - A.fold) * Math.min(1, dt * 2);
-    if (A.st !== 'rest') {
-      A.h += clamp(angTo(A.h, Math.atan2(A.ty - A.y, A.tx - A.x)), -1, 1) * dt * (swim ? 1.4 : .9);
-      const d = Math.hypot(A.tx - A.x, A.ty - A.y);
-      if (bite && d < L * .1) { P.food.splice(P.food.indexOf(bite), 1); ripple(bite.x, bite.y, .03 * u, .2, 2); A.flare = 1; A.st = 'rest'; A.until = t + rand(3, 8); }
-      else if (!bite && A.st !== 'air' && d < L * .25) { A.st = 'rest'; A.until = t + rand(swim ? 20 : 12, 60); }
+    const A = P.axo, u = U(), L = axoL(), m = u * .1, stride = L * .16;
+    const pick = near => {
+      if (near) { const a = rand(0, TAU), r = rand(.7, 1.8) * L; A.tx = clamp(A.x + Math.cos(a) * r, m, W - m); A.ty = clamp(A.y + Math.sin(a) * r, m, H - m); }
+      else { A.tx = rand(m, W - m); A.ty = rand(m, H - m); }
+    };
+    let bite = null, bd = Infinity;   // food: it notices slowly, and comes on foot unless it's far
+    if (A.st === 'rest' || A.st === 'walk' || A.st === 'swim') for (const p of P.food) { if (t - p.born < 1.2) continue; const d = Math.hypot(p.x - A.x, p.y - A.y); if (d < bd && d < u * .6) { bd = d; bite = p; } }
+    if (bite) {
+      A.tx = bite.x; A.ty = bite.y;
+      if (A.st === 'rest') { A.st = bd > L * 3 ? 'swim' : 'walk'; A.burst = t; }
+      if (bd < L * .3 && t - A.snap > .7) { A.snap = t; A.bp = bite; A.flare = 1; }   // the lunge
     }
-    if (A.st === 'air') {   // up through the water for a breath, then back down to the bed
-      A.dep = Math.max(0, A.dep - dt * .22);
-      if (A.dep <= .02) { ripple(A.x, A.y, .08 * u, .35, 5); ripple(A.x, A.y, .04 * u, .25, 3); A.air = t + rand(150, 300); A.st = 'swim'; pick(); }
-    } else A.dep += (1 - A.dep) * Math.min(1, dt * .3);
-    if (A.st === 'rest' && Math.random() < dt * .03) A.flare = Math.max(A.flare, .6);   // a slow pump of the gills
-    A.flare = Math.max(0, A.flare - dt * .7);
-    A.ph += dt * A.sp / L * (swim ? 18 : 25);
-    const hd = A.h + Math.sin(A.ph) * (swim ? .45 : .18) * Math.min(1, A.sp / (u * .01));   // the body bends side to side as it goes
+    if (A.bp && t - A.snap > .12) {
+      const i = P.food.indexOf(A.bp);
+      if (i >= 0 && Math.hypot(A.bp.x - A.x, A.bp.y - A.y) < L * .45) { P.food.splice(i, 1); ripple(A.bp.x, A.bp.y, .03 * u, .2, 2); A.st = 'rest'; A.until = t + rand(2, 6); }
+      A.bp = null;
+    }
+    if (A.st === 'rest' && t > A.until) {
+      A.burst = t;
+      if (t > A.air) { A.st = 'air'; pick(false); }
+      else { const r = Math.random(); A.st = r < .7 ? 'walk' : 'swim'; pick(r < .4); }
+    }
+    const walking = A.st === 'walk', swimming = A.st === 'swim' || A.st === 'air';
+    const off = Math.atan2(A.ty - A.y, A.tx - A.x), dErr = angTo(A.h, off);
+    const want = walking || swimming ? clamp(dErr * 1.3, -1, 1) * (walking ? .75 : 1.1) : 0;
+    A.tr += (want - A.tr) * Math.min(1, dt * 2.2); A.h += A.tr * dt;   // turns are eased in and out
+    let vt = 0;
+    if (walking) vt = u * (bite ? .022 : .014) * (.82 + .18 * Math.cos(A.ph * 2)) * (Math.abs(dErr) > 1.5 ? .45 : 1);
+    if (swimming) {   // a few beats, then a long glide
+      const on = (t - A.burst) % 4.4 < 1.4;
+      A.amp += ((on ? 1 : 0) - A.amp) * Math.min(1, dt * (on ? 2.5 : .8));
+      A.sph += dt * 7 * A.amp;
+      vt = u * (.015 + .05 * A.amp); A.puff = Math.min(1, A.puff + dt * .25);
+    } else { A.amp += -A.amp * Math.min(1, dt * 1.5); A.puff = Math.max(0, A.puff - dt * .06); }
+    if (A.st === 'sink') vt = u * .005;
+    A.sp += (vt - A.sp) * Math.min(1, dt * (swimming ? 1.2 : 2));
+    if (walking) A.ph += dt * TAU * Math.max(A.sp, u * .004) / stride;
+    else { const stop = Math.ceil(A.ph / Math.PI - 1e-6) * Math.PI; A.ph = Math.min(stop, A.ph + dt * 3.5); }   // finish the step under way, then stand
+    A.fold += ((swimming ? 1 : A.st === 'sink' ? .15 : 0) - A.fold) * Math.min(1, dt * 2.5);
+    const hd = A.h + Math.sin(A.sph) * .42 * A.amp;
     A.x = clamp(A.x + Math.cos(hd) * A.sp * dt, m * .5, W - m * .5); A.y = clamp(A.y + Math.sin(hd) * A.sp * dt, m * .5, H - m * .5);
+    const d = Math.hypot(A.tx - A.x, A.ty - A.y);
+    if (!bite && (walking || A.st === 'swim') && d < L * .3) { A.st = 'rest'; A.until = t + rand(walking ? 6 : 10, 30); }
+    if (A.st === 'air') {   // up for a breath
+      if (d < L * .5) pick(false);
+      A.dep = Math.max(0, A.dep - dt * .13 * (.4 + A.amp));
+      if (A.dep <= .02) { ripple(A.x, A.y, .08 * u, .35, 5); ripple(A.x, A.y, .04 * u, .25, 3); A.air = t + rand(150, 300); A.st = 'sink'; A.flare = 1; }
+    } else if (A.st === 'sink') {   // and a slow drift back down, legs spread
+      A.dep += dt * .09;
+      if (A.dep >= 1) { A.dep = 1; A.st = 'rest'; A.until = t + rand(8, 20); }
+    } else A.dep += ((swimming ? .82 : 1) - A.dep) * Math.min(1, dt * .5);
+    if (t > A.lookAt) { A.lookT = A.st === 'rest' ? rand(-.45, .45) * (Math.random() < .3 ? 0 : 1) : 0; A.lookAt = t + rand(1.5, 5); }
+    A.look += ((walking ? clamp(A.tr * .5, -.4, .4) : A.lookT) - A.look) * Math.min(1, dt * 1.8);
+    if (A.st === 'rest') { if (Math.random() < dt * .05) A.swish = t; if (Math.random() < dt * .04) A.flare = Math.max(A.flare, .6); }
+    A.flare = Math.max(0, A.flare - dt * .7);
     const seg = L / AXN; A.pts[0] = [A.x, A.y];
     for (let i = 1; i <= AXN; i++) {   // each part of the body follows the one before it
       const a = A.pts[i - 1], b = A.pts[i], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
       A.pts[i] = [a[0] + dx / l * seg, a[1] + dy / l * seg];
     }
+    const half = Math.floor(A.ph / Math.PI), kk = A.ph / Math.PI - half;
+    for (const g of A.legs) {   // feet stay planted where they stand; one diagonal pair steps while the other holds
+      if (A.fold > .3) { const p = axoFoot(A, g.g, L); g.x = p[0]; g.y = p[1]; g.half = -1; g.lift = 0; continue; }
+      if (half % 2 === g.g[2] && kk > 1e-4) {
+        if (g.half !== half) { g.half = half; g.x0 = g.x; g.y0 = g.y; }
+        const p = axoFoot(A, g.g, L, stride * (walking ? .5 : .1)), e = ease(kk);
+        g.x = g.x0 + (p[0] - g.x0) * e; g.y = g.y0 + (p[1] - g.y0) * e; g.lift = Math.sin(Math.PI * kk);
+      } else g.lift = 0;
+    }
   }
   function drawAxo(t) {
-    const A = P.axo, u = U(), L = axoL() * (1 - .06 * A.dep), N = AXN, al = 1 - .15 * A.dep, seg = L / N;
-    const pts = A.pts.map(p => [p[0], p[1]]), nrm = [], fw = [], wid = [];
+    const A = P.axo, u = U(), L = axoL() * (1 - .06 * A.dep), N = AXN, al = 1 - .15 * A.dep;
+    const moving = Math.min(1, A.sp / (u * .006));
+    const B = L * .04 * Math.min(1, A.sp / (u * .008)) * (1 - A.fold);   // the side-to-side bend of a walk
+    const sn = t - A.snap < .35 ? Math.sin(Math.PI * (t - A.snap) / .35) : 0;   // the lunge
+    const ws = t - A.swish, swA = ws < 4 ? L * .05 * Math.exp(-ws * 1.1) : 0;
+    const br = 1 + .03 * Math.sin(t * 1.3 + A.seed) + .02 * A.puff * Math.sin(t * 3.1);   // breathing
+    const pts = [], wid = [];
+    let fw = [], nrm = [];
+    const frames = () => { fw = []; nrm = []; for (let i = 0; i <= N; i++) { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N, i + 1)], dx = a[0] - b[0], dy = a[1] - b[1], l = Math.hypot(dx, dy) || 1; fw.push([dx / l, dy / l]); nrm.push([-dy / l, dx / l]); } };
+    for (let i = 0; i <= N; i++) pts.push(A.pts[i].slice());
+    frames();
     for (let i = 0; i <= N; i++) {
-      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N, i + 1)], dx = a[0] - b[0], dy = a[1] - b[1], l = Math.hypot(dx, dy) || 1;
-      fw.push([dx / l, dy / l]); nrm.push([-dy / l, dx / l]); wid.push(AXW[i] * L);
+      const q = i / N;
+      let o = (q < .6 ? Math.sin(A.ph) * Math.cos(Math.PI * (q - .22) / .36) : -Math.sin(A.ph - (q - .6) * 5) * (1 + (q - .6) * 2.5)) * B * sstep(0, .12, q);
+      if (q > .5) o += swA * Math.sin(ws * 5 - q * 7) * (q - .5) * 2;   // a flick of the tail
+      o += A.amp * L * .075 * Math.sin(A.sph - q * 6.5) * (.12 + q * q * 1.1) * sstep(0, .15, q);   // swimming: a slow wave from neck to tail
+      o += Math.sin(t * .45 + A.seed) * L * .03 * (1 - moving) * Math.pow(Math.max(0, q - .55) / .45, 1.5);   // a slow curl at rest
+      const fwd = sn * L * .1 * Math.max(0, 1 - q / .4);
+      pts[i] = [pts[i][0] + nrm[i][0] * o + fw[i][0] * fwd, pts[i][1] + nrm[i][1] * o + fw[i][1] * fwd];
+      wid.push(axoW(q) * L * (q > .18 && q < .62 ? br : 1));
     }
-    const still = 1 - Math.min(1, A.sp / (u * .01));
-    for (let i = 6; i <= N; i++) {   // resting, the tail curls and uncurls a little
-      const s = Math.sin(t * .45 + A.seed) * L * .03 * still * Math.pow((i - 6) / (N - 6), 1.5) + (A.fold > .5 ? Math.sin(A.ph * 2 - i * .6) * L * .012 : 0);
-      pts[i] = [pts[i][0] + nrm[i][0] * s, pts[i][1] + nrm[i][1] * s];
-    }
-    const f0 = fw[1], n0 = nrm[1], hc = [pts[1][0] + f0[0] * seg * .4, pts[1][1] + f0[1] * seg * .4], rx = seg * 1.6, ry = L * .1;
+    const pv = pts[5].slice();   // the head turns on its neck
+    for (let i = 0; i < 5; i++) { const a = A.look * (1 - i / 5), c = Math.cos(a), s = Math.sin(a), dx = pts[i][0] - pv[0], dy = pts[i][1] - pv[1]; pts[i] = [pv[0] + dx * c - dy * s, pv[1] + dx * s + dy * c]; }
+    frames();
+    const f0 = [(pts[0][0] - pts[3][0]), (pts[0][1] - pts[3][1])], fl0 = Math.hypot(...f0) || 1; f0[0] /= fl0; f0[1] /= fl0;
+    const n0 = [-f0[1], f0[0]], rx = L * .115, ry = L * .1, hc = [pts[1][0] - f0[0] * L * .01, pts[1][1] - f0[1] * L * .01];
     const outline = (from, extra) => {   // a smooth outline down one side and back up the other
       const side = [];
       for (let i = from; i <= N; i++) { const e = wid[i] + extra(i); side.push([pts[i][0] + nrm[i][0] * e, pts[i][1] + nrm[i][1] * e]); }
@@ -3234,34 +3369,44 @@ const fauna = (() => {
       for (let j = 0; j < side.length - 1; j++) x.quadraticCurveTo(side[j][0], side[j][1], (side[j][0] + side[j + 1][0]) / 2, (side[j][1] + side[j + 1][1]) / 2);
       x.lineTo(side[side.length - 1][0], side[side.length - 1][1]); x.closePath();
     };
-    const leg = (i, sd, o, hind) => {
-      const sw = Math.sin(A.ph + o) * (1 - still) * (1 - A.fold), f = fw[i], n = nrm[i];
-      const a = (hind ? 1.7 : 1.15) * (1 - A.fold) + (hind ? 2.85 : 2.7) * A.fold - .45 * sw, a2 = a - (hind ? .85 : .6) * (1 - A.fold);
-      const dir = q => [f[0] * Math.cos(q) + n[0] * sd * Math.sin(q), f[1] * Math.cos(q) + n[1] * sd * Math.sin(q)];
-      const b = [pts[i][0] + n[0] * sd * wid[i] * .7, pts[i][1] + n[1] * sd * wid[i] * .7], d1 = dir(a), d2 = dir(a2);
-      const k = [b[0] + d1[0] * L * .07, b[1] + d1[1] * L * .07], e = [k[0] + d2[0] * L * .05, k[1] + d2[1] * L * .05];
-      x.lineWidth = L * .032; x.beginPath(); x.moveTo(b[0], b[1]); x.lineTo(k[0], k[1]); x.lineTo(e[0], e[1]); x.stroke();
-      x.lineWidth = L * .011;
-      for (let j = -1.5; j <= 1.5; j++) { const d = dir(a2 + j * .35); x.beginPath(); x.moveTo(e[0], e[1]); x.lineTo(e[0] + d[0] * L * .024, e[1] + d[1] * L * .024); x.stroke(); }
+    const leg = g => {   // shoulder to planted foot, bent at the elbow (back) or knee (forward)
+      const i = Math.round(g.g[0] * N), sd = g.g[1], f = fw[i], n = nrm[i];
+      const S = [pts[i][0] + n[0] * sd * wid[i] * .7, pts[i][1] + n[1] * sd * wid[i] * .7];
+      const tk = [pts[i][0] + n[0] * sd * wid[i] * 1.15 - f[0] * L * .12, pts[i][1] + n[1] * sd * wid[i] * 1.15 - f[1] * L * .12];
+      let F = [g.x + (tk[0] - g.x) * A.fold, g.y + (tk[1] - g.y) * A.fold];
+      const l1 = L * .075, l2 = L * .07, mx = (l1 + l2) * .97;
+      let dx = F[0] - S[0], dy = F[1] - S[1], d = Math.hypot(dx, dy) || 1e-3;
+      if (d > mx) { F = [S[0] + dx / d * mx, S[1] + dy / d * mx]; d = mx; }
+      const th = Math.atan2(F[1] - S[1], F[0] - S[0]), a = Math.acos(clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1));
+      const k1 = [S[0] + Math.cos(th + a) * l1, S[1] + Math.sin(th + a) * l1], k2 = [S[0] + Math.cos(th - a) * l1, S[1] + Math.sin(th - a) * l1];
+      const dot = p => (p[0] - S[0]) * f[0] + (p[1] - S[1]) * f[1];
+      const K = (g.g[3] ? dot(k1) < dot(k2) : dot(k1) > dot(k2)) ? k1 : k2;
+      x.lineWidth = L * .034; x.beginPath(); x.moveTo(S[0], S[1]); x.lineTo(K[0], K[1]); x.stroke();
+      x.lineWidth = L * .028; x.beginPath(); x.moveTo(K[0], K[1]); x.lineTo(F[0], F[1]); x.stroke();
+      const hd = Math.atan2(F[1] - K[1], F[0] - K[0]), fl = L * .026 * (1 + .3 * g.lift);
+      x.lineWidth = L * .012;
+      for (let j = -1.5; j <= 1.5; j++) { const a2 = hd + j * .4; x.beginPath(); x.moveTo(F[0], F[1]); x.lineTo(F[0] + Math.cos(a2) * fl, F[1] + Math.sin(a2) * fl); x.stroke(); }
     };
     x.save(); x.globalAlpha = al; x.lineCap = 'round'; x.lineJoin = 'round';
     const lift = 1 - A.dep;
     x.shadowColor = `rgba(0,0,0,${.4 + .1 * lift})`; x.shadowBlur = (5 + 12 * lift) * D; x.shadowOffsetX = (3 + 10 * lift) * D; x.shadowOffsetY = (4 + 11 * lift) * D;
     x.strokeStyle = '#f0d0cb';
-    leg(4, 1, 0, 0); leg(4, -1, Math.PI, 0); leg(9, 1, Math.PI, 1); leg(9, -1, 0, 1);
+    for (const g of A.legs) leg(g);
+    const tf = Math.round(.42 * N);
     x.globalAlpha = al * .35; x.fillStyle = '#f3d8d4';   // the clear fin along the tail
-    outline(6, i => L * .03 * Math.sin(Math.PI * Math.min(1, (i - 6) / (N - 5))) + L * .004); x.fill();
+    outline(tf, i => L * .032 * Math.sin(Math.PI * Math.min(1, (i - tf) / (N - tf + 1.5))) + L * .004); x.fill();
     x.globalAlpha = al;
     const g = x.createLinearGradient(pts[0][0], pts[0][1], pts[N][0], pts[N][1]);
     g.addColorStop(0, '#fae2de'); g.addColorStop(.6, '#f5d6d1'); g.addColorStop(1, '#eecbc6');
-    x.fillStyle = g; outline(1, () => 0); x.fill();
+    x.fillStyle = g; outline(2, () => 0); x.fill();
     x.beginPath(); x.ellipse(hc[0], hc[1], rx, ry, Math.atan2(f0[1], f0[0]), 0, TAU); x.fill();
     x.shadowColor = 'transparent'; x.shadowBlur = x.shadowOffsetX = x.shadowOffsetY = 0;
     x.strokeStyle = 'rgba(255,248,245,.18)'; x.lineWidth = L * .025;   // the light along its back
-    x.beginPath(); x.moveTo(pts[1][0], pts[1][1]); for (let i = 2; i < N - 3; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke();
+    x.beginPath(); x.moveTo(pts[2][0], pts[2][1]); for (let i = 3; i < N - 4; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke();
+    const gr = 1.4 + 2.4 * A.puff, ga = .06 + .07 * A.puff;   // the gills flutter faster after it has been swimming
     for (const sd of [1, -1]) {   // the gills: three feathery stalks a side, see-through, swaying
       for (let k = 0; k < 3; k++) {
-        const a = [1.55, 2, 2.45][k] + .07 * Math.sin(t * 1.6 + k * .9 + sd * 1.7 + A.seed) + A.flare * (k - 1) * .18 + A.fold * .25;
+        const a = [1.55, 2, 2.45][k] + ga * Math.sin(t * gr + k * .9 + sd * 1.7 + A.seed) + A.flare * (k - 1) * .18 + A.fold * .3 - sd * A.tr * .12;
         const lk = L * [.13, .15, .12][k] * (1 + .12 * A.flare);
         const dv = [f0[0] * Math.cos(a) + n0[0] * sd * Math.sin(a), f0[1] * Math.cos(a) + n0[1] * sd * Math.sin(a)];
         const b = [hc[0] - f0[0] * rx * (.3 + k * .14) + n0[0] * sd * ry * .78, hc[1] - f0[1] * rx * (.3 + k * .14) + n0[1] * sd * ry * .78];
@@ -3272,16 +3417,17 @@ const fauna = (() => {
         x.strokeStyle = 'rgba(246,140,166,.45)'; x.lineWidth = Math.max(.7 * D, L * .006);
         for (let j = 1; j <= 7; j++) {
           const s = j / 8, p = at(s), q = at(Math.min(1, s + .05)), tl = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, tx = (q[0] - p[0]) / tl, ty = (q[1] - p[1]) / tl;
-          const fl = L * .04 * (1 - s * .55), wob = .15 * Math.sin(t * 2.3 + j + k * 2 + sd);
+          const fl = L * .04 * (1 - s * .55), wob = .15 * Math.sin(t * (2.3 + A.puff * 2) + j + k * 2 + sd);
           for (const side of [1, -1]) { const px = -ty * side, py = tx * side; x.beginPath(); x.moveTo(p[0], p[1]); x.lineTo(p[0] + (px * (.75 + wob) + tx * .65) * fl, p[1] + (py * (.75 + wob) + ty * .65) * fl); x.stroke(); }
         }
       }
     }
     x.fillStyle = '#1c1214';
     for (const sd of [1, -1]) { x.beginPath(); x.arc(hc[0] + f0[0] * rx * .3 + n0[0] * sd * ry * .7, hc[1] + f0[1] * rx * .3 + n0[1] * sd * ry * .7, 1.4 * D, 0, TAU); x.fill(); }
-    x.strokeStyle = 'rgba(150,80,84,.4)'; x.lineWidth = .8 * D;   // and its little smile
-    x.beginPath(); x.moveTo(hc[0] + f0[0] * rx * .72 + n0[0] * ry * .42, hc[1] + f0[1] * rx * .72 + n0[1] * ry * .42);
-    x.quadraticCurveTo(hc[0] + f0[0] * rx * .9, hc[1] + f0[1] * rx * .9, hc[0] + f0[0] * rx * .72 - n0[0] * ry * .42, hc[1] + f0[1] * rx * .72 - n0[1] * ry * .42); x.stroke();
+    x.strokeStyle = 'rgba(150,80,84,.4)'; x.lineWidth = .8 * D;   // and its little smile, open for a moment as it lunges
+    const mo = 1 + sn * .8;
+    x.beginPath(); x.moveTo(hc[0] + f0[0] * rx * .72 + n0[0] * ry * .42 * mo, hc[1] + f0[1] * rx * .72 + n0[1] * ry * .42 * mo);
+    x.quadraticCurveTo(hc[0] + f0[0] * rx * (.9 + sn * .08), hc[1] + f0[1] * rx * (.9 + sn * .08), hc[0] + f0[0] * rx * .72 - n0[0] * ry * .42 * mo, hc[1] + f0[1] * rx * .72 - n0[1] * ry * .42 * mo); x.stroke();
     x.restore();
   }
 
@@ -3492,7 +3638,7 @@ const fauna = (() => {
       for (const f of P.fish) { mv(f); f.trail = f.trail.map(([a, b]) => [a * sx, b * sy]); }
       [...P.school, ...P.striders, ...P.drift, ...P.motes, ...P.food, ...P.rip].forEach(mv);
       if (P.turtle.on) { mv(P.turtle); P.turtle.tx *= sx; P.turtle.ty *= sy; }
-      mv(P.axo); P.axo.tx *= sx; P.axo.ty *= sy; P.axo.pts = P.axo.pts.map(([a, b]) => [a * sx, b * sy]);
+      mv(P.axo); P.axo.tx *= sx; P.axo.ty *= sy; P.axo.pts = P.axo.pts.map(([a, b]) => [a * sx, b * sy]); for (const g of P.axo.legs) { g.x *= sx; g.y *= sy; g.x0 *= sx; g.y0 *= sy; }
       P.W = W; P.H = H;
     }
     const pd = pads(t), n = Math.ceil(dt / .04);   // small steps keep the steering smooth on a slow frame
